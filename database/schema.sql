@@ -1,0 +1,194 @@
+﻿-- Core user and patient profile tables
+
+CREATE TABLE IF NOT EXISTS app_user (
+  id UUID PRIMARY KEY,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(120),
+  phone_number VARCHAR(32),
+  status VARCHAR(24) NOT NULL,
+  account_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  account_locked BOOLEAN NOT NULL DEFAULT FALSE,
+  mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  last_login_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id UUID NOT NULL REFERENCES app_user(id),
+  role VARCHAR(50) NOT NULL,
+  PRIMARY KEY (user_id, role)
+);
+
+CREATE TABLE IF NOT EXISTS patient_profile (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL UNIQUE REFERENCES app_user(id),
+  date_of_birth DATE,
+  sex VARCHAR(16),
+  height_cm INTEGER,
+  weight_kg INTEGER,
+  city VARCHAR(80),
+  country_code VARCHAR(2),
+  occupation VARCHAR(80),
+  cigarettes_per_day INTEGER,
+  smoking_start_age INTEGER,
+  fagerstrom_score INTEGER,
+  had_anxiety_score INTEGER,
+  had_depression_score INTEGER,
+  dependence_level VARCHAR(24),
+  medical_history_notes VARCHAR(1000),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS onboarding_assessment (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL UNIQUE REFERENCES patient_profile(id),
+  quit_attempts INTEGER,
+  longest_quit_days INTEGER,
+  motivation_score INTEGER,
+  confidence_score INTEGER,
+  smokes_at_home BOOLEAN,
+  uses_other_tobacco BOOLEAN,
+  triggers VARCHAR(500),
+  notes VARCHAR(1000),
+  cage_cut_down BOOLEAN,
+  cage_annoyed BOOLEAN,
+  cage_guilty BOOLEAN,
+  cage_eye_opener BOOLEAN,
+  cage_score INTEGER,
+  cage_positive BOOLEAN,
+  cannabis_last_12_months BOOLEAN,
+  cannabis_frequency VARCHAR(32),
+  weight_concern_score INTEGER,
+  weight_confidence_score INTEGER,
+  physical_activity_level VARCHAR(32),
+  honc_q1 BOOLEAN,
+  honc_q2 BOOLEAN,
+  honc_q3 BOOLEAN,
+  honc_q4 BOOLEAN,
+  honc_q5 BOOLEAN,
+  honc_q6 BOOLEAN,
+  honc_q7 BOOLEAN,
+  honc_q8 BOOLEAN,
+  honc_q9 BOOLEAN,
+  honc_q10 BOOLEAN,
+  honc_score INTEGER,
+  honc_high_dependence BOOLEAN,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS sevrage_plan (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL UNIQUE REFERENCES patient_profile(id),
+  intensity VARCHAR(16),
+  summary VARCHAR(2000),
+  nrt_recommendation VARCHAR(1200),
+  behavioral_recommendations VARCHAR(1200),
+  follow_up_plan VARCHAR(1200),
+  relapse_protocol VARCHAR(1200),
+  start_date DATE,
+  target_quit_date DATE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS sevrage_plan_steps (
+  plan_id UUID NOT NULL REFERENCES sevrage_plan(id),
+  step VARCHAR(500) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_report (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),
+  report_date DATE NOT NULL,
+  cigarettes_smoked INTEGER,
+  cravings_intensity INTEGER,
+  mood_score INTEGER,
+  stress_score INTEGER,
+  used_nrt BOOLEAN,
+  relapse_event BOOLEAN,
+  notes VARCHAR(1000),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64),
+  UNIQUE (patient_profile_id, report_date)
+);
+
+CREATE TABLE IF NOT EXISTS fagerstrom_test (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),
+  time_to_first_cigarette VARCHAR(24) NOT NULL,
+  difficult_to_refrain BOOLEAN NOT NULL,
+  most_difficult_cigarette VARCHAR(24) NOT NULL,
+  cigarettes_per_day VARCHAR(24) NOT NULL,
+  smoke_more_in_morning BOOLEAN NOT NULL,
+  smoke_when_ill BOOLEAN NOT NULL,
+  total_score INTEGER NOT NULL,
+  dependence_level VARCHAR(16) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS had_test (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),
+  q1 INTEGER NOT NULL,
+  q2 INTEGER NOT NULL,
+  q3 INTEGER NOT NULL,
+  q4 INTEGER NOT NULL,
+  q5 INTEGER NOT NULL,
+  q6 INTEGER NOT NULL,
+  q7 INTEGER NOT NULL,
+  q8 INTEGER NOT NULL,
+  q9 INTEGER NOT NULL,
+  q10 INTEGER NOT NULL,
+  q11 INTEGER NOT NULL,
+  q12 INTEGER NOT NULL,
+  q13 INTEGER NOT NULL,
+  q14 INTEGER NOT NULL,
+  anxiety_score INTEGER NOT NULL,
+  depression_score INTEGER NOT NULL,
+  anxiety_interpretation VARCHAR(24) NOT NULL,
+  depression_interpretation VARCHAR(24) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_email ON app_user(email);

@@ -1,0 +1,33 @@
+﻿spring:
+  application:
+    name: neuralconsult-sevrage
+  datasource:
+    url: jdbc:postgresql://localhost:5432/neuralconsult
+    username: neural
+    password: neuralpass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+security:
+  jwt:
+    secret: "change-me-super-secret-256-bit-key"
+    issuer: "neuralconsult"
+    accessTokenMinutes: 60
+    refreshTokenDays: 14
+    cookieSecure: false
