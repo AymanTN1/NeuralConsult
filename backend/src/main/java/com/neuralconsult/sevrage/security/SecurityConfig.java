@@ -22,7 +22,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
+  public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                 JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                 OnboardingRequiredFilter onboardingRequiredFilter)
       throws Exception {
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -32,7 +34,8 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
             .anyRequest().authenticated()
         )
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterAfter(onboardingRequiredFilter, JwtAuthenticationFilter.class);
 
     return http.build();
   }

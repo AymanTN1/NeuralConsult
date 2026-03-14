@@ -22,6 +22,9 @@ public class OnboardingService {
   public OnboardingAssessment save(User user, OnboardingRequest request) {
     PatientProfile profile = patientProfileService.getOrCreate(user);
     applyProfile(profile, request);
+    if (!profile.isOnboardingComplete()) {
+      profile.setOnboardingComplete(true);
+    }
 
     OnboardingAssessment assessment = repository.findByPatientProfile(profile).orElseGet(() -> {
       OnboardingAssessment created = new OnboardingAssessment();
@@ -54,13 +57,91 @@ public class OnboardingService {
   }
 
   private void applyAssessment(OnboardingAssessment assessment, OnboardingRequest request) {
+    assessment.setAppointmentLeadDays(request.appointmentLeadDays());
+    assessment.setPregnant(request.pregnant());
+    assessment.setPregnancyTrimester(request.pregnancyTrimester());
+    assessment.setUsesBirthControlPill(request.usesBirthControlPill());
+    assessment.setConsultationObjective(request.consultationObjective());
+    assessment.setProfessionalStatus(request.professionalStatus());
+    assessment.setOtherSmokersAtHome(request.otherSmokersAtHome());
+    assessment.setEducationLevel(request.educationLevel());
+    assessment.setReferralSource(request.referralSource());
+    assessment.setRiskHypertension(request.riskHypertension());
+    assessment.setRiskDiabetes(request.riskDiabetes());
+    assessment.setRiskHypercholesterolemia(request.riskHypercholesterolemia());
+    assessment.setCardiovascularMyocardialInfarction(request.cardiovascularMyocardialInfarction());
+    assessment.setCardiovascularAngina(request.cardiovascularAngina());
+    assessment.setCardiovascularStroke(request.cardiovascularStroke());
+    assessment.setCardiovascularPeripheralArteryDisease(request.cardiovascularPeripheralArteryDisease());
+    assessment.setRespiratoryChronicBronchitis(request.respiratoryChronicBronchitis());
+    assessment.setRespiratoryCopd(request.respiratoryCopd());
+    assessment.setRespiratoryAsthma(request.respiratoryAsthma());
+    assessment.setCancerLung(request.cancerLung());
+    assessment.setCancerThroat(request.cancerThroat());
+    assessment.setCancerBladder(request.cancerBladder());
+    assessment.setCancerOther(request.cancerOther());
+    assessment.setCancerOtherDetails(request.cancerOtherDetails());
+    assessment.setMedicationTranquilizers(request.medicationTranquilizers());
+    assessment.setMedicationSleepingPills(request.medicationSleepingPills());
+    assessment.setMedicationAntidepressants(request.medicationAntidepressants());
+    assessment.setMedicationNeuroleptics(request.medicationNeuroleptics());
+    assessment.setMedicationMoodRegulators(request.medicationMoodRegulators());
+    assessment.setMedicationSubstitutionTreatment(request.medicationSubstitutionTreatment());
+    assessment.setDepressionHistory(request.depressionHistory());
+    assessment.setOtherHealthIssues(request.otherHealthIssues());
+    assessment.setReducedConsumptionLastMonth(request.reducedConsumptionLastMonth());
+    assessment.setCurrentlySmoking(request.currentlySmoking());
+    assessment.setQuitDays(request.quitDays());
+    assessment.setQuitMonths(request.quitMonths());
+    assessment.setCigarettesPerDayBeforeQuit(request.cigarettesPerDayBeforeQuit());
+    assessment.setSmokesDaily(request.smokesDaily());
+    assessment.setManufacturedCigarettesPerDay(request.manufacturedCigarettesPerDay());
+    assessment.setRolledCigarettesPerDay(request.rolledCigarettesPerDay());
+    assessment.setCigarillosPerDay(request.cigarillosPerDay());
+    assessment.setUsesCigar(request.usesCigar());
+    assessment.setUsesPipe(request.usesPipe());
+    assessment.setUsesChewingTobacco(request.usesChewingTobacco());
+    assessment.setUsesSnus(request.usesSnus());
+    assessment.setUsesHookah(request.usesHookah());
+    assessment.setUsesPloom(request.usesPloom());
+    assessment.setOtherTobaccoDetails(request.otherTobaccoDetails());
+    assessment.setUsesECigarette(request.usesECigarette());
+    assessment.setEcigWeeklyLiquid(request.ecigWeeklyLiquid());
+    assessment.setUsesNicotineCartridges(request.usesNicotineCartridges());
+    assessment.setNicotineCartridgeDosage(request.nicotineCartridgeDosage());
+    assessment.setWeeklyTobaccoSpend(request.weeklyTobaccoSpend());
+    assessment.setIncomeBracket(request.incomeBracket());
+    assessment.setEpicesQ49(request.epicesQ49());
+    assessment.setEpicesQ50(request.epicesQ50());
+    assessment.setEpicesQ51(request.epicesQ51());
+    assessment.setEpicesQ52(request.epicesQ52());
+    assessment.setEpicesQ53(request.epicesQ53());
+    assessment.setEpicesQ54(request.epicesQ54());
+    assessment.setEpicesQ55(request.epicesQ55());
+    assessment.setEpicesQ56(request.epicesQ56());
+    assessment.setEpicesQ57(request.epicesQ57());
+    assessment.setEpicesQ58(request.epicesQ58());
+    assessment.setEpicesQ59(request.epicesQ59());
     assessment.setQuitAttempts(request.quitAttempts());
     assessment.setLongestQuitDays(request.longestQuitDays());
+    assessment.setMotivationStage(request.motivationStage());
     assessment.setMotivationScore(request.motivationScore());
     assessment.setConfidenceScore(request.confidenceScore());
+    assessment.setSmokingReasonAutomatic(request.smokingReasonAutomatic());
+    assessment.setSmokingReasonConviviality(request.smokingReasonConviviality());
+    assessment.setSmokingReasonPleasure(request.smokingReasonPleasure());
+    assessment.setSmokingReasonStress(request.smokingReasonStress());
+    assessment.setSmokingReasonConcentration(request.smokingReasonConcentration());
+    assessment.setSmokingReasonSupportMoral(request.smokingReasonSupportMoral());
+    assessment.setSmokingReasonWeight(request.smokingReasonWeight());
     assessment.setSmokesAtHome(request.smokesAtHome());
     assessment.setUsesOtherTobacco(request.usesOtherTobacco());
     assessment.setTriggers(request.triggers());
+    assessment.setQuitReasons(request.quitReasons());
+    assessment.setQuitFears(request.quitFears());
+    assessment.setAlcoholFrequency(request.alcoholFrequency());
+    assessment.setAlcoholQuantity(request.alcoholQuantity());
+    assessment.setAlcoholBinge(request.alcoholBinge());
     assessment.setNotes(request.notes());
 
     assessment.setCageCutDown(request.cageCutDown());
@@ -70,6 +151,7 @@ public class OnboardingService {
 
     assessment.setCannabisLast12Months(request.cannabisLast12Months());
     assessment.setCannabisFrequency(request.cannabisFrequency());
+    assessment.setCannabisStartAge(request.cannabisStartAge());
 
     assessment.setWeightConcernScore(request.weightConcernScore());
     assessment.setWeightConfidenceScore(request.weightConfidenceScore());
@@ -111,6 +193,33 @@ public class OnboardingService {
     );
     assessment.setHoncScore(honcScore);
     assessment.setHoncHighDependence(honcScore >= 7);
+
+    Integer alcoholFrequency = assessment.getAlcoholFrequency();
+    Integer alcoholQuantity = assessment.getAlcoholQuantity();
+    Integer alcoholBinge = assessment.getAlcoholBinge();
+    if (alcoholFrequency == null && alcoholQuantity == null && alcoholBinge == null) {
+      assessment.setAlcoholScore(null);
+    } else {
+      int alcoholScore = (alcoholFrequency != null ? alcoholFrequency : 0)
+          + (alcoholQuantity != null ? alcoholQuantity : 0)
+          + (alcoholBinge != null ? alcoholBinge : 0);
+      assessment.setAlcoholScore(alcoholScore);
+    }
+
+    int epicesScore = countTrue(
+        assessment.getEpicesQ49(),
+        assessment.getEpicesQ50(),
+        assessment.getEpicesQ51(),
+        assessment.getEpicesQ52(),
+        assessment.getEpicesQ53(),
+        assessment.getEpicesQ54(),
+        assessment.getEpicesQ55(),
+        assessment.getEpicesQ56(),
+        assessment.getEpicesQ57(),
+        assessment.getEpicesQ58(),
+        assessment.getEpicesQ59()
+    );
+    assessment.setEpicesScore(epicesScore);
   }
 
   private int countTrue(Boolean... values) {

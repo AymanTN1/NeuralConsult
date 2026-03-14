@@ -40,7 +40,7 @@ public class PatientProfile extends AuditableEntity {
   @Column(name = "city", length = 80)
   private String city;
 
-  @Column(name = "country_code", length = 2)
+  @Column(name = "country_code", length = 64)
   private String countryCode;
 
   @Column(name = "occupation", length = 80)
@@ -67,6 +67,9 @@ public class PatientProfile extends AuditableEntity {
 
   @Column(name = "medical_history_notes", length = 1000)
   private String medicalHistoryNotes;
+
+  @Column(name = "is_onboarding_complete", nullable = false)
+  private boolean onboardingComplete;
 
   public enum Sex {
     FEMALE,

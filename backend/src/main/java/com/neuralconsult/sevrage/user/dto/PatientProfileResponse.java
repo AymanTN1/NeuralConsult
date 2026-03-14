@@ -13,6 +13,7 @@ public record PatientProfileResponse(
     String occupation,
     Integer cigarettesPerDay,
     Integer smokingStartAge,
+    boolean onboardingComplete,
     String dependenceLevel,
     String medicalHistoryNotes
 ) {

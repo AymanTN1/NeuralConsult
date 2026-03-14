@@ -88,6 +88,7 @@ public class PatientProfileController {
         profile.getOccupation(),
         profile.getCigarettesPerDay(),
         profile.getSmokingStartAge(),
+        profile.isOnboardingComplete(),
         profile.getDependenceLevel() != null ? profile.getDependenceLevel().name() : null,
         profile.getMedicalHistoryNotes()
     );
