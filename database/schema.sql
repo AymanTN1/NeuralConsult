@@ -197,6 +197,25 @@ CREATE TABLE IF NOT EXISTS sevrage_plan (
   deleted_by VARCHAR(64)
 );
 
+-- Clinical Intelligence Notes (generated, validated summaries for physicians)
+CREATE TABLE IF NOT EXISTS clinical_note (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL UNIQUE REFERENCES patient_profile(id),
+  medical_summary VARCHAR(8000) NOT NULL,
+  complementary_note VARCHAR(4000) NOT NULL,
+  facts_snapshot VARCHAR(12000) NOT NULL,
+  validation_status VARCHAR(24) NOT NULL,
+  validation_issues VARCHAR(2000),
+  model_name VARCHAR(80),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
 CREATE TABLE IF NOT EXISTS sevrage_plan_steps (
   plan_id UUID NOT NULL REFERENCES sevrage_plan(id),
   step VARCHAR(500) NOT NULL

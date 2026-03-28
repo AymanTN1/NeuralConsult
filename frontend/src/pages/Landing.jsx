@@ -1,200 +1,249 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-const Landing = () => (
-  <div>
-    <section className="hero-section">
-      <div className="container">
-        <div className="row align-items-center g-4">
-          <div className="col-12 col-lg-6">
-            <div className="icon-chip mb-3">
-              <i className="bi bi-shield-check" /> Parcours clinique securise
-            </div>
-            <h1 className="display-4 fw-bold">
-              Un sevrage tabagique moderne, mesure et personnalise.
+const smokeRows = Array.from({ length: 9 }, (_, index) => index);
+
+const interruptionBlocks = [
+  {
+    kicker: "Poumons",
+    title: "L'oxygene ne manque pas d'abord a l'ecran. Il manque dans les tissus.",
+    copy:
+      "Chaque cigarette ajoute une dette biologique. Le systeme visuel la rend tangible avant meme que le patient n'entre dans son dossier."
+  },
+  {
+    kicker: "Cardio",
+    title: "L'urgence n'est pas abstraite. Elle s'accumule, pulsation apres pulsation.",
+    copy:
+      "Le design coupe le scroll avec des panneaux francs pour rappeler que le sevrage n'est pas un simple objectif lifestyle mais une intervention clinique."
+  },
+  {
+    kicker: "Psychique",
+    title: "Dependance physique et tension psychologique cohabitent dans la meme brume.",
+    copy:
+      "La plateforme affiche les scores, le contexte social et l'alliance therapeutique dans une meme narration pour guider l'action medicale."
+  }
+];
+
+const pathwayCards = [
+  {
+    label: "Mirror Intake",
+    value: "Profilage force",
+    copy: "Le dossier patient capte habitudes, contexte de vie, antecedents et vulnerabilites."
+  },
+  {
+    label: "Clinical Glow",
+    value: "Scores reactifs",
+    copy: "Les niveaux HAD et Fagerstrom se comportent comme des signaux lumineux, jamais comme des champs figes."
+  },
+  {
+    label: "Oxygen Path",
+    value: "Plan vivant",
+    copy: "Le tableau de bord respire progressivement quand le patient avance dans ses jours sans tabac."
+  }
+];
+
+const Landing = () => {
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const nextProgress = scrollableHeight > 0 ? Math.min(window.scrollY / scrollableHeight, 1) : 0;
+      setScrollProgress(nextProgress);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
+
+  const scene = useMemo(() => {
+    const burn = Math.min(scrollProgress * 1.35, 1);
+    const clarity = Math.min(scrollProgress * 1.6, 1);
+    const cigaretteWidth = Math.max(100, 340 - burn * 220);
+    const emberSize = 26 + burn * 18;
+    const fogOpacity = 0.9 - clarity * 0.72;
+    const ashFall = burn * 80;
+    return {
+      burn,
+      clarity,
+      cigaretteWidth,
+      emberSize,
+      fogOpacity,
+      ashFall
+    };
+  }, [scrollProgress]);
+
+  return (
+    <div className="landing-dark">
+      <section className="landing-hero">
+        <div className="landing-fog" style={{ opacity: scene.fogOpacity }} />
+        <div className="container landing-grid">
+          <div className="landing-copy">
+            <div className="hero-kicker">Modern Clinical Darkness</div>
+            <h1 className="landing-title">
+              Voir le tabac
+              <br />
+              comme une urgence
+              <br />
+              mesurable.
             </h1>
-            <p className="lead muted-text mt-3">
-              NeuralConsult Sevrage combine questionnaires INPES, suivi quotidien et plans de sevrage
-              intelligents pour accompagner chaque patient avec precision.
+            <p className="landing-lead">
+              NeuralConsult Sevrage transforme le parcours tabagique en experience clinique immersive.
+              Le brouillard, les scores et le temps de vie gagne convergent vers une seule decision : agir.
             </p>
-            <div className="d-flex flex-wrap gap-2 mt-4">
+
+            <div className="landing-actions">
               <Link to="/register" className="btn btn-dark btn-lg">
-                Demarrer maintenant
+                Get Help
               </Link>
               <Link to="/login" className="btn btn-outline-dark btn-lg">
-                Se connecter
+                Login
               </Link>
             </div>
-            <div className="d-flex flex-wrap gap-3 mt-4">
-              <div className="stat-card">
-                <p className="mb-1 fw-semibold">Profiling complet</p>
-                <span className="muted-text small">Tests + historique + habitudes</span>
-              </div>
-              <div className="stat-card">
-                <p className="mb-1 fw-semibold">Plan adapte</p>
-                <span className="muted-text small">NRT, suivi et rechute</span>
-              </div>
-            </div>
-          </div>
-          <div className="col-12 col-lg-6">
-            <div className="hero-card p-4">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="fw-bold mb-0">Vue clinique</h5>
-                <span className="badge text-bg-light">Temps reel</span>
-              </div>
-              <div className="row g-3">
-                <div className="col-12">
-                  <div className="glass-panel p-3">
-                    <div className="d-flex justify-content-between">
-                      <div>
-                        <p className="mb-1 fw-semibold">Score dependance</p>
-                        <p className="muted-text small mb-0">Fagerstrom + HAD</p>
-                      </div>
-                      <span className="badge text-bg-dark">Priorite</span>
-                    </div>
-                    <div className="progress mt-3" style={{ height: 8 }}>
-                      <div className="progress-bar bg-dark" style={{ width: "68%" }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-12">
-                  <div className="glass-panel p-3">
-                    <p className="mb-2 fw-semibold">Plan de sevrage</p>
-                    <div className="d-flex flex-wrap gap-2">
-                      <span className="badge text-bg-light">Patch + gomme</span>
-                      <span className="badge text-bg-light">Suivi hebdo</span>
-                      <span className="badge text-bg-light">Journal quotidien</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-12">
-                  <div className="glass-panel p-3">
-                    <p className="mb-1 fw-semibold">Alertes rechute</p>
-                    <p className="muted-text small mb-0">
-                      Declencheurs identifies, protocole 5 minutes et soutien immediat.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <section className="py-5">
-      <div className="container">
-        <div className="text-center mb-4">
-          <p className="text-uppercase muted-text small">Pourquoi NeuralConsult</p>
-          <h2 className="section-title">Une plateforme clinique complete, mobile-first.</h2>
-        </div>
-        <div className="row g-4">
-          <div className="col-12 col-md-6 col-lg-4">
-            <div className="feature-card">
-              <div className="feature-icon mb-3">
-                <i className="bi bi-clipboard2-check" />
+            <div className="landing-metrics">
+              <div className="landing-metric-card">
+                <span className="landing-metric-label">Fog clearance</span>
+                <strong>{Math.round(scene.clarity * 100)}%</strong>
               </div>
-              <h5 className="fw-semibold">Profiling INPES</h5>
-              <p className="muted-text mb-0">CAGE, HONC, poids, activite et habitudes tabagiques.</p>
+              <div className="landing-metric-card">
+                <span className="landing-metric-label">Burn progression</span>
+                <strong>{Math.round(scene.burn * 100)}%</strong>
+              </div>
+              <div className="landing-metric-card">
+                <span className="landing-metric-label">Clinical mode</span>
+                <strong>{scene.clarity > 0.55 ? "Activated" : "Smoker state"}</strong>
+              </div>
             </div>
           </div>
-          <div className="col-12 col-md-6 col-lg-4">
-            <div className="feature-card">
-              <div className="feature-icon mb-3">
-                <i className="bi bi-graph-up-arrow" />
-              </div>
-              <h5 className="fw-semibold">Suivi intelligent</h5>
-              <p className="muted-text mb-0">Dashboard analytique, tendances et alertes rechute.</p>
-            </div>
-          </div>
-          <div className="col-12 col-md-6 col-lg-4">
-            <div className="feature-card">
-              <div className="feature-icon mb-3">
-                <i className="bi bi-person-heart" />
-              </div>
-              <h5 className="fw-semibold">Plan sur-mesure</h5>
-              <p className="muted-text mb-0">NRT, routines, suivi psychologique et accompagnement.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <section className="py-5 bg-white">
-      <div className="container">
-        <div className="row g-4 align-items-center">
-          <div className="col-12 col-lg-6">
-            <h2 className="section-title">Un parcours clair et rassurant.</h2>
+          <div className="landing-scene">
+            <div className="cigarette-stage">
+              <div className="cigarette-copy">
+                <span>Scroll-linked consumption</span>
+                <strong>Le scroll consume l'objet, pas l'urgence.</strong>
+              </div>
+
+              <div className="cigarette-rail">
+                <div className="cigarette-filter" />
+                <div className="cigarette-body" style={{ width: `${scene.cigaretteWidth}px` }}>
+                  <div className="cigarette-stripe" />
+                  <div className="cigarette-stripe cigarette-stripe-secondary" />
+                </div>
+                <div
+                  className="cigarette-ember"
+                  style={{
+                    width: `${scene.emberSize}px`,
+                    height: `${scene.emberSize}px`
+                  }}
+                />
+              </div>
+
+              <div className="cigarette-smoke-field">
+                {smokeRows.map((index) => (
+                  <span
+                    key={index}
+                    className="smoke-puff"
+                    style={{
+                      animationDelay: `${index * 0.5}s`,
+                      opacity: Math.max(0.08, scene.fogOpacity - index * 0.05)
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="ash-field" style={{ transform: `translateY(${scene.ashFall}px)` }}>
+                {Array.from({ length: 14 }, (_, index) => (
+                  <span
+                    key={index}
+                    className="ash-particle"
+                    style={{
+                      left: `${6 + index * 6}%`,
+                      animationDelay: `${index * 0.12}s`,
+                      opacity: scene.burn
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-interruption" id="impact">
+        <div className="container">
+          <div className="interruption-header">
+            <div className="hero-kicker">Interruption panels</div>
+            <h2 className="section-title">Le design coupe la navigation comme un monitor coupe le silence.</h2>
+          </div>
+
+          <div className="interruption-grid">
+            {interruptionBlocks.map((block) => (
+              <article key={block.kicker} className="interruption-card">
+                <div className="interruption-line" />
+                <span className="interruption-kicker">{block.kicker}</span>
+                <h3>{block.title}</h3>
+                <p>{block.copy}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-pathway" id="pathway">
+        <div className="container">
+          <div className="pathway-shell">
+            <div>
+              <div className="hero-kicker">Clinical workstation</div>
+              <h2 className="section-title">Une interface qui evolue du brouillard vers l'oxygene.</h2>
+              <p className="muted-text">
+                Le candidat ressent un environnement dense, sombre et charge. Le patient accompagne voit
+                au contraire la lumiere clinique remonter au fil des jours sans tabac.
+              </p>
+            </div>
+
+            <div className="pathway-grid">
+              {pathwayCards.map((card) => (
+                <div key={card.label} className="pathway-card">
+                  <span className="pathway-label">{card.label}</span>
+                  <h3>{card.value}</h3>
+                  <p>{card.copy}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-clarity" id="clarity">
+        <div className="container clarity-shell">
+          <div>
+            <div className="hero-kicker">Clarity point</div>
+            <h2 className="section-title">La fumee ne disparait vraiment qu'au moment de demander de l'aide.</h2>
             <p className="muted-text">
-              Chaque etape est tracee, depuis l'evaluation initiale jusqu'au plan de sevrage
-              et au suivi quotidien. L'equipe clinique garde une vision globale des progres.
+              La plateforme met la sante en premier : le temps de vie gagne, le plan de sevrage, puis les
+              gains financiers seulement ensuite.
             </p>
-            <div className="d-flex flex-column gap-3 mt-4">
-              <div className="d-flex align-items-center gap-3">
-                <span className="feature-icon"><i className="bi bi-1-circle" /></span>
-                <div>
-                  <p className="mb-1 fw-semibold">Profiling initial</p>
-                  <p className="muted-text mb-0">Habitudes, co-consommations, motivation.</p>
-                </div>
-              </div>
-              <div className="d-flex align-items-center gap-3">
-                <span className="feature-icon"><i className="bi bi-2-circle" /></span>
-                <div>
-                  <p className="mb-1 fw-semibold">Tests cliniques</p>
-                  <p className="muted-text mb-0">Fagerstrom, HAD et evolution des scores.</p>
-                </div>
-              </div>
-              <div className="d-flex align-items-center gap-3">
-                <span className="feature-icon"><i className="bi bi-3-circle" /></span>
-                <div>
-                  <p className="mb-1 fw-semibold">Plan + journal</p>
-                  <p className="muted-text mb-0">Plan de sevrage et suivi quotidien.</p>
-                </div>
-              </div>
-            </div>
           </div>
-          <div className="col-12 col-lg-6">
-            <div className="glass-panel p-4">
-              <div className="row g-3">
-                <div className="col-6">
-                  <div className="stat-card">
-                    <p className="mb-1 fw-semibold">Precision</p>
-                    <h3 className="fw-bold mb-0">+35%</h3>
-                    <span className="muted-text small">Sur les plans adaptes</span>
-                  </div>
-                </div>
-                <div className="col-6">
-                  <div className="stat-card">
-                    <p className="mb-1 fw-semibold">Adherence</p>
-                    <h3 className="fw-bold mb-0">78%</h3>
-                    <span className="muted-text small">Suivi quotidien</span>
-                  </div>
-                </div>
-                <div className="col-12">
-                  <div className="stat-card">
-                    <p className="mb-1 fw-semibold">Scores en temps reel</p>
-                    <p className="muted-text mb-0">
-                      Vos decisions sont guidees par des donnees a jour et interpretees.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+
+          <div className="clarity-cta">
+            <Link to="/register" className="btn btn-dark btn-lg">
+              Creer un dossier
+            </Link>
+            <Link to="/login" className="btn btn-outline-dark btn-lg">
+              Revenir a mon espace
+            </Link>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section className="py-5">
-      <div className="container text-center">
-        <h2 className="section-title">Pret a lancer votre sevrage ?</h2>
-        <p className="muted-text mb-4">Accedez au profiling et au plan personnalise en quelques minutes.</p>
-        <Link to="/register" className="btn btn-dark btn-lg">
-          Creer un compte
-        </Link>
-      </div>
-    </section>
-  </div>
-);
+      </section>
+    </div>
+  );
+};
 
 export default Landing;

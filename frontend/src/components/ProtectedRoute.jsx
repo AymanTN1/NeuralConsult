@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -8,8 +8,9 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="container py-5">
-        <div className="alert alert-info">Chargement...</div>
+      <div className="clinical-loader">
+        <div className="clinical-loader-ring" />
+        <div className="clinical-loader-copy">Initialisation de l'espace clinique...</div>
       </div>
     );
   }

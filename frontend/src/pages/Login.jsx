@@ -9,77 +9,101 @@ const Login = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (event) => {
+    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError(null);
+
     try {
       await login(form.email, form.password);
       navigate("/dashboard");
     } catch (err) {
-      setError("Identifiants invalides.");
+      setError("La connexion a ete refusee. Verifiez l'email et le mot de passe.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container auth-shell py-5">
-      <div className="row g-4 align-items-stretch w-100">
-        <div className="col-12 col-lg-6">
-          <div className="auth-aside h-100">
-            <span className="badge">NeuralConsult Sevrage</span>
-            <h2 className="fw-bold mt-3">Reconnectez-vous a votre tableau clinique.</h2>
-            <p className="mt-3 text-white-50">
-              Retrouvez vos scores, votre plan de sevrage et votre journal quotidien.
-            </p>
-            <div className="mt-4 d-flex flex-column gap-3">
-              <div className="d-flex align-items-center gap-2">
-                <i className="bi bi-clipboard2-pulse" />
-                <span>Profiling INPES et tests cliniques</span>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <i className="bi bi-graph-up-arrow" />
-                <span>Evolution des scores et indicateurs</span>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <i className="bi bi-bell" />
-                <span>Alertes et suivi personnalise</span>
-              </div>
+    <section className="auth-stage">
+      <div className="container auth-stage-grid">
+        <div className="auth-story">
+          <div className="hero-kicker">Secure clinical access</div>
+          <h1 className="auth-title">Reconnecter le patient a une interface qui respire avec lui.</h1>
+          <p className="auth-copy">
+            Retrouver le dashboard, la note clinique, les scores evolutifs et le protocole de sevrage
+            dans une meme station de travail sombre, precise et apaisante.
+          </p>
+
+          <div className="auth-story-pulse">
+            <div className="pulse-ring" />
+            <div className="pulse-core">
+              <span>HAD / Fagerstrom</span>
+              <strong>Signal clinique centralise</strong>
+            </div>
+          </div>
+
+          <div className="auth-feature-list">
+            <div className="auth-feature-card">
+              <i className="bi bi-activity" />
+              <span>Vue d'ensemble du risque</span>
+            </div>
+            <div className="auth-feature-card">
+              <i className="bi bi-journal-medical" />
+              <span>Journal et progression quotidienne</span>
+            </div>
+            <div className="auth-feature-card">
+              <i className="bi bi-stars" />
+              <span>Insights cliniques et notes AI</span>
             </div>
           </div>
         </div>
-        <div className="col-12 col-lg-6">
-          <div className="card form-card p-4">
-            <div className="card-body">
-              <h2 className="h4 mb-3 fw-bold">Connexion</h2>
-              <p className="muted-text">Accedez a votre espace clinique.</p>
-              {error && <div className="alert alert-danger">{error}</div>}
-              <form onSubmit={handleSubmit} className="mt-4">
-                <div className="mb-3">
-                  <label className="form-label">Email</label>
-                  <input className="form-control" type="email" name="email" value={form.email} onChange={handleChange} required />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Mot de passe</label>
-                  <input className="form-control" type="password" name="password" value={form.password} onChange={handleChange} required />
-                </div>
-                <button className="btn btn-dark w-100" disabled={loading}>
-                  {loading ? "Connexion..." : "Se connecter"}
-                </button>
-              </form>
-              <p className="mt-3 small muted-text">
-                Pas de compte ? <Link to="/register">Creer un compte</Link>
-              </p>
-            </div>
+
+        <div className="auth-card-shell">
+          <div className="auth-card">
+            <div className="hero-kicker">Authentication</div>
+            <h2 className="auth-card-title">Connexion</h2>
+            <p className="muted-text">Accedez a votre poste clinique sans quitter le contexte patient.</p>
+
+            {error && <div className="alert alert-danger mt-3">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              <label className="form-label">Email</label>
+              <input
+                className="form-control"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+
+              <label className="form-label">Mot de passe</label>
+              <input
+                className="form-control"
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+
+              <button className="btn btn-dark w-100" disabled={loading}>
+                {loading ? "Connexion..." : "Entrer dans le poste clinique"}
+              </button>
+            </form>
+
+            <p className="auth-alt-link">
+              Nouveau ici ? <Link to="/register">Creer le dossier d'acces</Link>
+            </p>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

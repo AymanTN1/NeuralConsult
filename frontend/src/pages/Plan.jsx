@@ -26,88 +26,127 @@ const Plan = () => {
     setMessage(null);
     const { data } = await api.post("/api/sevrage-plan/generate");
     setPlan(data);
-    setMessage("Plan genere.");
+    setMessage("Le plan a ete regenere avec succes.");
   };
 
   return (
-    <div className="container py-4 app-shell">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h2 className="fw-bold mb-0">Plan de sevrage</h2>
-          <p className="muted-text mb-0">Synthese clinique et recommandations.</p>
+    <div className="app-page">
+      <section className="dashboard-command">
+        <div className="dashboard-command-copy">
+          <div className="hero-kicker">Therapeutic pathway</div>
+          <h2 className="dashboard-title">Le plan doit paraitre prescrit, pas simplement affiche.</h2>
+          <p className="muted-text">
+            Cette zone regroupe l'intensite, la strategie NRT, les recommandations comportementales et le protocole anti-rechute.
+          </p>
         </div>
-        <button className="btn btn-dark" onClick={generatePlan}>
-          <i className="bi bi-lightning-charge me-1" /> Generer
-        </button>
-      </div>
+
+        <div className="dashboard-command-actions">
+          <button className="btn btn-dark" onClick={generatePlan}>
+            <i className="bi bi-stars me-1" />
+            Generer
+          </button>
+        </div>
+      </section>
+
       {message && <div className="alert alert-success">{message}</div>}
-      {loading && <div className="text-muted">Chargement...</div>}
-      {!loading && !plan && (
-        <div className="alert alert-warning">Aucun plan disponible. Cliquez sur Generer.</div>
-      )}
+      {loading && <div className="alert alert-info">Chargement du plan clinique...</div>}
+      {!loading && !plan && <div className="alert alert-warning">Aucun plan disponible. Cliquez sur Generer.</div>}
+
       {plan && (
-        <div className="card form-card p-3">
-          <div className="card-body">
-            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-              <div>
-                <h5 className="card-title mb-1">
-                  {plan.intensity || "Plan"}{" "}
-                  <span className="badge text-bg-dark ms-2">{plan.intensity}</span>
-                </h5>
-                <p className="muted-text mb-2">Date cible: {plan.targetQuitDate || "A definir"}</p>
+        <>
+          <section className="life-gain-panel">
+            <div className="life-gain-main">
+              <span className="life-gain-label">Active Track</span>
+              <strong>{plan.intensity || "Plan"}</strong>
+              <p>{plan.summary}</p>
+            </div>
+
+            <div className="life-gain-side">
+              <div className="life-gain-card">
+                <span>Date cible</span>
+                <strong>{plan.targetQuitDate || "A definir"}</strong>
+                <p>Le point d'atterrissage therapeutique du plan de sevrage.</p>
+              </div>
+              <div className="life-gain-card">
+                <span>Demarrage</span>
+                <strong>{plan.startDate || "En attente"}</strong>
+                <p>Le protocole devient respirant a partir de cette date.</p>
+              </div>
+              <div className="life-gain-card">
+                <span>Orientation</span>
+                <strong>{plan.intensity || "Medium"}</strong>
+                <p>Lecture rapide du niveau d'intensite pour le soignant.</p>
               </div>
             </div>
-            <p className="mt-2">{plan.summary}</p>
-            <div className="row g-3 mt-2">
-              <div className="col-12 col-md-6">
-                <div className="metric-card h-100">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <i className="bi bi-bandaid" />
-                    <h6 className="mb-0">NRT</h6>
-                  </div>
-                  <p className="mb-0">{plan.nrtRecommendation}</p>
+          </section>
+
+          <section className="dashboard-support-grid">
+            <article className="chart-card">
+              <div className="chart-card-head">
+                <div>
+                  <div className="hero-kicker">Substitution</div>
+                  <h3>NRT Recommendation</h3>
                 </div>
               </div>
-              <div className="col-12 col-md-6">
-                <div className="metric-card h-100">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <i className="bi bi-person-check" />
-                    <h6 className="mb-0">Comportement</h6>
-                  </div>
-                  <p className="mb-0">{plan.behavioralRecommendations}</p>
+              <p className="muted-text">{plan.nrtRecommendation}</p>
+            </article>
+
+            <article className="chart-card">
+              <div className="chart-card-head">
+                <div>
+                  <div className="hero-kicker">Behavior</div>
+                  <h3>Behavioral Support</h3>
                 </div>
               </div>
-              <div className="col-12 col-md-6">
-                <div className="metric-card h-100">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <i className="bi bi-calendar-check" />
-                    <h6 className="mb-0">Suivi</h6>
-                  </div>
-                  <p className="mb-0">{plan.followUpPlan}</p>
+              <p className="muted-text">{plan.behavioralRecommendations}</p>
+            </article>
+
+            <article className="chart-card">
+              <div className="chart-card-head">
+                <div>
+                  <div className="hero-kicker">Follow-up</div>
+                  <h3>Clinical Follow-Up</h3>
                 </div>
               </div>
-              <div className="col-12 col-md-6">
-                <div className="metric-card h-100">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <i className="bi bi-exclamation-triangle" />
-                    <h6 className="mb-0">Protocole rechute</h6>
-                  </div>
-                  <p className="mb-0">{plan.relapseProtocol}</p>
+              <p className="muted-text">{plan.followUpPlan}</p>
+            </article>
+
+            <article className="chart-card">
+              <div className="chart-card-head">
+                <div>
+                  <div className="hero-kicker">Relapse shield</div>
+                  <h3>Emergency Protocol</h3>
                 </div>
               </div>
-            </div>
-            {plan.steps && plan.steps.length > 0 && (
-              <div className="mt-4">
-                <h6 className="fw-semibold">Etapes</h6>
-                <ul className="list-group list-group-flush">
-                  {plan.steps.map((step, idx) => (
-                    <li className="list-group-item" key={`${idx}-${step}`}>{step}</li>
-                  ))}
-                </ul>
+              <p className="muted-text">{plan.relapseProtocol}</p>
+            </article>
+          </section>
+
+          {plan.steps && plan.steps.length > 0 && (
+            <section className="milestone-stack">
+              <div className="chart-card-head">
+                <div>
+                  <div className="hero-kicker">Execution steps</div>
+                  <h3>Sequence de mise en oeuvre</h3>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
+
+              <div className="milestone-list">
+                {plan.steps.map((step, index) => (
+                  <div className="milestone-item is-done" key={`${index}-${step}`}>
+                    <span className="milestone-bullet">
+                      <i className="bi bi-check2" />
+                    </span>
+                    <div>
+                      <strong>Etape {index + 1}</strong>
+                      <p>{step}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   );
