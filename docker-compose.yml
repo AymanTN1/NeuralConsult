@@ -11,6 +11,7 @@
       - db_data:/var/lib/postgresql/data
 
   backend:
+    image: aymantantani/neuralconsult-backend:latest
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
@@ -27,6 +28,7 @@
       - ai-service
 
   frontend:
+    image: aymantantani/neuralconsult-frontend:latest
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
@@ -34,6 +36,7 @@
       - "5173:80"
 
   ai-service:
+    image: aymantantani/neuralconsult-ai-service:latest
     build:
       context: .
       dockerfile: docker/ai.Dockerfile
