@@ -287,7 +287,7 @@ const Tests = () => {
               <h5 className="card-title mb-1">Dossier patient (donnees synchronisees)</h5>
               <p className="muted-text mb-0">Les informations demographiques proviennent du dossier initial.</p>
             </div>
-            <Link to="/onboarding" className="btn btn-outline-dark btn-sm">
+            <Link to="/evaluation" className="btn btn-outline-dark btn-sm">
               Mettre a jour
             </Link>
           </div>

@@ -4,11 +4,11 @@ import { useAuth } from "../context/AuthContext";
 
 const navItems = [
   { to: "/dashboard", icon: "bi bi-activity", label: "Command Center" },
-  { to: "/onboarding", icon: "bi bi-clipboard2-pulse", label: "Profiling" },
+  { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Evaluation" },
   { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests" },
   { to: "/plan", icon: "bi bi-diagram-3", label: "Plan" },
   { to: "/journal", icon: "bi bi-journal-medical", label: "Journal" },
-  { to: "/profile", icon: "bi bi-person-vcard", label: "Profil" }
+  { to: "/profile", icon: "bi bi-person-vcard", label: "Personal Profile" }
 ];
 
 const ClinicalSidebar = () => {

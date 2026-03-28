@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { CLINICAL_PHASES } from "../data/clinicalJourney";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
@@ -122,18 +123,11 @@ const defaultForm = {
   notes: ""
 };
 
-const steps = [
-  { id: 1, title: "Dossier patient" },
-  { id: 2, title: "Antecedents et traitements" },
-  { id: 3, title: "Bilan tabagique" },
-  { id: 4, title: "Motivation et habitudes" },
-  { id: 5, title: "Addictions et contexte social" }
-];
-
 const Onboarding = () => {
   const { user, refetch } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [visitedSteps, setVisitedSteps] = useState([1]);
   const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState(null);
   const [scores, setScores] = useState(null);
@@ -160,6 +154,10 @@ const Onboarding = () => {
     };
     load();
   }, [user]);
+
+  useEffect(() => {
+    setVisitedSteps((previous) => (previous.includes(step) ? previous : [...previous, step]));
+  }, [step]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -225,16 +223,31 @@ const Onboarding = () => {
     }
   };
 
-  const stepTitle = steps.find((item) => item.id === step)?.title || "Profiling";
+  const selectedPhase = CLINICAL_PHASES.find((item) => item.id === step) || CLINICAL_PHASES[0];
+  const progressPercent = user?.profile?.onboardingComplete
+    ? 100
+    : Math.round((visitedSteps.length / CLINICAL_PHASES.length) * 100);
 
   return (
     <div className="container py-4 app-shell">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="evaluation-page-header">
         <div>
-          <h2 className="fw-bold mb-1">Profiling initial</h2>
-          <div className="muted-text">{stepTitle}</div>
+          <div className="hero-kicker">Mandatory Evaluation Timeline</div>
+          <h2 className="fw-bold mb-1">Consultation initiale du patient</h2>
+          <div className="muted-text">
+            Le profil personnel reste distinct. Toute la matiere clinique, tabagique et sociale vit dans cette timeline.
+          </div>
         </div>
-        <span className="badge bg-dark">Etape {step}/{steps.length}</span>
+        <div className="evaluation-status-stack">
+          <div className="evaluation-status-pill">
+            <span>Signal 12</span>
+            <strong>{Math.max(scores?.alcoholScore || 0, scores?.honcScore || 0, scores?.cageScore || 0)}</strong>
+          </div>
+          <div className={`evaluation-status-pill ${user?.profile?.onboardingComplete ? "is-complete" : ""}`}>
+            <span>Profiling</span>
+            <strong>{user?.profile?.onboardingComplete ? "Complet" : `${progressPercent}%`}</strong>
+          </div>
+        </div>
       </div>
 
       {message && (
@@ -252,7 +265,48 @@ const Onboarding = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="card form-card p-3">
+      <div className="evaluation-layout">
+        <aside className="evaluation-timeline">
+          {CLINICAL_PHASES.map((phase) => {
+            const isActive = phase.id === step;
+            const isVisited = visitedSteps.includes(phase.id);
+            return (
+              <button
+                key={phase.id}
+                type="button"
+                className={`timeline-phase-card ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}`}
+                onClick={() => setStep(phase.id)}
+              >
+                <span className="timeline-phase-index">{phase.id}</span>
+                <div>
+                  <div className="timeline-phase-label">{phase.label}</div>
+                  <strong>{phase.title}</strong>
+                  <p>{phase.questionRange}</p>
+                </div>
+              </button>
+            );
+          })}
+        </aside>
+
+        <form onSubmit={handleSubmit} className="card form-card p-3 evaluation-main-panel">
+          <div className="evaluation-main-head">
+            <div>
+              <div className="evaluation-phase-kicker">{selectedPhase.label}</div>
+              <h3>{selectedPhase.title}</h3>
+              <p className="muted-text mb-0">{selectedPhase.summary}</p>
+            </div>
+            <div className="evaluation-range-chip">{selectedPhase.questionRange}</div>
+          </div>
+
+          <div className="evaluation-goals-inline">
+            {selectedPhase.goals.map((goal) => (
+              <div key={goal} className="evaluation-goal-chip">
+                <i className="bi bi-check2-circle" />
+                <span>{goal}</span>
+              </div>
+            ))}
+          </div>
+
         {step === 1 && (
           <div className="row g-3">
             <div className="col-12 col-md-4">
@@ -591,6 +645,17 @@ const Onboarding = () => {
         {step === 4 && (
           <div className="row g-3">
             <div className="col-12">
+              <div className="evaluation-inline-note">
+                <div>
+                  <strong>Dependency scoring timeline</strong>
+                  <p className="mb-0">
+                    Cette phase prepare le score de dependance. Le calcul officiel detaille de Fagerstrom
+                    reste disponible dans l'espace <Link to="/tests">Tests</Link>.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="col-12">
               <h5 className="fw-semibold">Pourquoi fumez-vous ? (0-10)</h5>
             </div>
             {[
@@ -810,21 +875,22 @@ const Onboarding = () => {
           </div>
         )}
 
-        <div className="d-flex justify-content-between mt-4">
-          <button type="button" className="btn btn-outline-secondary" onClick={() => setStep((prev) => Math.max(1, prev - 1))} disabled={step === 1}>
-            Precedent
+          <div className="evaluation-footer-actions">
+          <button type="button" className="btn btn-outline-dark" onClick={() => setStep((prev) => Math.max(1, prev - 1))} disabled={step === 1}>
+            Phase precedente
           </button>
-          {step < steps.length ? (
-            <button type="button" className="btn btn-dark" onClick={() => setStep((prev) => Math.min(steps.length, prev + 1))}>
-              Suivant
+          {step < CLINICAL_PHASES.length ? (
+            <button type="button" className="btn btn-dark" onClick={() => setStep((prev) => Math.min(CLINICAL_PHASES.length, prev + 1))}>
+              Phase suivante
             </button>
           ) : (
             <button type="submit" className="btn btn-dark">
-              Enregistrer
+              Enregistrer l'evaluation
             </button>
           )}
-        </div>
-      </form>
+          </div>
+        </form>
+      </div>
 
       {user?.profile?.onboardingComplete && (
         <div className="mt-3 text-end">

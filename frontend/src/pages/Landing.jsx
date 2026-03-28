@@ -1,219 +1,402 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, lazy, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import PhaseSpotlightModal from "../components/landing/PhaseSpotlightModal";
+import { CLINICAL_PHASES, CO2_PER_CIGARETTE_KG, LANDING_MILESTONES } from "../data/clinicalJourney";
 
-const smokeRows = Array.from({ length: 9 }, (_, index) => index);
+const CinematicLandingScene = lazy(() => import("../components/landing/CinematicLandingScene"));
+const DEFAULT_PHASE = CLINICAL_PHASES[0];
+const FLOATING_SMOKE_PLUMES = Array.from({ length: 7 }, (_, index) => ({
+  id: index,
+  delay: index * 0.18,
+  duration: 2.3 + index * 0.2,
+  drift: -18 - index * 8,
+  scale: 0.82 + index * 0.08
+}));
+
+const defaultCalculator = {
+  cigarettesPerDay: 20,
+  cigarettesPerPack: 20,
+  packPrice: 42
+};
+
+const commandCards = [
+  {
+    title: "Clinical Intake",
+    copy:
+      "First login routes every incomplete patient directly into the structured evaluation timeline: context, medical risks, smoking habits, dependency scoring and vulnerability.",
+    icon: "bi bi-clipboard2-pulse"
+  },
+  {
+    title: "AI Decision Layer",
+    copy:
+      "The platform progressively turns raw answers into clinical signals, treatment plans and validated summaries instead of leaving the dossier as inert form data.",
+    icon: "bi bi-cpu"
+  }
+];
 
 const interruptionBlocks = [
   {
-    kicker: "Poumons",
-    title: "L'oxygene ne manque pas d'abord a l'ecran. Il manque dans les tissus.",
+    kicker: "Oxygene",
+    title: "Le manque n'est pas visuel. Il est biologique.",
     copy:
-      "Chaque cigarette ajoute une dette biologique. Le systeme visuel la rend tangible avant meme que le patient n'entre dans son dossier."
+      "Le design veut provoquer une prise de conscience avant l'authentification: chaque cigarette consomme du souffle, du budget et de la marge de recuperation."
   },
   {
-    kicker: "Cardio",
-    title: "L'urgence n'est pas abstraite. Elle s'accumule, pulsation apres pulsation.",
+    kicker: "Dependance",
+    title: "La nicotine s'installe dans les habitudes, le psychisme et le contexte social.",
     copy:
-      "Le design coupe le scroll avec des panneaux francs pour rappeler que le sevrage n'est pas un simple objectif lifestyle mais une intervention clinique."
+      "L'experience raconte cette densite clinique avec une fumee lourde au debut, puis un espace qui se clarifie a mesure que l'utilisateur avance."
   },
   {
-    kicker: "Psychique",
-    title: "Dependance physique et tension psychologique cohabitent dans la meme brume.",
+    kicker: "Regeneration",
+    title: "Le retour vers la sante doit etre visible, pas abstrait.",
     copy:
-      "La plateforme affiche les scores, le contexte social et l'alliance therapeutique dans une meme narration pour guider l'action medicale."
+      "Le bio-hologramme pulmonaire montre le cout de la combustion en temps reel, puis rappelle pourquoi l'intervention clinique doit interrompre cette trajectoire."
   }
 ];
 
-const pathwayCards = [
-  {
-    label: "Mirror Intake",
-    value: "Profilage force",
-    copy: "Le dossier patient capte habitudes, contexte de vie, antecedents et vulnerabilites."
-  },
-  {
-    label: "Clinical Glow",
-    value: "Scores reactifs",
-    copy: "Les niveaux HAD et Fagerstrom se comportent comme des signaux lumineux, jamais comme des champs figes."
-  },
-  {
-    label: "Oxygen Path",
-    value: "Plan vivant",
-    copy: "Le tableau de bord respire progressivement quand le patient avance dans ses jours sans tabac."
-  }
-];
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("fr-MA", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
 
 const Landing = () => {
+  const pageRef = useRef(null);
+  const sceneScrollRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [scrollVelocity, setScrollVelocity] = useState(0);
+  const [pageScrollProgress, setPageScrollProgress] = useState(0);
+  const [selectedPhase, setSelectedPhase] = useState(null);
+  const [hoveredPhase, setHoveredPhase] = useState(DEFAULT_PHASE);
+  const [calculator, setCalculator] = useState(defaultCalculator);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const nextProgress = scrollableHeight > 0 ? Math.min(window.scrollY / scrollableHeight, 1) : 0;
-      setScrollProgress(nextProgress);
-    };
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
 
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
+    const context = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: sceneScrollRef.current,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          setScrollProgress(self.progress);
+          setScrollVelocity(Math.abs(self.getVelocity()));
+        }
+      });
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
+      ScrollTrigger.create({
+        trigger: pageRef.current,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          setPageScrollProgress(self.progress);
+        }
+      });
+    }, pageRef);
+
+    return () => context.revert();
   }, []);
 
-  const scene = useMemo(() => {
-    const burn = Math.min(scrollProgress * 1.35, 1);
-    const clarity = Math.min(scrollProgress * 1.6, 1);
-    const cigaretteWidth = Math.max(100, 340 - burn * 220);
-    const emberSize = 26 + burn * 18;
-    const fogOpacity = 0.9 - clarity * 0.72;
-    const ashFall = burn * 80;
+  const impact = useMemo(() => {
+    const cigarettesPerDay = Number(calculator.cigarettesPerDay) || 0;
+    const cigarettesPerPack = Number(calculator.cigarettesPerPack) || 20;
+    const packPrice = Number(calculator.packPrice) || 0;
+    const packsPerDay = cigarettesPerPack > 0 ? cigarettesPerDay / cigarettesPerPack : 0;
+    const dailySpend = packsPerDay * packPrice;
+    const monthlySavings = dailySpend * 30;
+    const yearlySavings = dailySpend * 365;
+    const yearlyCo2Kg = cigarettesPerDay * 365 * CO2_PER_CIGARETTE_KG;
+    const unlockedMilestones = LANDING_MILESTONES.filter((milestone) => yearlySavings >= milestone.amount);
+    const nextMilestone = LANDING_MILESTONES.find((milestone) => yearlySavings < milestone.amount);
+
     return {
-      burn,
-      clarity,
-      cigaretteWidth,
-      emberSize,
-      fogOpacity,
-      ashFall
+      monthlySavings,
+      yearlySavings,
+      yearlyCo2Kg,
+      unlockedMilestones,
+      nextMilestone
     };
-  }, [scrollProgress]);
+  }, [calculator]);
+
+  const handleCalculatorChange = (event) => {
+    const { name, value } = event.target;
+    setCalculator((previous) => ({
+      ...previous,
+      [name]: value
+    }));
+  };
+
+  const velocityLevel = Math.min(scrollVelocity / 1800, 1);
+  const roadmapPhase = hoveredPhase || selectedPhase || DEFAULT_PHASE;
+  const floatingCigaretteVisibility = Math.min(Math.max((pageScrollProgress - 0.16) / 0.14, 0), 1);
+  const floatingCigaretteScale = 0.72 + pageScrollProgress * 0.42;
+  const floatingCigaretteRotation = 18 - pageScrollProgress * 28;
+  const floatingCigaretteX = 20 - pageScrollProgress * 2;
+  const floatingCigaretteY = 74 - pageScrollProgress * 32;
+  const floatingCigaretteBodyScale = Math.max(0.18, 1 - scrollProgress * 0.84);
 
   return (
-    <div className="landing-dark">
-      <section className="landing-hero">
-        <div className="landing-fog" style={{ opacity: scene.fogOpacity }} />
-        <div className="container landing-grid">
-          <div className="landing-copy">
-            <div className="hero-kicker">Modern Clinical Darkness</div>
-            <h1 className="landing-title">
-              Voir le tabac
+    <div className="landing-cinematic" ref={pageRef}>
+      <div
+        className={`landing-floating-cigarette ${floatingCigaretteVisibility > 0.02 ? "is-visible" : ""}`}
+        style={{
+          "--floating-cigarette-scale": floatingCigaretteScale,
+          "--floating-cigarette-rotation": `${floatingCigaretteRotation}deg`,
+          "--floating-cigarette-x": `${floatingCigaretteX}vw`,
+          "--floating-cigarette-y": `${floatingCigaretteY}vh`,
+          "--floating-cigarette-opacity": floatingCigaretteVisibility
+        }}
+        aria-hidden="true"
+      >
+        <div className="landing-floating-cigarette-shadow" />
+        <div className="landing-floating-cigarette-rail">
+          <div className="landing-floating-cigarette-filter" />
+          <div
+            className="landing-floating-cigarette-body"
+            style={{ transform: `scaleX(${floatingCigaretteBodyScale})` }}
+          >
+            <div className="landing-floating-cigarette-stripe" />
+            <div className="landing-floating-cigarette-stripe landing-floating-cigarette-stripe-secondary" />
+          </div>
+          <div className="landing-floating-cigarette-ember" />
+        </div>
+        <div className="landing-floating-cigarette-smoke" aria-hidden="true">
+          {FLOATING_SMOKE_PLUMES.map((plume) => (
+            <span
+              key={plume.id}
+              className="landing-floating-cigarette-plume"
+              style={{
+                "--smoke-delay": `${plume.delay}s`,
+                "--smoke-duration": `${plume.duration}s`,
+                "--smoke-drift": `${plume.drift}px`,
+                "--smoke-scale": plume.scale,
+                opacity: Math.max(0.14, floatingCigaretteVisibility - plume.id * 0.08)
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <section className="landing-scroll-theater" ref={sceneScrollRef}>
+        <div className="landing-scroll-sticky">
+          <Suspense fallback={<div className="landing-scene-fallback">Activation du bio-hologramme...</div>}>
+            <CinematicLandingScene progress={scrollProgress} scrollVelocity={velocityLevel} />
+          </Suspense>
+        </div>
+      </section>
+
+      <section className="landing-command-section">
+        <div className="container command-section-inner">
+          <div className="command-section-head">
+            <div className="hero-kicker">Command Modules</div>
+            <h2 className="section-title">
+              Des modules centraux.
               <br />
-              comme une urgence
-              <br />
-              mesurable.
-            </h1>
-            <p className="landing-lead">
-              NeuralConsult Sevrage transforme le parcours tabagique en experience clinique immersive.
-              Le brouillard, les scores et le temps de vie gagne convergent vers une seule decision : agir.
+              Pas des widgets secondaires.
+            </h2>
+            <p className="muted-text">
+              Le calculateur d'impact et l'acces clinique sont places au centre comme deux consoles
+              majeures de decision, dans un langage visuel beaucoup plus medical et cinematographique.
             </p>
-
-            <div className="landing-actions">
-              <Link to="/register" className="btn btn-dark btn-lg">
-                Get Help
-              </Link>
-              <Link to="/login" className="btn btn-outline-dark btn-lg">
-                Login
-              </Link>
-            </div>
-
-            <div className="landing-metrics">
-              <div className="landing-metric-card">
-                <span className="landing-metric-label">Fog clearance</span>
-                <strong>{Math.round(scene.clarity * 100)}%</strong>
-              </div>
-              <div className="landing-metric-card">
-                <span className="landing-metric-label">Burn progression</span>
-                <strong>{Math.round(scene.burn * 100)}%</strong>
-              </div>
-              <div className="landing-metric-card">
-                <span className="landing-metric-label">Clinical mode</span>
-                <strong>{scene.clarity > 0.55 ? "Activated" : "Smoker state"}</strong>
-              </div>
-            </div>
           </div>
 
-          <div className="landing-scene">
-            <div className="cigarette-stage">
-              <div className="cigarette-copy">
-                <span>Scroll-linked consumption</span>
-                <strong>Le scroll consume l'objet, pas l'urgence.</strong>
+          <div className="landing-command-grid">
+            <div className="landing-command-card landing-command-card-impact">
+              <div className="landing-command-card-head">
+                <span className="landing-command-badge">Savings & CO2 Mirror</span>
+                <strong>Command module A</strong>
               </div>
 
-              <div className="cigarette-rail">
-                <div className="cigarette-filter" />
-                <div className="cigarette-body" style={{ width: `${scene.cigaretteWidth}px` }}>
-                  <div className="cigarette-stripe" />
-                  <div className="cigarette-stripe cigarette-stripe-secondary" />
+              <div className="landing-command-body">
+                <div className="landing-calculator-grid">
+                  <label className="impact-field">
+                    <span>Cigarettes par jour</span>
+                    <input
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      name="cigarettesPerDay"
+                      value={calculator.cigarettesPerDay}
+                      onChange={handleCalculatorChange}
+                    />
+                  </label>
+                  <label className="impact-field">
+                    <span>Cigarettes par paquet</span>
+                    <input
+                      className="form-control"
+                      type="number"
+                      min="1"
+                      name="cigarettesPerPack"
+                      value={calculator.cigarettesPerPack}
+                      onChange={handleCalculatorChange}
+                    />
+                  </label>
+                  <label className="impact-field">
+                    <span>Prix du paquet (DH)</span>
+                    <input
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      name="packPrice"
+                      value={calculator.packPrice}
+                      onChange={handleCalculatorChange}
+                    />
+                  </label>
                 </div>
-                <div
-                  className="cigarette-ember"
-                  style={{
-                    width: `${scene.emberSize}px`,
-                    height: `${scene.emberSize}px`
-                  }}
-                />
+
+                <div className="landing-command-stats">
+                  <div className="landing-command-stat">
+                    <span>Economies mensuelles</span>
+                    <strong>{formatCurrency(impact.monthlySavings)} DH</strong>
+                  </div>
+                  <div className="landing-command-stat">
+                    <span>Economies annuelles</span>
+                    <strong>{formatCurrency(impact.yearlySavings)} DH</strong>
+                  </div>
+                  <div className="landing-command-stat">
+                    <span>CO2 evite / an</span>
+                    <strong>{impact.yearlyCo2Kg.toFixed(0)} kg</strong>
+                  </div>
+                </div>
+
+                <div className="landing-command-milestones">
+                  {LANDING_MILESTONES.map((milestone) => {
+                    const unlocked = impact.unlockedMilestones.some((item) => item.label === milestone.label);
+                    return (
+                      <div key={milestone.label} className={`landing-command-milestone ${unlocked ? "is-unlocked" : ""}`}>
+                        <i className={milestone.icon} />
+                        <div>
+                          <strong>{milestone.label}</strong>
+                          <span>{formatCurrency(milestone.amount)} DH</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="landing-command-reset">
+                  <button className="btn btn-outline-dark" type="button" onClick={() => setCalculator(defaultCalculator)}>
+                    Reinitialiser
+                  </button>
+                  <span className="muted-text">
+                    {impact.nextMilestone
+                      ? `Prochaine cible: ${impact.nextMilestone.label}`
+                      : "Tous les paliers proposes sont atteints"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="landing-command-card landing-command-card-auth">
+              <div className="landing-command-card-head">
+                <span className="landing-command-badge">Clinical Access</span>
+                <strong>Command module B</strong>
               </div>
 
-              <div className="cigarette-smoke-field">
-                {smokeRows.map((index) => (
-                  <span
-                    key={index}
-                    className="smoke-puff"
-                    style={{
-                      animationDelay: `${index * 0.5}s`,
-                      opacity: Math.max(0.08, scene.fogOpacity - index * 0.05)
-                    }}
-                  />
-                ))}
-              </div>
+              <div className="landing-auth-module">
+                <h3>Entrer dans l'espace clinique</h3>
+                <p>
+                  Authentifiez-vous pour ouvrir l'evaluation obligatoire, separer le profil personnel
+                  du dossier clinique et activer le parcours de sevrage guide.
+                </p>
 
-              <div className="ash-field" style={{ transform: `translateY(${scene.ashFall}px)` }}>
-                {Array.from({ length: 14 }, (_, index) => (
-                  <span
-                    key={index}
-                    className="ash-particle"
-                    style={{
-                      left: `${6 + index * 6}%`,
-                      animationDelay: `${index * 0.12}s`,
-                      opacity: scene.burn
-                    }}
-                  />
-                ))}
+                <div className="landing-auth-actions">
+                  <Link to="/login" className="btn btn-dark btn-lg">
+                    Login
+                  </Link>
+                  <Link to="/register" className="btn btn-outline-dark btn-lg">
+                    Creer un compte
+                  </Link>
+                </div>
+
+                <div className="landing-auth-tags">
+                  {commandCards.map((card) => (
+                    <div key={card.title} className="landing-auth-tag">
+                      <i className={card.icon} />
+                      <div>
+                        <strong>{card.title}</strong>
+                        <p>{card.copy}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="landing-interruption" id="impact">
-        <div className="container">
-          <div className="interruption-header">
-            <div className="hero-kicker">Interruption panels</div>
-            <h2 className="section-title">Le design coupe la navigation comme un monitor coupe le silence.</h2>
+      <section className="landing-interruption-cinematic">
+        <div className="container interruption-cinematic-inner">
+          {interruptionBlocks.map((block) => (
+            <article key={block.kicker} className="interruption-cinematic-card">
+              <span>{block.kicker}</span>
+              <h3>{block.title}</h3>
+              <p>{block.copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-roadmap-centered">
+        <div className="container roadmap-centered-inner">
+          <div className="roadmap-centered-head">
+            <div className="hero-kicker">Phase Roadmap</div>
+            <h2 className="section-title">
+              Une timeline centrale.
+              <br />
+              Des phases plus massives.
+            </h2>
+            <p className="muted-text">
+              Cliquer sur une phase ouvre une carte centrale dominante qui explique les objectifs cliniques
+              de cette etape du programme.
+            </p>
           </div>
 
-          <div className="interruption-grid">
-            {interruptionBlocks.map((block) => (
-              <article key={block.kicker} className="interruption-card">
-                <div className="interruption-line" />
-                <span className="interruption-kicker">{block.kicker}</span>
-                <h3>{block.title}</h3>
-                <p>{block.copy}</p>
-              </article>
+          <div className="landing-roadmap-central-line">
+            {CLINICAL_PHASES.map((phase) => (
+              <button
+                key={phase.id}
+                type="button"
+                className={`landing-roadmap-central-phase ${selectedPhase?.id === phase.id ? "is-selected" : ""}`}
+                onClick={() => setSelectedPhase(phase)}
+                onMouseEnter={() => setHoveredPhase(phase)}
+                onFocus={() => setHoveredPhase(phase)}
+                onMouseLeave={() => setHoveredPhase(selectedPhase || DEFAULT_PHASE)}
+                aria-expanded={selectedPhase?.id === phase.id}
+                aria-label={`${phase.label} ${phase.title}`}
+              >
+                <span className="landing-roadmap-central-index">{phase.id}</span>
+                <div className="landing-roadmap-central-copy">
+                  <span>{phase.label}</span>
+                  <strong>{phase.title}</strong>
+                  <p>{phase.questionRange}</p>
+                  <small className="landing-roadmap-phase-preview">{phase.summary}</small>
+                </div>
+              </button>
             ))}
           </div>
-        </div>
-      </section>
 
-      <section className="landing-pathway" id="pathway">
-        <div className="container">
-          <div className="pathway-shell">
-            <div>
-              <div className="hero-kicker">Clinical workstation</div>
-              <h2 className="section-title">Une interface qui evolue du brouillard vers l'oxygene.</h2>
-              <p className="muted-text">
-                Le candidat ressent un environnement dense, sombre et charge. Le patient accompagne voit
-                au contraire la lumiere clinique remonter au fil des jours sans tabac.
-              </p>
+          <div className="landing-roadmap-hover-console" aria-live="polite">
+            <div className="landing-roadmap-hover-head">
+              <div>
+                <span className="landing-roadmap-hover-kicker">{roadmapPhase.label}</span>
+                <h3>{roadmapPhase.title}</h3>
+              </div>
+              <span className="landing-roadmap-hover-range">{roadmapPhase.questionRange}</span>
             </div>
-
-            <div className="pathway-grid">
-              {pathwayCards.map((card) => (
-                <div key={card.label} className="pathway-card">
-                  <span className="pathway-label">{card.label}</span>
-                  <h3>{card.value}</h3>
-                  <p>{card.copy}</p>
+            <p className="landing-roadmap-hover-summary">{roadmapPhase.summary}</p>
+            <div className="landing-roadmap-hover-goals">
+              {roadmapPhase.goals.map((goal) => (
+                <div key={goal} className="landing-roadmap-hover-goal">
+                  <i className="bi bi-activity" />
+                  <span>{goal}</span>
                 </div>
               ))}
             </div>
@@ -221,20 +404,20 @@ const Landing = () => {
         </div>
       </section>
 
-      <section className="landing-clarity" id="clarity">
-        <div className="container clarity-shell">
+      <section className="landing-final-cta">
+        <div className="container landing-final-cta-inner">
           <div>
-            <div className="hero-kicker">Clarity point</div>
-            <h2 className="section-title">La fumee ne disparait vraiment qu'au moment de demander de l'aide.</h2>
+            <div className="hero-kicker">Pure Oxygen</div>
+            <h2 className="section-title">La clarte commence quand la combustion s'arrete.</h2>
             <p className="muted-text">
-              La plateforme met la sante en premier : le temps de vie gagne, le plan de sevrage, puis les
-              gains financiers seulement ensuite.
+              Landing immersive pour attirer, evaluation structuree pour qualifier, et intelligence clinique
+              pour traduire le dossier en expertise exploitable.
             </p>
           </div>
 
-          <div className="clarity-cta">
+          <div className="landing-final-actions">
             <Link to="/register" className="btn btn-dark btn-lg">
-              Creer un dossier
+              Demarrer le parcours
             </Link>
             <Link to="/login" className="btn btn-outline-dark btn-lg">
               Revenir a mon espace
@@ -242,6 +425,8 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      <PhaseSpotlightModal phase={selectedPhase} onClose={() => setSelectedPhase(null)} />
     </div>
   );
 };

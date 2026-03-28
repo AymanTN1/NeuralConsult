@@ -7,9 +7,9 @@ const pageMeta = {
     eyebrow: "Station clinique",
     title: "Vue d'ensemble du risque"
   },
-  "/onboarding": {
-    eyebrow: "Intake force",
-    title: "Dossier initial du patient"
+  "/evaluation": {
+    eyebrow: "Evaluation timeline",
+    title: "Consultation initiale structuree"
   },
   "/tests": {
     eyebrow: "Scores dynamiques",
@@ -24,8 +24,8 @@ const pageMeta = {
     title: "Respiration, cravings et rechute"
   },
   "/profile": {
-    eyebrow: "Identite clinique",
-    title: "Synthese du dossier patient"
+    eyebrow: "Identite patient",
+    title: "Personal Profile"
   }
 };
 
@@ -38,6 +38,7 @@ const ClinicalTopbar = () => {
     user?.scores?.hadAnxietyScore || 0,
     user?.scores?.hadDepressionScore || 0
   );
+  const onboardingComplete = user?.profile?.onboardingComplete;
 
   return (
     <header className="clinical-topbar">
@@ -50,6 +51,10 @@ const ClinicalTopbar = () => {
         <div className={`clinical-score-chip severity-${riskScore >= 11 ? "critical" : riskScore >= 8 ? "warning" : "stable"}`}>
           <span className="clinical-score-chip-label">Signal</span>
           <span className="clinical-score-chip-value">{riskScore}</span>
+        </div>
+        <div className={`clinical-score-chip ${onboardingComplete ? "severity-stable" : "severity-warning"}`}>
+          <span className="clinical-score-chip-label">Profiling</span>
+          <span className="clinical-score-chip-value">{onboardingComplete ? "Complet" : "En cours"}</span>
         </div>
         <div className="topbar-user">
           <div className="topbar-user-name">{user?.fullName || "Patient"}</div>

@@ -1254,6 +1254,1358 @@ textarea.form-control:focus {
   color: #f5fbff !important;
 }
 
+.section-title-sm {
+  font-family: "Sora", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.landing-impact,
+.landing-roadmap {
+  position: relative;
+  padding: 6rem 0;
+}
+
+.impact-header,
+.roadmap-header {
+  max-width: 58rem;
+  margin-bottom: 2rem;
+}
+
+.impact-grid,
+.roadmap-shell,
+.profile-layout-grid,
+.evaluation-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.84fr);
+  gap: 1.5rem;
+}
+
+.impact-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.2rem;
+  color: #dff7ff;
+  font-weight: 700;
+}
+
+.impact-field-grid,
+.impact-stat-stack,
+.roadmap-goal-list,
+.profile-card-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.impact-field span {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #dceaf7;
+}
+
+.impact-stat {
+  padding: 1rem 1.15rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(124, 214, 255, 0.12);
+  background: linear-gradient(180deg, rgba(14, 24, 38, 0.82), rgba(7, 14, 24, 0.82));
+}
+
+.impact-stat span {
+  display: block;
+  color: var(--nc-copy-soft);
+  margin-bottom: 0.35rem;
+}
+
+.impact-stat strong {
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  color: #9af6bb;
+}
+
+.impact-milestones {
+  margin-top: 1.4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid rgba(124, 214, 255, 0.12);
+}
+
+.impact-milestones-header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.impact-milestones-header h3 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: 1.1rem;
+}
+
+.impact-milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.impact-milestone {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(124, 214, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 0.3rem;
+  color: #d8e5f2;
+}
+
+.impact-milestone i {
+  font-size: 1.15rem;
+  color: #8fdfff;
+}
+
+.impact-milestone.is-unlocked {
+  border-color: rgba(122, 240, 176, 0.28);
+  background: rgba(122, 240, 176, 0.08);
+  box-shadow: 0 20px 48px rgba(122, 240, 176, 0.12);
+}
+
+.roadmap-timeline,
+.evaluation-timeline {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+}
+
+.roadmap-timeline::before,
+.evaluation-timeline::before {
+  content: "";
+  position: absolute;
+  left: 1.1rem;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(124, 214, 255, 0.24), rgba(122, 240, 176, 0.12));
+}
+
+.roadmap-phase,
+.timeline-phase-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 1rem 1rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.roadmap-node,
+.timeline-phase-index {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(124, 214, 255, 0.2);
+  background: #091320;
+  color: #dff7ff;
+  box-shadow: 0 0 0 0 rgba(116, 230, 255, 0.2);
+}
+
+.roadmap-phase strong,
+.timeline-phase-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.roadmap-phase p,
+.timeline-phase-card p {
+  margin: 0;
+  color: var(--nc-copy-soft);
+  font-size: 0.88rem;
+}
+
+.roadmap-phase-label,
+.timeline-phase-label,
+.evaluation-phase-kicker {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #90ebff;
+}
+
+.roadmap-phase.is-active .roadmap-node,
+.timeline-phase-card.is-active .timeline-phase-index,
+.timeline-phase-card.is-visited .timeline-phase-index {
+  background: linear-gradient(135deg, #73e8ff, #79f4ba);
+  color: #05111b;
+  border-color: transparent;
+  box-shadow: 0 0 0 0.4rem rgba(116, 230, 255, 0.12);
+}
+
+.roadmap-detail,
+.evaluation-main-panel,
+.profile-summary-panel,
+.profile-aside-panel {
+  min-height: 100%;
+}
+
+.roadmap-detail-head,
+.evaluation-main-head,
+.profile-summary-header,
+.profile-page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.roadmap-detail-badge,
+.evaluation-range-chip,
+.profile-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(124, 214, 255, 0.16);
+  color: #dff8ff;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.profile-status-badge.is-complete {
+  color: #9af6bb;
+  border-color: rgba(122, 240, 176, 0.22);
+  background: rgba(122, 240, 176, 0.08);
+}
+
+.profile-status-badge.is-pending {
+  color: #ffe49d;
+  border-color: rgba(255, 209, 102, 0.24);
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.roadmap-detail h3,
+.evaluation-main-head h3 {
+  margin: 0.5rem 0 0.35rem;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.8rem, 2.7vw, 2.4rem);
+}
+
+.roadmap-goal-item,
+.evaluation-goal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(124, 214, 255, 0.08);
+  color: #e4f1fb;
+}
+
+.roadmap-goal-item i,
+.evaluation-goal-chip i {
+  color: #9af6bb;
+}
+
+.roadmap-detail-actions,
+.profile-header-actions,
+.evaluation-status-stack,
+.evaluation-footer-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.profile-page-header,
+.evaluation-page-header {
+  margin-bottom: 1.4rem;
+}
+
+.profile-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1.25rem;
+}
+
+.profile-data-card {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(124, 214, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.profile-data-label {
+  color: var(--nc-copy-soft);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.profile-aside-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-side-steps,
+.evaluation-phase-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-side-step {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.profile-side-step span:first-child {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(116, 230, 255, 0.12);
+  color: #aeefff;
+}
+
+.profile-side-step p {
+  margin: 0.25rem 0 0;
+  color: var(--nc-copy-soft);
+}
+
+.evaluation-status-pill {
+  min-width: 8.4rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 113, 113, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 0.15rem;
+}
+
+.evaluation-status-pill span {
+  color: var(--nc-copy-soft);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.evaluation-status-pill strong {
+  font-family: "Sora", sans-serif;
+  font-size: 1.35rem;
+}
+
+.evaluation-status-pill.is-complete {
+  border-color: rgba(122, 240, 176, 0.24);
+}
+
+.evaluation-score-strip {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: rgba(116, 230, 255, 0.08);
+  color: #dff8ff;
+  margin-bottom: 1rem;
+}
+
+.evaluation-goals-inline {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin: 1.2rem 0 1.4rem;
+}
+
+.evaluation-inline-note,
+.evaluation-score-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(116, 230, 255, 0.08), rgba(122, 240, 176, 0.06));
+  border: 1px solid rgba(124, 214, 255, 0.12);
+}
+
+.evaluation-inline-note p,
+.evaluation-score-banner p {
+  color: var(--nc-copy-soft);
+}
+
+.evaluation-inline-note a {
+  color: #9de9ff;
+  text-decoration: underline;
+}
+
+.evaluation-score-banner {
+  margin-top: 1rem;
+}
+
+.evaluation-score-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--nc-copy-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+}
+
+.evaluation-dependency-pill {
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid rgba(255, 209, 102, 0.22);
+  color: #ffe49d;
+  background: rgba(255, 209, 102, 0.08);
+  font-weight: 700;
+}
+
+.evaluation-dependency-pill.is-ready {
+  border-color: rgba(122, 240, 176, 0.22);
+  color: #9af6bb;
+  background: rgba(122, 240, 176, 0.08);
+}
+
+.landing-cinematic {
+  position: relative;
+  overflow: clip;
+}
+
+.landing-cinematic::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(193, 65, 65, 0.08), transparent 22%),
+    radial-gradient(circle at 82% 72%, rgba(124, 214, 255, 0.05), transparent 26%),
+    radial-gradient(circle at 60% 42%, rgba(255, 255, 255, 0.03), transparent 18%);
+  opacity: 0.9;
+  z-index: 0;
+}
+
+.landing-floating-cigarette {
+  position: fixed;
+  left: var(--floating-cigarette-x, 18vw);
+  top: var(--floating-cigarette-y, 78vh);
+  z-index: 24;
+  width: 18rem;
+  pointer-events: none;
+  opacity: 0;
+  transform:
+    translate(-50%, -50%)
+    scale(var(--floating-cigarette-scale, 0.8))
+    rotate(var(--floating-cigarette-rotation, 12deg));
+  transition: opacity 180ms linear;
+  filter: drop-shadow(0 26px 52px rgba(0, 0, 0, 0.34));
+}
+
+.landing-floating-cigarette.is-visible {
+  opacity: var(--floating-cigarette-opacity, 0.6);
+}
+
+.landing-floating-cigarette-shadow {
+  position: absolute;
+  inset: auto 8% -1.4rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.36), transparent 72%);
+  filter: blur(14px);
+}
+
+.landing-floating-cigarette-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4.8rem minmax(0, 1fr) 1.65rem;
+  align-items: center;
+}
+
+.landing-floating-cigarette-filter {
+  height: 1.2rem;
+  border-radius: 999px 0 0 999px;
+  background: linear-gradient(180deg, #f3d3a2, #cb9a63);
+  box-shadow: inset 0 -1px 0 rgba(60, 20, 10, 0.2);
+}
+
+.landing-floating-cigarette-body {
+  position: relative;
+  height: 0.82rem;
+  transform-origin: left center;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, rgba(252, 252, 252, 0.98), rgba(216, 226, 233, 0.92));
+  overflow: hidden;
+}
+
+.landing-floating-cigarette-stripe {
+  position: absolute;
+  inset: 0 auto 0 8%;
+  width: 0.12rem;
+  background: rgba(192, 84, 36, 0.6);
+}
+
+.landing-floating-cigarette-stripe-secondary {
+  left: 12%;
+}
+
+.landing-floating-cigarette-ember {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 206, 144, 1) 0%, rgba(255, 104, 61, 0.95) 42%, rgba(90, 12, 6, 0.16) 72%);
+  box-shadow:
+    0 0 24px rgba(255, 81, 44, 0.72),
+    0 0 14px rgba(255, 206, 144, 0.34);
+}
+
+.landing-floating-cigarette-smoke {
+  position: absolute;
+  right: -0.4rem;
+  bottom: 0.8rem;
+  width: 7rem;
+  height: 9rem;
+  overflow: visible;
+}
+
+.landing-floating-cigarette-plume {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 36% 36%, rgba(245, 245, 245, 0.5), transparent 34%),
+    radial-gradient(circle at center, rgba(118, 126, 132, 0.28), rgba(46, 53, 58, 0.08) 68%, transparent 100%);
+  filter: blur(16px);
+  mix-blend-mode: screen;
+  transform-origin: center bottom;
+  animation: cigarette-smoke-rise var(--smoke-duration) linear infinite;
+  animation-delay: var(--smoke-delay);
+}
+
+.landing-scroll-theater {
+  position: relative;
+  min-height: 320vh;
+}
+
+.landing-scroll-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.cinematic-stage {
+  position: relative;
+  width: min(100%, 1600px);
+  height: 100vh;
+  margin-inline: auto;
+}
+
+.cinematic-canvas-shell {
+  position: absolute;
+  inset: 0;
+}
+
+.landing-scene-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #a8f4ff;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
+.cinematic-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, rgba(116, 230, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 50% 68%, rgba(255, 81, 44, 0.12), transparent 18%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cinematic-stage-copy {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  padding: 2rem;
+  pointer-events: none;
+}
+
+.cinematic-title {
+  font-size: clamp(3.2rem, 7.8vw, 7.8rem);
+  line-height: 0.92;
+  margin: 1rem 0;
+}
+
+.cinematic-lead {
+  max-width: 48rem;
+  font-size: clamp(1rem, 1.45vw, 1.2rem);
+  color: #e3eef9;
+  text-shadow: 0 8px 24px rgba(3, 8, 14, 0.82);
+}
+
+.sticky-cigarette-shell {
+  position: absolute;
+  left: 50%;
+  top: 68%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: grid;
+  gap: 0.9rem;
+  justify-items: center;
+}
+
+.sticky-cigarette-caption {
+  display: inline-grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(9, 17, 29, 0.72);
+  border: 1px solid rgba(124, 214, 255, 0.18);
+  backdrop-filter: blur(18px);
+  text-align: center;
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.32);
+}
+
+.sticky-cigarette-caption span {
+  color: var(--nc-copy-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sticky-cigarette-caption strong {
+  color: #fff4ef;
+}
+
+.sticky-cigarette-caption em {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: #ffb1a4;
+}
+
+.sticky-cigarette-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: 5.1rem minmax(0, 1fr) 1.9rem;
+  align-items: center;
+  width: min(68vw, 540px);
+}
+
+.sticky-cigarette-filter {
+  height: 1.4rem;
+  border-radius: 999px 0 0 999px;
+  background: linear-gradient(180deg, #f6d6a5, #dfb275);
+  box-shadow: inset 0 -1px 0 rgba(60, 20, 10, 0.2);
+}
+
+.sticky-cigarette-body {
+  transform-origin: left center;
+  height: 1rem;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #fefefe, #dee7f1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(46, 65, 88, 0.16);
+}
+
+.sticky-cigarette-stripe {
+  position: absolute;
+  inset: 0 auto 0 8%;
+  width: 0.14rem;
+  background: rgba(192, 84, 36, 0.6);
+}
+
+.sticky-cigarette-stripe-secondary {
+  left: 12%;
+}
+
+.sticky-cigarette-ember {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 208, 149, 1) 0%, rgba(255, 108, 64, 0.95) 42%, rgba(90, 12, 6, 0.18) 72%);
+  position: relative;
+  z-index: 3;
+}
+
+.sticky-cigarette-smoke-stack {
+  position: absolute;
+  right: -0.2rem;
+  bottom: 1rem;
+  width: 7rem;
+  height: 9rem;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.sticky-cigarette-smoke {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 36% 36%, rgba(255, 236, 223, 0.72), transparent 34%),
+    radial-gradient(circle at center, rgba(191, 210, 225, 0.28), rgba(87, 106, 124, 0.08) 68%, transparent 100%);
+  filter: blur(16px);
+  mix-blend-mode: screen;
+  transform-origin: center bottom;
+  animation: cigarette-smoke-rise var(--smoke-duration) linear infinite;
+  animation-delay: var(--smoke-delay);
+}
+
+.landing-command-section,
+.landing-roadmap-centered,
+.landing-final-cta,
+.landing-interruption-cinematic {
+  position: relative;
+  padding: 6rem 0;
+}
+
+.command-section-inner,
+.roadmap-centered-inner,
+.landing-final-cta-inner {
+  display: grid;
+  gap: 2rem;
+}
+
+.command-section-head,
+.roadmap-centered-head {
+  max-width: 54rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.landing-command-section .muted-text,
+.roadmap-centered-head .muted-text,
+.landing-final-cta .muted-text,
+.interruption-cinematic-card p {
+  color: #d5e4f2 !important;
+}
+
+.landing-command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  width: min(100%, 1280px);
+  margin-inline: auto;
+}
+
+.landing-command-card {
+  position: relative;
+  border-radius: 2rem;
+  padding: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(9, 17, 29, 0.92), rgba(5, 11, 20, 0.88)),
+    linear-gradient(135deg, rgba(116, 230, 255, 0.08), rgba(122, 240, 176, 0.04));
+  border: 1px solid rgba(116, 230, 255, 0.18);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.38), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.landing-command-card::before {
+  content: "";
+  position: absolute;
+  inset: 1rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(120, 240, 255, 0.08);
+  pointer-events: none;
+}
+
+.landing-command-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.landing-command-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a6f5ff;
+  background: rgba(116, 230, 255, 0.08);
+  border: 1px solid rgba(116, 230, 255, 0.18);
+}
+
+.landing-command-body,
+.landing-auth-module {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.landing-calculator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.landing-command-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.landing-command-stat {
+  padding: 1rem 1.05rem;
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(124, 214, 255, 0.12);
+}
+
+.landing-command-stat span {
+  display: block;
+  color: #d3e1ee;
+  margin-bottom: 0.35rem;
+}
+
+.landing-command-stat strong {
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.4rem, 2vw, 2.2rem);
+  color: #9af6bb;
+}
+
+.landing-command-milestones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.landing-command-milestone {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(124, 214, 255, 0.1);
+}
+
+.landing-command-milestone i {
+  font-size: 1.1rem;
+  color: #8cdfff;
+}
+
+.landing-command-milestone strong {
+  display: block;
+}
+
+.landing-command-milestone span {
+  color: #d5e4f2;
+  font-size: 0.88rem;
+}
+
+.landing-command-milestone.is-unlocked {
+  border-color: rgba(122, 240, 176, 0.24);
+  background: rgba(122, 240, 176, 0.08);
+}
+
+.landing-command-reset {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.landing-auth-module h3 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(2rem, 3vw, 3rem);
+}
+
+.landing-auth-module p {
+  margin: 0;
+  color: #dce8f4;
+}
+
+.landing-auth-actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.landing-auth-tags {
+  display: grid;
+  gap: 1rem;
+}
+
+.landing-auth-tag {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(124, 214, 255, 0.08);
+}
+
+.landing-auth-tag i {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(116, 230, 255, 0.12);
+  color: #8cecff;
+}
+
+.landing-auth-tag p {
+  margin: 0.35rem 0 0;
+  color: #d6e5f2;
+}
+
+.landing-interruption-cinematic {
+  padding-top: 0;
+}
+
+.interruption-cinematic-inner {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.interruption-cinematic-card {
+  padding: 1.4rem;
+  border-radius: 1.4rem;
+  background: rgba(9, 17, 29, 0.82);
+  border: 1px solid rgba(124, 214, 255, 0.14);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+}
+
+.interruption-cinematic-card span {
+  display: inline-block;
+  color: #ffadad;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  margin-bottom: 0.85rem;
+}
+
+.interruption-cinematic-card h3 {
+  margin: 0 0 0.7rem;
+  font-family: "Sora", sans-serif;
+  font-size: 1.35rem;
+}
+
+.interruption-cinematic-card p {
+  margin: 0;
+  color: var(--nc-copy-soft);
+}
+
+.landing-roadmap-centered {
+  padding: 10rem 0 12rem;
+}
+
+.roadmap-centered-head {
+  margin-bottom: 5rem;
+}
+
+.landing-roadmap-central-line {
+  position: relative;
+  display: grid;
+  gap: 4.2rem;
+  width: min(100%, 860px);
+  margin-inline: auto;
+  padding: 3rem 0 3.6rem;
+}
+
+.landing-roadmap-central-line::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1rem;
+  bottom: 1rem;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(124, 214, 255, 0.18), rgba(122, 240, 176, 0.12));
+  transform: translateX(-50%);
+  box-shadow: 0 0 28px rgba(116, 230, 255, 0.16);
+}
+
+.landing-roadmap-central-phase {
+  position: relative;
+  display: grid;
+  grid-template-columns: 8.2rem minmax(0, 1fr);
+  gap: 1.6rem;
+  align-items: center;
+  width: min(100%, 760px);
+  margin-inline: auto;
+  min-height: 11.4rem;
+  padding: 2.45rem 2.6rem;
+  border-radius: 2rem;
+  border: 1px solid rgba(124, 214, 255, 0.16);
+  background: rgba(9, 17, 29, 0.8);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.26);
+  color: inherit;
+  text-align: left;
+  overflow: hidden;
+  transform: translateZ(0);
+  will-change: transform, box-shadow, border-color;
+  transition:
+    transform 90ms linear,
+    box-shadow 90ms linear,
+    border-color 90ms linear,
+    background 90ms linear;
+}
+
+.landing-roadmap-central-phase::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(116, 230, 255, 0.08), rgba(122, 240, 176, 0.04), rgba(255, 109, 99, 0.02));
+  opacity: 0;
+  transition: opacity 90ms linear;
+}
+
+.landing-roadmap-central-phase::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  box-shadow:
+    0 0 0 1px rgba(124, 214, 255, 0.06),
+    0 0 0 rgba(116, 230, 255, 0);
+  transition:
+    box-shadow 90ms linear,
+    border-color 90ms linear;
+}
+
+.landing-roadmap-central-phase:hover,
+.landing-roadmap-central-phase:focus-visible,
+.landing-roadmap-central-phase.is-selected {
+  transform: scale(1.025);
+  border-color: rgba(124, 214, 255, 0.5);
+  background: rgba(7, 15, 27, 0.98);
+  box-shadow:
+    0 38px 90px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(116, 230, 255, 0.22),
+    0 0 42px rgba(116, 230, 255, 0.28);
+}
+
+.landing-roadmap-central-phase:nth-child(odd) {
+  transform: translateX(-1.4rem);
+}
+
+.landing-roadmap-central-phase:nth-child(even) {
+  transform: translateX(1.4rem);
+}
+
+.landing-roadmap-central-phase:nth-child(odd):hover,
+.landing-roadmap-central-phase:nth-child(odd):focus-visible,
+.landing-roadmap-central-phase:nth-child(odd).is-selected {
+  transform: translateX(-1.4rem) scale(1.025);
+}
+
+.landing-roadmap-central-phase:nth-child(even):hover,
+.landing-roadmap-central-phase:nth-child(even):focus-visible,
+.landing-roadmap-central-phase:nth-child(even).is-selected {
+  transform: translateX(1.4rem) scale(1.025);
+}
+
+.landing-roadmap-central-phase:hover::before,
+.landing-roadmap-central-phase:focus-visible::before,
+.landing-roadmap-central-phase.is-selected::before {
+  opacity: 1;
+}
+
+.landing-roadmap-central-phase:hover::after,
+.landing-roadmap-central-phase:focus-visible::after,
+.landing-roadmap-central-phase.is-selected::after {
+  border-color: rgba(124, 214, 255, 0.42);
+  box-shadow:
+    0 0 0 1px rgba(124, 214, 255, 0.22),
+    0 0 42px rgba(116, 230, 255, 0.28);
+}
+
+.landing-roadmap-central-index {
+  position: relative;
+  z-index: 1;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(3.2rem, 4.8vw, 4.8rem);
+  color: #a8f8ff;
+  text-align: center;
+  text-shadow: 0 0 18px rgba(116, 230, 255, 0.18);
+}
+
+.landing-roadmap-central-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-roadmap-central-copy span {
+  display: inline-block;
+  margin-bottom: 0.48rem;
+  color: #95efff;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.landing-roadmap-central-copy strong {
+  display: block;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  color: #f6fbff;
+}
+
+.landing-roadmap-central-copy p {
+  margin: 0.6rem 0 0;
+  color: #d7e5f2;
+  font-size: 0.96rem;
+}
+
+.landing-roadmap-phase-preview {
+  display: block;
+  margin-top: 0.9rem;
+  max-width: 42rem;
+  color: #b8c8d8;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  opacity: 0;
+  transform: translateY(0.45rem);
+  transition: opacity 90ms linear, transform 90ms linear;
+}
+
+.landing-roadmap-central-phase:hover .landing-roadmap-phase-preview,
+.landing-roadmap-central-phase:focus-visible .landing-roadmap-phase-preview,
+.landing-roadmap-central-phase.is-selected .landing-roadmap-phase-preview {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-roadmap-hover-console {
+  width: min(100%, 940px);
+  margin: 2.4rem auto 0;
+  padding: 2rem 2.2rem;
+  border-radius: 2rem;
+  border: 1px solid rgba(124, 214, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(8, 16, 28, 0.94), rgba(5, 11, 20, 0.92)),
+    linear-gradient(135deg, rgba(116, 230, 255, 0.08), rgba(255, 109, 99, 0.04));
+  box-shadow:
+    0 36px 80px rgba(0, 0, 0, 0.3),
+    0 0 32px rgba(116, 230, 255, 0.08);
+}
+
+.landing-roadmap-hover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.landing-roadmap-hover-kicker {
+  display: inline-block;
+  margin-bottom: 0.55rem;
+  color: #9af2ff;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+}
+
+.landing-roadmap-hover-head h3 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.8rem, 2.8vw, 2.9rem);
+  color: #f5fbff;
+}
+
+.landing-roadmap-hover-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(116, 230, 255, 0.08);
+  border: 1px solid rgba(116, 230, 255, 0.16);
+  color: #b6f7ff;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.landing-roadmap-hover-summary {
+  margin: 1rem 0 0;
+  color: #dce8f4;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  max-width: 54rem;
+}
+
+.landing-roadmap-hover-goals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.4rem;
+}
+
+.landing-roadmap-hover-goal {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(124, 214, 255, 0.1);
+}
+
+.landing-roadmap-hover-goal i {
+  color: #8ef3cb;
+}
+
+.phase-spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(2, 6, 10, 0.74);
+  backdrop-filter: blur(20px);
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.phase-spotlight-card {
+  position: relative;
+  width: min(100%, 780px);
+  border-radius: 2rem;
+  padding: 2rem;
+  background:
+    linear-gradient(180deg, rgba(7, 14, 24, 0.96), rgba(6, 13, 22, 0.92)),
+    linear-gradient(135deg, rgba(116, 230, 255, 0.1), rgba(122, 240, 176, 0.06));
+  border: 1px solid rgba(124, 214, 255, 0.18);
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.5);
+}
+
+.phase-spotlight-close {
+  position: absolute;
+  right: 1.2rem;
+  top: 1.2rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 214, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: #dff8ff;
+}
+
+.phase-spotlight-badge {
+  display: inline-flex;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(116, 230, 255, 0.08);
+  border: 1px solid rgba(116, 230, 255, 0.14);
+  color: #9cf1ff;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+  margin-bottom: 1rem;
+}
+
+.phase-spotlight-card h3 {
+  margin: 0 0 0.7rem;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 0.95;
+}
+
+.phase-spotlight-summary {
+  color: #dce8f4;
+  font-size: 1.02rem;
+  margin: 0 0 1.2rem;
+}
+
+.phase-spotlight-block {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+
+.phase-spotlight-label {
+  color: var(--nc-copy-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+}
+
+.phase-spotlight-goals {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.phase-spotlight-goal {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(124, 214, 255, 0.08);
+}
+
+.phase-spotlight-goal i {
+  color: #8ef3cb;
+}
+
+.landing-final-cta-inner {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  padding: 2rem;
+  border-radius: 2rem;
+  border: 1px solid rgba(124, 214, 255, 0.14);
+  background: rgba(9, 17, 29, 0.76);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.28);
+}
+
+.landing-final-actions {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.evaluation-footer-actions {
+  justify-content: space-between;
+  margin-top: 1.8rem;
+}
+
 @keyframes drift-smoke {
   0% {
     transform: translate3d(0, 0, 0) scale(0.86);
@@ -1293,6 +2645,18 @@ textarea.form-control:focus {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes cigarette-smoke-rise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.72);
+  }
+  38% {
+    transform: translate3d(calc(var(--smoke-drift) * 0.4), -2.6rem, 0) scale(calc(var(--smoke-scale) * 0.9));
+  }
+  100% {
+    transform: translate3d(var(--smoke-drift), -8.4rem, 0) scale(calc(var(--smoke-scale) * 1.45));
   }
 }
 
@@ -1343,6 +2707,12 @@ textarea.form-control:focus {
   .auth-stage-grid,
   .pathway-shell,
   .clarity-shell,
+  .impact-grid,
+  .landing-command-grid,
+  .landing-final-cta-inner,
+  .roadmap-shell,
+  .profile-layout-grid,
+  .evaluation-layout,
   .dashboard-grid,
   .dashboard-support-grid,
   .life-gain-panel {
@@ -1350,6 +2720,7 @@ textarea.form-control:focus {
   }
 
   .interruption-grid,
+  .interruption-cinematic-inner,
   .pathway-grid,
   .life-gain-side {
     grid-template-columns: minmax(0, 1fr);
@@ -1364,6 +2735,21 @@ textarea.form-control:focus {
   .landing-scene {
     min-height: 26rem;
   }
+
+  .landing-calculator-grid,
+  .landing-command-stats,
+  .landing-command-milestones,
+  .landing-roadmap-hover-goals {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .landing-floating-cigarette {
+    left: auto;
+    right: 2rem;
+    top: auto;
+    bottom: 2rem;
+    transform: scale(0.72) rotate(12deg);
+  }
 }
 
 @media (max-width: 767px) {
@@ -1372,7 +2758,10 @@ textarea.form-control:focus {
   .topbar-actions,
   .landing-actions,
   .clarity-cta,
-  .dashboard-command-actions {
+  .dashboard-command-actions,
+  .profile-header-actions,
+  .evaluation-status-stack,
+  .evaluation-footer-actions {
     width: 100%;
     flex-wrap: wrap;
   }
@@ -1417,6 +2806,42 @@ textarea.form-control:focus {
   .auth-title,
   .dashboard-title {
     font-size: clamp(2.2rem, 10vw, 3.6rem);
+  }
+
+  .cinematic-title {
+    font-size: clamp(2.8rem, 13vw, 4.4rem);
+  }
+
+  .sticky-cigarette-rail {
+    width: min(92vw, 420px);
+    grid-template-columns: 4rem minmax(0, 1fr) 1.5rem;
+  }
+
+  .landing-roadmap-central-phase {
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+    min-height: auto;
+    padding: 1.6rem;
+    transform: none;
+  }
+
+  .landing-roadmap-central-index {
+    text-align: left;
+  }
+
+  .landing-roadmap-central-phase:hover,
+  .landing-roadmap-central-phase:focus-visible,
+  .landing-roadmap-central-phase.is-selected {
+    transform: scale(1.012);
+  }
+
+  .landing-roadmap-hover-head {
+    flex-direction: column;
+  }
+
+  .profile-card-grid,
+  .impact-milestone-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .life-gain-main strong,

@@ -19,8 +19,8 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.profile?.onboardingComplete === false && location.pathname !== "/onboarding") {
-    return <Navigate to="/onboarding" replace />;
+  if (user?.profile?.onboardingComplete === false && location.pathname !== "/evaluation") {
+    return <Navigate to="/evaluation" replace />;
   }
 
   return children;
