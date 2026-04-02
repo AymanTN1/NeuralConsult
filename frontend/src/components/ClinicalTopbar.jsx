@@ -1,6 +1,7 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { isDoctor, isPatient } from "../utils/roles";
 
 const pageMeta = {
   "/dashboard": {
@@ -10,6 +11,10 @@ const pageMeta = {
   "/evaluation": {
     eyebrow: "Evaluation timeline",
     title: "Consultation initiale structuree"
+  },
+  "/doctors": {
+    eyebrow: "Alliance medecin-patient",
+    title: "Annuaire, matching et demandes"
   },
   "/tests": {
     eyebrow: "Scores dynamiques",
@@ -32,13 +37,18 @@ const pageMeta = {
 const ClinicalTopbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const meta = pageMeta[location.pathname] || pageMeta["/dashboard"];
+  const doctorMode = isDoctor(user);
+  const meta = doctorMode
+    ? location.pathname === "/profile"
+      ? { eyebrow: "Identite praticien", title: "Profil medecin et positionnement" }
+      : { eyebrow: "Doctor workspace", title: "Demandes, dossiers et validation de plans" }
+    : (pageMeta[location.pathname] || pageMeta["/dashboard"]);
   const riskScore = Math.max(
     user?.scores?.fagerstromScore || 0,
     user?.scores?.hadAnxietyScore || 0,
     user?.scores?.hadDepressionScore || 0
   );
-  const onboardingComplete = user?.profile?.onboardingComplete;
+  const onboardingComplete = !isPatient(user) || user?.profile?.onboardingComplete;
 
   return (
     <header className="clinical-topbar">
@@ -49,8 +59,8 @@ const ClinicalTopbar = () => {
 
       <div className="topbar-actions">
         <div className={`clinical-score-chip severity-${riskScore >= 11 ? "critical" : riskScore >= 8 ? "warning" : "stable"}`}>
-          <span className="clinical-score-chip-label">Signal</span>
-          <span className="clinical-score-chip-value">{riskScore}</span>
+          <span className="clinical-score-chip-label">{doctorMode ? "Role" : "Signal"}</span>
+          <span className="clinical-score-chip-value">{doctorMode ? "MD" : riskScore}</span>
         </div>
         <div className={`clinical-score-chip ${onboardingComplete ? "severity-stable" : "severity-warning"}`}>
           <span className="clinical-score-chip-label">Profiling</span>

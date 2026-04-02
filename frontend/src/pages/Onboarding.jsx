@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import QuestionAssistantModal from "../components/QuestionAssistantModal";
+import QuestionHelpOverlay from "../components/QuestionHelpOverlay";
 import { CLINICAL_PHASES } from "../data/clinicalJourney";
+import { getQuestionAssistantMeta } from "../data/questionAssistantCatalog";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
@@ -131,6 +134,9 @@ const Onboarding = () => {
   const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState(null);
   const [scores, setScores] = useState(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantField, setAssistantField] = useState(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -162,6 +168,25 @@ const Onboarding = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  };
+
+  const openAssistantForField = (fieldName) => {
+    if (!fieldName) return;
+    setAssistantField(fieldName);
+    setAssistantOpen(true);
+  };
+
+  const applyAssistantSuggestion = (rawValue) => {
+    if (!assistantField) return;
+    setForm((previous) => {
+      const currentValue = previous[assistantField];
+      const nextValue = typeof currentValue === "boolean" ? rawValue === "true" : rawValue;
+      return {
+        ...previous,
+        [assistantField]: nextValue
+      };
+    });
+    setAssistantOpen(false);
   };
 
   const toNumber = (value) => (value === "" || value === null ? null : Number(value));
@@ -224,6 +249,20 @@ const Onboarding = () => {
   };
 
   const selectedPhase = CLINICAL_PHASES.find((item) => item.id === step) || CLINICAL_PHASES[0];
+  const assistantQuestionMeta = useMemo(() => {
+    const meta = getQuestionAssistantMeta(assistantField, selectedPhase.id);
+    if (!meta) {
+      return null;
+    }
+    return {
+      ...meta,
+      phaseId: meta.phaseId ?? selectedPhase.id,
+      phaseLabel: selectedPhase.label,
+      questionContext:
+        meta.questionContext ||
+        "L'assistant reformule la question et peut proposer un choix officiel, mais le patient garde toujours la reponse finale."
+    };
+  }, [assistantField, selectedPhase]);
   const progressPercent = user?.profile?.onboardingComplete
     ? 100
     : Math.round((visitedSteps.length / CLINICAL_PHASES.length) * 100);
@@ -288,7 +327,11 @@ const Onboarding = () => {
           })}
         </aside>
 
-        <form onSubmit={handleSubmit} className="card form-card p-3 evaluation-main-panel">
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="card form-card p-3 evaluation-main-panel"
+        >
           <div className="evaluation-main-head">
             <div>
               <div className="evaluation-phase-kicker">{selectedPhase.label}</div>
@@ -306,6 +349,12 @@ const Onboarding = () => {
               </div>
             ))}
           </div>
+
+          <QuestionHelpOverlay
+            containerRef={formRef}
+            phaseId={selectedPhase.id}
+            onOpenQuestionHelp={openAssistantForField}
+          />
 
         {step === 1 && (
           <div className="row g-3">
@@ -899,6 +948,15 @@ const Onboarding = () => {
           </button>
         </div>
       )}
+
+      <QuestionAssistantModal
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        questionMeta={assistantQuestionMeta}
+        currentValue={assistantField ? form[assistantField] : null}
+        patientFacts={payload}
+        onApplySuggestion={applyAssistantSuggestion}
+      />
     </div>
   );
 };

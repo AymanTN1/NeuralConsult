@@ -35,7 +35,7 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
         && !(authentication instanceof AnonymousAuthenticationToken)) {
       String email = authentication.getName();
       User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
-      if (user != null) {
+      if (user != null && isPatient(user)) {
         PatientProfile profile = patientProfileService.getOrCreate(user);
         if (!profile.isOnboardingComplete()) {
           response.setStatus(428);
@@ -49,6 +49,10 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
     filterChain.doFilter(request, response);
   }
 
+  private boolean isPatient(User user) {
+    return user.getRoles().isEmpty() || user.getRoles().contains("ROLE_PATIENT");
+  }
+
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
@@ -57,6 +61,7 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
     }
     return path.startsWith("/api/auth")
         || path.startsWith("/api/onboarding")
+        || path.startsWith("/api/ai-assistant")
         || path.startsWith("/api/me")
         || path.startsWith("/actuator");
   }

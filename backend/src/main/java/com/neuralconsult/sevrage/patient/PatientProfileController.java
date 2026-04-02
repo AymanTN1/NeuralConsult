@@ -42,7 +42,8 @@ public class PatientProfileController {
         user.getEmail(),
         user.getFullName(),
         toProfileResponse(profile),
-        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
+        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
+        user.getRoles()
     );
   }
 
@@ -59,7 +60,8 @@ public class PatientProfileController {
         user.getEmail(),
         user.getFullName(),
         toProfileResponse(profile),
-        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
+        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
+        user.getRoles()
     );
   }
 
@@ -73,7 +75,8 @@ public class PatientProfileController {
         user.getEmail(),
         user.getFullName(),
         toProfileResponse(profile),
-        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
+        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
+        user.getRoles()
     );
   }
 

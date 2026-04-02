@@ -20,7 +20,7 @@ import lombok.Setter;
 @Table(name = "patient_profile")
 public class PatientProfile extends AuditableEntity {
 
-  @OneToOne(fetch = FetchType.LAZY, optional = false)
+  @OneToOne(fetch = FetchType.EAGER, optional = false)
   @JoinColumn(name = "user_id", nullable = false, unique = true)
   private User user;
 

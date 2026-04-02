@@ -28,7 +28,13 @@ public class UserService {
     user.setEmail(request.email().toLowerCase());
     user.setFullName(request.fullName());
     user.setPasswordHash(passwordEncoder.encode(request.password()));
-    user.setRoles(Set.of("ROLE_USER"));
+    String accountType = request.accountType() != null ? request.accountType().trim().toUpperCase() : "PATIENT";
+    String role = switch (accountType) {
+      case "DOCTOR" -> "ROLE_DOCTOR";
+      case "ADMIN" -> "ROLE_ADMIN";
+      default -> "ROLE_PATIENT";
+    };
+    user.setRoles(Set.of(role));
 
     return userRepository.save(user);
   }

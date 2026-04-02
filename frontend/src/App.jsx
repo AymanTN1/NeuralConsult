@@ -5,10 +5,13 @@ import TopNav from "./components/TopNav";
 import ClinicalSidebar from "./components/ClinicalSidebar";
 import ClinicalTopbar from "./components/ClinicalTopbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { isPatient } from "./utils/roles";
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DoctorDirectory = lazy(() => import("./pages/DoctorDirectory"));
+const DoctorWorkspace = lazy(() => import("./pages/DoctorWorkspace"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Tests = lazy(() => import("./pages/Tests"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -52,7 +55,7 @@ const AppShell = () => {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    {isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
                   </ProtectedRoute>
                 }
               />
@@ -60,7 +63,15 @@ const AppShell = () => {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <Profile />
+                    {isPatient(user) ? <Profile /> : <DoctorWorkspace mode="profile" />}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/doctors"
+                element={
+                  <ProtectedRoute>
+                    <DoctorDirectory />
                   </ProtectedRoute>
                 }
               />
@@ -95,8 +106,10 @@ const AppShell = () => {
     );
   }
 
+  const shellState = !isPatient(user) || user?.profile?.onboardingComplete ? "state-oxygenated" : "state-foggy";
+
   return (
-    <div className={`clinical-workstation ${user?.profile?.onboardingComplete ? "state-oxygenated" : "state-foggy"}`}>
+    <div className={`clinical-workstation ${shellState}`}>
       <ClinicalSidebar />
       <div className="clinical-content">
         <ClinicalTopbar />
@@ -116,7 +129,7 @@ const AppShell = () => {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    {isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
                   </ProtectedRoute>
                 }
               />
@@ -124,7 +137,15 @@ const AppShell = () => {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <Profile />
+                    {isPatient(user) ? <Profile /> : <DoctorWorkspace mode="profile" />}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/doctors"
+                element={
+                  <ProtectedRoute>
+                    <DoctorDirectory />
                   </ProtectedRoute>
                 }
               />
@@ -152,7 +173,14 @@ const AppShell = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route path="*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route
+                path="*"
+                element={
+                  <ProtectedRoute>
+                    {isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </Suspense>
         </main>

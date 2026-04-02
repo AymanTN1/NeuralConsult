@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.services.knowledge_base import KnowledgeBaseClient, KnowledgeReference
+from app.services.llm_client import DefaultLlmClient
 
 
 def _safe_str(v: Any) -> Optional[str]:
@@ -65,12 +67,28 @@ class ClinicalNotesService:
 
     def __init__(self) -> None:
         self.kb = KnowledgeBaseClient()
+        self.llm = DefaultLlmClient()
 
-    def generate(self, facts: Dict[str, Any]) -> Dict[str, Any]:
-        medical_summary, complementary_note, refs = self._generate_notes(facts)
+    async def generate(self, facts: Dict[str, Any]) -> Dict[str, Any]:
+        refs = self.kb.retrieve(
+            query="Synthese clinique sevrage tabagique INPES 2007",
+            facts=facts,
+        )
+
+        if self.llm.is_configured():
+            try:
+                medical_summary, complementary_note = await self._generate_notes_with_llm(facts, refs)
+                model_name = f"{self.llm.provider}:{self.llm.model}"
+            except Exception:
+                medical_summary, complementary_note = self._generate_notes_deterministic(facts, refs)
+                model_name = f"{self.MODEL_NAME}-fallback"
+        else:
+            medical_summary, complementary_note = self._generate_notes_deterministic(facts, refs)
+            model_name = self.MODEL_NAME
+
         validation = self._validate(facts, medical_summary, complementary_note)
         return {
-            "model_name": self.MODEL_NAME,
+            "model_name": model_name,
             "medical_summary": medical_summary,
             "complementary_note": complementary_note,
             "validation": validation,
@@ -79,7 +97,45 @@ class ClinicalNotesService:
             ],
         }
 
-    def _generate_notes(self, facts: Dict[str, Any]) -> Tuple[str, str, List[KnowledgeReference]]:
+    async def _generate_notes_with_llm(
+        self,
+        facts: Dict[str, Any],
+        refs: List[KnowledgeReference],
+    ) -> Tuple[str, str]:
+        system_prompt = (
+            "You are a clinical summarization engine for a tobacco cessation platform. "
+            "You write physician-ready notes from structured patient facts. "
+            "You must never invent missing information. "
+            "You must explicitly mention when information is missing. "
+            "Return valid JSON only."
+        )
+
+        user_prompt = (
+            "Produce a structured medical summary and a complementary note.\n\n"
+            f"Facts:\n{json.dumps(facts, ensure_ascii=True, indent=2)}\n\n"
+            f"References:\n{json.dumps([r.__dict__ for r in refs], ensure_ascii=True, indent=2)}\n\n"
+            "Return JSON with exactly this shape:\n"
+            "{\n"
+            '  "medical_summary": "structured physician summary in French",\n'
+            '  "complementary_note": "critical attention note in French"\n'
+            "}"
+        )
+        response = await self.llm.generate_json(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=0.1,
+        )
+        medical_summary = _safe_str(response.get("medical_summary"))
+        complementary_note = _safe_str(response.get("complementary_note"))
+        if not medical_summary or not complementary_note:
+            raise RuntimeError("Gemini response missing required note fields.")
+        return medical_summary, complementary_note
+
+    def _generate_notes_deterministic(
+        self,
+        facts: Dict[str, Any],
+        refs: List[KnowledgeReference],
+    ) -> Tuple[str, str]:
         patient = facts.get("patient_profile") or {}
         onboarding = facts.get("onboarding_assessment") or {}
         tests = facts.get("tests") or {}
@@ -119,12 +175,6 @@ class ClinicalNotesService:
         # Optional: include latest tests snapshots (still facts, not interpretations)
         latest_fagerstrom = tests.get("fagerstrom_latest") or {}
         latest_had = tests.get("had_latest") or {}
-
-        # RAG preparation: retrieve external references (empty for now).
-        refs = self.kb.retrieve(
-            query="Synthese clinique sevrage tabagique INPES 2007",
-            facts=facts,
-        )
 
         inferred_fager_level = _infer_fagerstrom_level(int(fager_score)) if fager_score is not None else None
         had_a_interp = _interpret_had(int(had_a)) if had_a is not None else None
@@ -222,7 +272,7 @@ class ClinicalNotesService:
 
         complementary_note = "POINTS D'ATTENTION (Note complementaire)\n- " + "\n- ".join(flags)
 
-        return medical_summary, complementary_note, refs
+        return medical_summary, complementary_note
 
     def _compute_missing_fields(self, patient: Dict[str, Any], onboarding: Dict[str, Any]) -> List[str]:
         missing: List[str] = []
@@ -269,4 +319,3 @@ class ClinicalNotesService:
             issues.append("Section 'Donnees manquantes' absente.")
 
         return {"is_valid": len(issues) == 0, "issues": issues}
-

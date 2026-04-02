@@ -3,14 +3,15 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from app.modeling import ApiModel
 from app.services.clinical_notes import ClinicalNotesService
 
 router = APIRouter(prefix="/clinical-notes", tags=["clinical-notes"])
 
 
-class ClinicalNotesGenerateRequest(BaseModel):
+class ClinicalNotesGenerateRequest(ApiModel):
     """
     NOTE: To enforce "zero hallucination", the generator must stick to this `facts` object.
     If a fact is missing, the output should explicitly mention the missing info.
@@ -20,12 +21,12 @@ class ClinicalNotesGenerateRequest(BaseModel):
     facts: Dict[str, Any] = Field(..., description="Patient facts (single source of truth)")
 
 
-class ValidationResult(BaseModel):
+class ValidationResult(ApiModel):
     is_valid: bool
     issues: List[str] = Field(default_factory=list)
 
 
-class ClinicalNotesGenerateResponse(BaseModel):
+class ClinicalNotesGenerateResponse(ApiModel):
     request_id: str
     medical_summary: str
     complementary_note: str
@@ -40,7 +41,7 @@ class ClinicalNotesGenerateResponse(BaseModel):
 @router.post("/generate", response_model=ClinicalNotesGenerateResponse)
 async def generate_notes(payload: ClinicalNotesGenerateRequest) -> ClinicalNotesGenerateResponse:
     service = ClinicalNotesService()
-    result = service.generate(payload.facts)
+    result = await service.generate(payload.facts)
 
     if not result["validation"]["is_valid"]:
         # Block the workflow: caller must ask for re-analysis / correction.
@@ -54,4 +55,3 @@ async def generate_notes(payload: ClinicalNotesGenerateRequest) -> ClinicalNotes
         model_name=result["model_name"],
         references=result.get("references", []),
     )
-

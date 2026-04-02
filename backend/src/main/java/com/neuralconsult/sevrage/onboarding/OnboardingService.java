@@ -1,5 +1,7 @@
 package com.neuralconsult.sevrage.onboarding;
 
+import com.neuralconsult.sevrage.clinical.intelligence.ClinicalIntelligenceService;
+import com.neuralconsult.sevrage.clinical.notes.ClinicalNotesService;
 import com.neuralconsult.sevrage.onboarding.dto.OnboardingRequest;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
@@ -12,10 +14,17 @@ public class OnboardingService {
 
   private final OnboardingRepository repository;
   private final PatientProfileService patientProfileService;
+  private final ClinicalNotesService clinicalNotesService;
+  private final ClinicalIntelligenceService clinicalIntelligenceService;
 
-  public OnboardingService(OnboardingRepository repository, PatientProfileService patientProfileService) {
+  public OnboardingService(OnboardingRepository repository,
+                           PatientProfileService patientProfileService,
+                           ClinicalNotesService clinicalNotesService,
+                           ClinicalIntelligenceService clinicalIntelligenceService) {
     this.repository = repository;
     this.patientProfileService = patientProfileService;
+    this.clinicalNotesService = clinicalNotesService;
+    this.clinicalIntelligenceService = clinicalIntelligenceService;
   }
 
   @Transactional
@@ -34,7 +43,12 @@ public class OnboardingService {
 
     applyAssessment(assessment, request);
     computeDerivedScores(assessment);
-    return repository.save(assessment);
+    OnboardingAssessment saved = repository.save(assessment);
+
+    clinicalNotesService.generateAndSave(user);
+    clinicalIntelligenceService.generateAndSave(user);
+
+    return saved;
   }
 
   @Transactional

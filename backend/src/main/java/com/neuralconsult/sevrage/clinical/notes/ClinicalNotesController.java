@@ -5,6 +5,7 @@ import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ public class ClinicalNotesController {
   }
 
   @GetMapping
+  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
   public ClinicalNoteResponse get(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     Optional<ClinicalNote> note = clinicalNotesService.get(user);
@@ -33,6 +35,7 @@ public class ClinicalNotesController {
   }
 
   @PostMapping("/generate")
+  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
   public ClinicalNoteResponse generate(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     try {
@@ -53,4 +56,3 @@ public class ClinicalNotesController {
     );
   }
 }
-

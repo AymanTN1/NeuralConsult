@@ -29,15 +29,22 @@ public class UserController {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername())
         .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-    PatientProfile profile = patientProfileService.getOrCreate(user);
+    PatientProfile profile = isPatient(user) ? patientProfileService.getOrCreate(user) : null;
 
     return new UserProfileResponse(
         user.getId(),
         user.getEmail(),
         user.getFullName(),
-        toProfileResponse(profile),
-        new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
+        profile != null ? toProfileResponse(profile) : null,
+        profile != null
+            ? new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
+            : null,
+        user.getRoles()
     );
+  }
+
+  private boolean isPatient(User user) {
+    return user.getRoles().isEmpty() || user.getRoles().contains("ROLE_PATIENT");
   }
 
   private PatientProfileResponse toProfileResponse(PatientProfile profile) {

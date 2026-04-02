@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "", fullName: "" });
+  const [form, setForm] = useState({ email: "", password: "", fullName: "", accountType: "PATIENT" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,8 +35,8 @@ const Register = () => {
           <div className="hero-kicker">First access</div>
           <h1 className="auth-title">Ouvrir un parcours qui transforme la fumee en donnees exploitables.</h1>
           <p className="auth-copy">
-            Le nouvel utilisateur entre d'abord dans un sas clinique. Ensuite viennent le dossier initial,
-            les tests, les notes medicales et le plan de sevrage.
+            Le nouvel utilisateur entre d'abord dans un sas clinique. Les patients ouvrent ensuite le dossier initial.
+            Les medecins accedent a un workspace de lecture, tri et validation des plans.
           </p>
 
           <div className="auth-story-matrix">
@@ -59,11 +59,22 @@ const Register = () => {
           <div className="auth-card">
             <div className="hero-kicker">Clinical account</div>
             <h2 className="auth-card-title">Creer un compte</h2>
-            <p className="muted-text">La premiere connexion ouvrira directement le dossier patient.</p>
+            <p className="muted-text">Choisissez votre role clinique avant la premiere connexion.</p>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}
 
             <form onSubmit={handleSubmit} className="auth-form">
+              <label className="form-label">Type de compte</label>
+              <select
+                className="form-select"
+                name="accountType"
+                value={form.accountType}
+                onChange={handleChange}
+              >
+                <option value="PATIENT">Patient</option>
+                <option value="DOCTOR">Medecin</option>
+              </select>
+
               <label className="form-label">Nom complet</label>
               <input
                 className="form-control"

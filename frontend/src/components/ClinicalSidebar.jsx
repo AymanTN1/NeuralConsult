@@ -1,20 +1,33 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { isDoctor, isPatient } from "../utils/roles";
 
-const navItems = [
+const patientNavItems = [
   { to: "/dashboard", icon: "bi bi-activity", label: "Command Center" },
   { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Evaluation" },
+  { to: "/doctors", icon: "bi bi-person-heart", label: "Medecins" },
   { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests" },
   { to: "/plan", icon: "bi bi-diagram-3", label: "Plan" },
   { to: "/journal", icon: "bi bi-journal-medical", label: "Journal" },
   { to: "/profile", icon: "bi bi-person-vcard", label: "Personal Profile" }
 ];
 
+const doctorNavItems = [
+  { to: "/dashboard", icon: "bi bi-speedometer2", label: "Doctor Workspace" },
+  { to: "/profile", icon: "bi bi-person-badge", label: "Doctor Profile" }
+];
+
 const ClinicalSidebar = () => {
   const { user } = useAuth();
   const profile = user?.profile;
-  const statusLabel = profile?.onboardingComplete ? "Patient actif" : "Candidat";
+  const doctorMode = isDoctor(user);
+  const statusLabel = doctorMode
+    ? "Medecin"
+    : profile?.onboardingComplete
+      ? "Patient actif"
+      : "Candidat";
+  const navItems = doctorMode ? doctorNavItems : patientNavItems;
 
   return (
     <aside className="clinical-sidebar">
@@ -29,7 +42,7 @@ const ClinicalSidebar = () => {
       </div>
 
       <div className="sidebar-patient">
-        <div className="sidebar-patient-label">Dossier en cours</div>
+        <div className="sidebar-patient-label">{doctorMode ? "Session en cours" : "Dossier en cours"}</div>
         <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
         <div className="sidebar-status-pill">{statusLabel}</div>
       </div>
@@ -46,9 +59,11 @@ const ClinicalSidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-footer-label">Signal clinique</div>
+        <div className="sidebar-footer-label">{isPatient(user) ? "Signal clinique" : "Pilotage clinique"}</div>
         <div className="sidebar-footer-copy">
-          Plus le brouillard recule, plus le parcours respire.
+          {doctorMode
+            ? "Vue medecin: lire, trier, accepter et valider un plan de sevrage."
+            : "Plus le brouillard recule, plus le parcours respire."}
         </div>
       </div>
     </aside>

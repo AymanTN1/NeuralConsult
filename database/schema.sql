@@ -242,6 +242,168 @@ CREATE TABLE IF NOT EXISTS daily_report (
   UNIQUE (patient_profile_id, report_date)
 );
 
+CREATE TABLE IF NOT EXISTS doctor_profile (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL UNIQUE REFERENCES app_user(id),
+  city VARCHAR(80),
+  country_code VARCHAR(64),
+  specialty VARCHAR(120),
+  bio VARCHAR(2000),
+  accepts_teleconsultation BOOLEAN NOT NULL DEFAULT TRUE,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  years_experience INTEGER,
+  success_score INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS doctor_patient_request (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),
+  doctor_profile_id UUID NOT NULL REFERENCES doctor_profile(id),
+  status VARCHAR(24) NOT NULL,
+  matching_mode VARCHAR(24),
+  matching_score INTEGER,
+  patient_message VARCHAR(1200),
+  doctor_response_note VARCHAR(1200),
+  answered_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS doctor_patient_assignment (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL UNIQUE REFERENCES patient_profile(id),
+  doctor_profile_id UUID NOT NULL REFERENCES doctor_profile(id),
+  source_request_id UUID UNIQUE REFERENCES doctor_patient_request(id),
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  assigned_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS ai_phase_summary (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),
+  phase_id INTEGER NOT NULL,
+  phase_title VARCHAR(160) NOT NULL,
+  summary VARCHAR(4000) NOT NULL,
+  model_name VARCHAR(80),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS ai_phase_summary_attention_points (
+  summary_id UUID NOT NULL REFERENCES ai_phase_summary(id),
+  attention_point VARCHAR(600) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_phase_summary_missing_info (
+  summary_id UUID NOT NULL REFERENCES ai_phase_summary(id),
+  missing_item VARCHAR(300) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_global_summary (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL UNIQUE REFERENCES patient_profile(id),
+  summary VARCHAR(8000) NOT NULL,
+  patient_readiness VARCHAR(1000),
+  model_name VARCHAR(80),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS ai_global_summary_focus_points (
+  global_summary_id UUID NOT NULL REFERENCES ai_global_summary(id),
+  focus_point VARCHAR(600) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_global_summary_missing_info (
+  global_summary_id UUID NOT NULL REFERENCES ai_global_summary(id),
+  missing_item VARCHAR(300) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_plan_candidate (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),
+  track VARCHAR(24) NOT NULL,
+  title VARCHAR(240) NOT NULL,
+  rationale VARCHAR(4000) NOT NULL,
+  nrt_recommendation VARCHAR(1200),
+  behavioral_focus VARCHAR(1200),
+  follow_up_plan VARCHAR(1200),
+  model_name VARCHAR(80),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS ai_plan_candidate_warnings (
+  candidate_id UUID NOT NULL REFERENCES ai_plan_candidate(id),
+  warning VARCHAR(600) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_plan_candidate_steps (
+  candidate_id UUID NOT NULL REFERENCES ai_plan_candidate(id),
+  step VARCHAR(600) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS validated_treatment_plan (
+  id UUID PRIMARY KEY,
+  patient_profile_id UUID NOT NULL UNIQUE REFERENCES patient_profile(id),
+  doctor_profile_id UUID REFERENCES doctor_profile(id),
+  source_candidate_id UUID REFERENCES ai_plan_candidate(id),
+  track VARCHAR(24) NOT NULL,
+  title VARCHAR(240) NOT NULL,
+  summary VARCHAR(4000) NOT NULL,
+  nrt_recommendation VARCHAR(1200),
+  behavioral_focus VARCHAR(1200),
+  follow_up_plan VARCHAR(1200),
+  doctor_note VARCHAR(2000),
+  validated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  row_version BIGINT NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  deleted_by VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS validated_treatment_plan_steps (
+  plan_id UUID NOT NULL REFERENCES validated_treatment_plan(id),
+  step VARCHAR(600) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS fagerstrom_test (
   id UUID PRIMARY KEY,
   patient_profile_id UUID NOT NULL REFERENCES patient_profile(id),

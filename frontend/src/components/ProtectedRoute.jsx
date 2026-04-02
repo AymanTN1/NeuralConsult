@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { isPatient } from "../utils/roles";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -19,7 +20,7 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.profile?.onboardingComplete === false && location.pathname !== "/evaluation") {
+  if (isPatient(user) && user?.profile?.onboardingComplete === false && location.pathname !== "/evaluation") {
     return <Navigate to="/evaluation" replace />;
   }
 
