@@ -27,7 +27,7 @@ public class ClinicalNotesController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public ClinicalNoteResponse get(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     Optional<ClinicalNote> note = clinicalNotesService.get(user);
@@ -35,7 +35,7 @@ public class ClinicalNotesController {
   }
 
   @PostMapping("/generate")
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public ClinicalNoteResponse generate(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     try {

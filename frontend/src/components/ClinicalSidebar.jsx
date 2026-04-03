@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { isDoctor, isPatient } from "../utils/roles";
 
 const patientNavItems = [
-  { to: "/dashboard", icon: "bi bi-activity", label: "Command Center" },
+  { to: "/dashboard", icon: "bi bi-activity", label: "Tableau de bord" },
   { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Evaluation" },
   { to: "/doctors", icon: "bi bi-person-heart", label: "Medecins" },
   { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests" },
@@ -36,7 +36,7 @@ const ClinicalSidebar = () => {
           <i className="bi bi-plus-square-pulse-fill" />
         </div>
         <div>
-          <div className="sidebar-eyebrow">Mirror of Urgency</div>
+          <div className="sidebar-eyebrow">Calm Clinical Care</div>
           <div className="sidebar-title">NeuralConsult</div>
         </div>
       </div>
@@ -59,11 +59,11 @@ const ClinicalSidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-footer-label">{isPatient(user) ? "Signal clinique" : "Pilotage clinique"}</div>
+        <div className="sidebar-footer-label">{isPatient(user) ? "Repere clinique" : "Pilotage clinique"}</div>
         <div className="sidebar-footer-copy">
           {doctorMode
-            ? "Vue medecin: lire, trier, accepter et valider un plan de sevrage."
-            : "Plus le brouillard recule, plus le parcours respire."}
+            ? "Vue medecin: lire le dossier, comprendre la progression et valider un plan adapte."
+            : "Une interface plus douce pour aider le patient a rester engage sans surcharge."}
         </div>
       </div>
     </aside>

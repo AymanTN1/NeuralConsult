@@ -5,11 +5,11 @@ import { isDoctor, isPatient } from "../utils/roles";
 
 const pageMeta = {
   "/dashboard": {
-    eyebrow: "Station clinique",
-    title: "Vue d'ensemble du risque"
+    eyebrow: "Suivi clinique",
+    title: "Vue d'ensemble du parcours"
   },
   "/evaluation": {
-    eyebrow: "Evaluation timeline",
+    eyebrow: "Evaluation initiale",
     title: "Consultation initiale structuree"
   },
   "/doctors": {
@@ -17,7 +17,7 @@ const pageMeta = {
     title: "Annuaire, matching et demandes"
   },
   "/tests": {
-    eyebrow: "Scores dynamiques",
+    eyebrow: "Scores cliniques",
     title: "Fagerstrom, HAD et historique"
   },
   "/plan": {
@@ -41,7 +41,7 @@ const ClinicalTopbar = () => {
   const meta = doctorMode
     ? location.pathname === "/profile"
       ? { eyebrow: "Identite praticien", title: "Profil medecin et positionnement" }
-      : { eyebrow: "Doctor workspace", title: "Demandes, dossiers et validation de plans" }
+      : { eyebrow: "Espace medecin", title: "Demandes, dossiers et validation de plans" }
     : (pageMeta[location.pathname] || pageMeta["/dashboard"]);
   const riskScore = Math.max(
     user?.scores?.fagerstromScore || 0,
@@ -59,7 +59,7 @@ const ClinicalTopbar = () => {
 
       <div className="topbar-actions">
         <div className={`clinical-score-chip severity-${riskScore >= 11 ? "critical" : riskScore >= 8 ? "warning" : "stable"}`}>
-          <span className="clinical-score-chip-label">{doctorMode ? "Role" : "Signal"}</span>
+          <span className="clinical-score-chip-label">{doctorMode ? "Role" : "Repere"}</span>
           <span className="clinical-score-chip-value">{doctorMode ? "MD" : riskScore}</span>
         </div>
         <div className={`clinical-score-chip ${onboardingComplete ? "severity-stable" : "severity-warning"}`}>

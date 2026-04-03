@@ -32,34 +32,34 @@ const Register = () => {
     <section className="auth-stage">
       <div className="container auth-stage-grid">
         <div className="auth-story">
-          <div className="hero-kicker">First access</div>
-          <h1 className="auth-title">Ouvrir un parcours qui transforme la fumee en donnees exploitables.</h1>
+          <div className="hero-kicker">Premier acces</div>
+          <h1 className="auth-title">Ouvrir un parcours clinique calme, structure et plus facile a suivre.</h1>
           <p className="auth-copy">
-            Le nouvel utilisateur entre d'abord dans un sas clinique. Les patients ouvrent ensuite le dossier initial.
-            Les medecins accedent a un workspace de lecture, tri et validation des plans.
+            Le nouvel utilisateur commence par un cadre simple: profil personnel, evaluation guidee,
+            puis lecture clinique cote medecin dans un espace plus lisible.
           </p>
 
           <div className="auth-story-matrix">
             <div className="matrix-card">
               <span>Phase 1</span>
-              <strong>Onboarding force</strong>
+              <strong>Profil personnel</strong>
             </div>
             <div className="matrix-card">
               <span>Phase 2</span>
-              <strong>Scoring + notes</strong>
+              <strong>Evaluation + scoring</strong>
             </div>
             <div className="matrix-card">
               <span>Phase 3</span>
-              <strong>Plan + respiration</strong>
+              <strong>Plan + suivi</strong>
             </div>
           </div>
         </div>
 
         <div className="auth-card-shell">
           <div className="auth-card">
-            <div className="hero-kicker">Clinical account</div>
+            <div className="hero-kicker">Compte clinique</div>
             <h2 className="auth-card-title">Creer un compte</h2>
-            <p className="muted-text">Choisissez votre role clinique avant la premiere connexion.</p>
+            <p className="muted-text">Choisissez votre role avant la premiere connexion.</p>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}
 
@@ -106,7 +106,7 @@ const Register = () => {
               />
 
               <button className="btn btn-dark w-100" disabled={loading}>
-                {loading ? "Creation..." : "Activer le parcours clinique"}
+                {loading ? "Creation..." : "Activer mon espace"}
               </button>
             </form>
 

@@ -25,14 +25,19 @@ import com.neuralconsult.sevrage.medical.tests.FagerstromTest;
 import com.neuralconsult.sevrage.medical.tests.FagerstromTestRepository;
 import com.neuralconsult.sevrage.medical.tests.HadTest;
 import com.neuralconsult.sevrage.medical.tests.HadTestRepository;
+import com.neuralconsult.sevrage.medical.tests.dto.FagerstromTestResponse;
+import com.neuralconsult.sevrage.medical.tests.dto.HadTestResponse;
 import com.neuralconsult.sevrage.onboarding.OnboardingAssessment;
 import com.neuralconsult.sevrage.onboarding.OnboardingRepository;
 import com.neuralconsult.sevrage.onboarding.dto.OnboardingAssessmentResponse;
 import com.neuralconsult.sevrage.patient.PatientProfile;
+import com.neuralconsult.sevrage.report.DailyReport;
+import com.neuralconsult.sevrage.report.DailyReportRepository;
+import com.neuralconsult.sevrage.report.dto.DailyReportResponse;
 import com.neuralconsult.sevrage.user.dto.PatientProfileResponse;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
-import java.util.List;
+import jakarta.transaction.Transactional;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
@@ -58,6 +63,7 @@ public class DoctorController {
   private final OnboardingRepository onboardingRepository;
   private final FagerstromTestRepository fagerstromTestRepository;
   private final HadTestRepository hadTestRepository;
+  private final DailyReportRepository dailyReportRepository;
   private final ClinicalNoteRepository clinicalNoteRepository;
   private final AiPhaseSummaryRepository aiPhaseSummaryRepository;
   private final AiGlobalSummaryRepository aiGlobalSummaryRepository;
@@ -73,6 +79,7 @@ public class DoctorController {
       OnboardingRepository onboardingRepository,
       FagerstromTestRepository fagerstromTestRepository,
       HadTestRepository hadTestRepository,
+      DailyReportRepository dailyReportRepository,
       ClinicalNoteRepository clinicalNoteRepository,
       AiPhaseSummaryRepository aiPhaseSummaryRepository,
       AiGlobalSummaryRepository aiGlobalSummaryRepository,
@@ -87,6 +94,7 @@ public class DoctorController {
     this.onboardingRepository = onboardingRepository;
     this.fagerstromTestRepository = fagerstromTestRepository;
     this.hadTestRepository = hadTestRepository;
+    this.dailyReportRepository = dailyReportRepository;
     this.clinicalNoteRepository = clinicalNoteRepository;
     this.aiPhaseSummaryRepository = aiPhaseSummaryRepository;
     this.aiGlobalSummaryRepository = aiGlobalSummaryRepository;
@@ -112,7 +120,7 @@ public class DoctorController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public List<DoctorProfileResponse> listDoctors(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return doctorProfileService.listMatchesForPatient(user).stream()
@@ -121,7 +129,7 @@ public class DoctorController {
   }
 
   @PostMapping("/requests")
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public DoctorPatientRequestResponse sendRequest(@AuthenticationPrincipal UserDetails principal,
                                                   @RequestBody DoctorPatientRequestCreateRequest request) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
@@ -135,7 +143,8 @@ public class DoctorController {
   }
 
   @GetMapping("/requests/patient")
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
+  @Transactional
   public List<DoctorPatientRequestResponse> listPatientRequests(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return requestService.listForPatient(user).stream().map(this::toRequestResponse).toList();
@@ -143,6 +152,7 @@ public class DoctorController {
 
   @GetMapping("/requests/doctor")
   @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  @Transactional
   public List<DoctorPatientRequestResponse> listDoctorRequests(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return requestService.listForDoctor(user).stream().map(this::toRequestResponse).toList();
@@ -180,6 +190,7 @@ public class DoctorController {
 
   @GetMapping("/patients")
   @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  @Transactional
   public List<DoctorPatientSummaryResponse> listAssignedPatients(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return requestService.listAssignments(user).stream()
@@ -196,19 +207,33 @@ public class DoctorController {
 
   @GetMapping("/patients/{patientProfileId}/dossier")
   @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  @Transactional
   public DoctorPatientDossierResponse getPatientDossier(@AuthenticationPrincipal UserDetails principal,
                                                         @PathVariable UUID patientProfileId) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     DoctorProfile doctorProfile = doctorProfileRepository.findByUser(user).orElseThrow();
-    PatientProfile patientProfile = assignmentRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile).stream()
+    Optional<PatientProfile> assignedPatient = assignmentRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile).stream()
         .map(DoctorPatientAssignment::getPatientProfile)
         .filter(profile -> profile.getId().equals(patientProfileId))
-        .findFirst()
-        .orElseThrow();
+        .findFirst();
+    PatientProfile patientProfile = assignedPatient.orElseGet(() ->
+        requestService.listForDoctor(user).stream()
+            .map(DoctorPatientRequest::getPatientProfile)
+            .filter(profile -> profile.getId().equals(patientProfileId))
+            .findFirst()
+            .orElseThrow()
+    );
 
     OnboardingAssessment assessment = onboardingRepository.findByPatientProfile(patientProfile).orElse(null);
     FagerstromTest latestFager = fagerstromTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(patientProfile).orElse(null);
     HadTest latestHad = hadTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(patientProfile).orElse(null);
+    List<FagerstromTest> fagerstromHistory = fagerstromTestRepository.findAllByPatientProfileOrderByCreatedAtDesc(patientProfile);
+    List<HadTest> hadHistory = hadTestRepository.findAllByPatientProfileOrderByCreatedAtDesc(patientProfile);
+    List<DailyReport> dailyReports = dailyReportRepository.findAllByPatientProfileAndReportDateBetween(
+        patientProfile,
+        java.time.LocalDate.now().minusDays(30),
+        java.time.LocalDate.now()
+    );
     ClinicalNote note = clinicalNoteRepository.findByPatientProfile(patientProfile).orElse(null);
     List<AiPhaseSummary> phaseSummaries = aiPhaseSummaryRepository.findAllByPatientProfileOrderByPhaseIdAsc(patientProfile);
     AiGlobalSummary globalSummary = aiGlobalSummaryRepository.findByPatientProfile(patientProfile).orElse(null);
@@ -241,6 +266,9 @@ public class DoctorController {
                 latestHad.getCreatedAt()
             )
             : null,
+        fagerstromHistory.stream().map(this::toResponse).toList(),
+        hadHistory.stream().map(this::toResponse).toList(),
+        dailyReports.stream().map(this::toResponse).toList(),
         note != null
             ? new ClinicalNoteResponse(
                 note.getMedicalSummary(),
@@ -426,6 +454,60 @@ public class DoctorController {
         assessment.getHoncQ10(),
         assessment.getHoncScore(),
         assessment.getHoncHighDependence()
+    );
+  }
+
+  private FagerstromTestResponse toResponse(FagerstromTest test) {
+    return new FagerstromTestResponse(
+        test.getId(),
+        test.getCreatedAt(),
+        test.getTimeToFirstCigarette(),
+        test.isDifficultToRefrain(),
+        test.getMostDifficultCigarette(),
+        test.getCigarettesPerDay(),
+        test.isSmokeMoreInMorning(),
+        test.isSmokeWhenIll(),
+        test.getTotalScore(),
+        test.getDependenceLevel() != null ? test.getDependenceLevel().name() : null
+    );
+  }
+
+  private HadTestResponse toResponse(HadTest test) {
+    return new HadTestResponse(
+        test.getId(),
+        test.getCreatedAt(),
+        test.getQ1(),
+        test.getQ2(),
+        test.getQ3(),
+        test.getQ4(),
+        test.getQ5(),
+        test.getQ6(),
+        test.getQ7(),
+        test.getQ8(),
+        test.getQ9(),
+        test.getQ10(),
+        test.getQ11(),
+        test.getQ12(),
+        test.getQ13(),
+        test.getQ14(),
+        test.getAnxietyScore(),
+        test.getAnxietyInterpretation() != null ? test.getAnxietyInterpretation().name() : null,
+        test.getDepressionScore(),
+        test.getDepressionInterpretation() != null ? test.getDepressionInterpretation().name() : null
+    );
+  }
+
+  private DailyReportResponse toResponse(DailyReport report) {
+    return new DailyReportResponse(
+        report.getId(),
+        report.getReportDate(),
+        report.getCigarettesSmoked(),
+        report.getCravingsIntensity(),
+        report.getMoodScore(),
+        report.getStressScore(),
+        report.getUsedNrt(),
+        report.getRelapseEvent(),
+        report.getNotes()
     );
   }
 }

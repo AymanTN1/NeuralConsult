@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import { chartTheme } from "../theme/chartTheme";
 
 const severityFromScore = (score) => {
   if (score >= 11) return "critical";
@@ -126,10 +127,10 @@ const Dashboard = () => {
     <div className={`app-page dashboard-stage dashboard-stage-${stage}`}>
       <section className="dashboard-command">
         <div className="dashboard-command-copy">
-          <div className="hero-kicker">Clinical command center</div>
-          <h2 className="dashboard-title">Le poste clinique ne montre pas juste des donnees. Il montre la trajectoire du patient.</h2>
+          <div className="hero-kicker">Tableau de bord clinique</div>
+          <h2 className="dashboard-title">Un espace plus calme pour lire la trajectoire du patient sans surcharge visuelle.</h2>
           <p className="muted-text">
-            Le brouillard se retire, les signaux deviennent plus nets et le temps de vie gagne prend la premiere place.
+            Les scores, le journal quotidien et les notes cliniques restent visibles, mais dans une interface plus douce et plus rassurante.
           </p>
         </div>
 
@@ -145,7 +146,7 @@ const Dashboard = () => {
 
       <section className="life-gain-panel">
         <div className="life-gain-main">
-          <span className="life-gain-label">Time of Life Gained</span>
+          <span className="life-gain-label">Temps de vie gagne</span>
           <strong>{formatLifeGain(lifeMinutesGained)}</strong>
           <p>
             Estimation mise en avant pour rappeler que la mission du produit reste la recuperation physiologique, pas la simple economie.
@@ -183,7 +184,7 @@ const Dashboard = () => {
         </article>
 
         <article className={`score-orb severity-${severityFromScore(riskFocus)}`}>
-          <span>Signal global</span>
+          <span>Repere global</span>
           <strong>{riskFocus}</strong>
           <p>Le glow s'intensifie quand le score devient critique.</p>
         </article>
@@ -202,20 +203,13 @@ const Dashboard = () => {
           <div className="dashboard-chart-wrap">
             <ResponsiveContainer>
               <LineChart data={hadTrend}>
-                <CartesianGrid stroke="rgba(124, 214, 255, 0.12)" strokeDasharray="4 4" />
-                <XAxis dataKey="date" stroke="#9cb0c4" />
-                <YAxis stroke="#9cb0c4" />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(8, 14, 24, 0.92)",
-                    border: "1px solid rgba(124, 214, 255, 0.16)",
-                    borderRadius: 18,
-                    color: "#eaf7ff"
-                  }}
-                />
+                <CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" />
+                <XAxis dataKey="date" stroke={chartTheme.axis} />
+                <YAxis stroke={chartTheme.axis} />
+                <Tooltip contentStyle={chartTheme.tooltip} />
                 <Legend />
-                <Line type="monotone" dataKey="anxiete" stroke="#74e6ff" strokeWidth={3} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="depression" stroke="#ff7b7b" strokeWidth={3} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="anxiete" stroke={chartTheme.anxiety} strokeWidth={3} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="depression" stroke={chartTheme.depression} strokeWidth={3} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -235,29 +229,22 @@ const Dashboard = () => {
               <AreaChart data={habitTrend}>
                 <defs>
                   <linearGradient id="cravingsFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#74e6ff" stopOpacity={0.42} />
-                    <stop offset="100%" stopColor="#74e6ff" stopOpacity={0} />
+                    <stop offset="0%" stopColor={chartTheme.cravingsFillTop} />
+                    <stop offset="100%" stopColor={chartTheme.cravingsFillBottom} />
                   </linearGradient>
                   <linearGradient id="stressFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff7b7b" stopOpacity={0.38} />
-                    <stop offset="100%" stopColor="#ff7b7b" stopOpacity={0} />
+                    <stop offset="0%" stopColor={chartTheme.stressFillTop} />
+                    <stop offset="100%" stopColor={chartTheme.stressFillBottom} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(124, 214, 255, 0.12)" strokeDasharray="4 4" />
-                <XAxis dataKey="date" stroke="#9cb0c4" />
-                <YAxis stroke="#9cb0c4" />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(8, 14, 24, 0.92)",
-                    border: "1px solid rgba(124, 214, 255, 0.16)",
-                    borderRadius: 18,
-                    color: "#eaf7ff"
-                  }}
-                />
+                <CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" />
+                <XAxis dataKey="date" stroke={chartTheme.axis} />
+                <YAxis stroke={chartTheme.axis} />
+                <Tooltip contentStyle={chartTheme.tooltip} />
                 <Legend />
-                <Area type="monotone" dataKey="cravings" stroke="#74e6ff" fill="url(#cravingsFill)" strokeWidth={2} />
-                <Area type="monotone" dataKey="stress" stroke="#ff7b7b" fill="url(#stressFill)" strokeWidth={2} />
-                <Line type="monotone" dataKey="cigarettes" stroke="#f4f7fb" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="cravings" stroke={chartTheme.cravings} fill="url(#cravingsFill)" strokeWidth={2} />
+                <Area type="monotone" dataKey="stress" stroke={chartTheme.stress} fill="url(#stressFill)" strokeWidth={2} />
+                <Line type="monotone" dataKey="cigarettes" stroke={chartTheme.cigarettes} strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

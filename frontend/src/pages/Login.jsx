@@ -32,18 +32,18 @@ const Login = () => {
     <section className="auth-stage">
       <div className="container auth-stage-grid">
         <div className="auth-story">
-          <div className="hero-kicker">Secure clinical access</div>
-          <h1 className="auth-title">Reconnecter le patient a une interface qui respire avec lui.</h1>
+          <div className="hero-kicker">Acces clinique apaise</div>
+          <h1 className="auth-title">Reconnecter le patient a une interface plus douce, plus lisible et plus rassurante.</h1>
           <p className="auth-copy">
-            Retrouver le dashboard, la note clinique, les scores evolutifs et le protocole de sevrage
-            dans une meme station de travail sombre, precise et apaisante.
+            Retrouver le tableau de bord, les scores, la note clinique et le protocole de sevrage
+            dans un espace de travail qui privilegie le calme et la comprehension.
           </p>
 
           <div className="auth-story-pulse">
             <div className="pulse-ring" />
             <div className="pulse-core">
               <span>HAD / Fagerstrom</span>
-              <strong>Signal clinique centralise</strong>
+              <strong>Repères cliniques centralises</strong>
             </div>
           </div>
 
@@ -67,7 +67,7 @@ const Login = () => {
           <div className="auth-card">
             <div className="hero-kicker">Authentication</div>
             <h2 className="auth-card-title">Connexion</h2>
-            <p className="muted-text">Accedez a votre poste clinique sans quitter le contexte patient.</p>
+            <p className="muted-text">Accedez a votre espace clinique et reprenez le suivi la ou il s'etait arrete.</p>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}
 
@@ -93,7 +93,7 @@ const Login = () => {
               />
 
               <button className="btn btn-dark w-100" disabled={loading}>
-                {loading ? "Connexion..." : "Entrer dans le poste clinique"}
+                {loading ? "Connexion..." : "Entrer dans l'espace clinique"}
               </button>
             </form>
 

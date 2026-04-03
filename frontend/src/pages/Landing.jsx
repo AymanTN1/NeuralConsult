@@ -23,37 +23,37 @@ const defaultCalculator = {
 
 const commandCards = [
   {
-    title: "Clinical Intake",
+    title: "Parcours structure",
     copy:
-      "First login routes every incomplete patient directly into the structured evaluation timeline: context, medical risks, smoking habits, dependency scoring and vulnerability.",
+      "Le premier acces oriente le patient vers une evaluation claire et progressive: contexte, risques, habitudes, dependance et vulnerabilite sociale.",
     icon: "bi bi-clipboard2-pulse"
   },
   {
-    title: "AI Decision Layer",
+    title: "Aide clinique IA",
     copy:
-      "The platform progressively turns raw answers into clinical signals, treatment plans and validated summaries instead of leaving the dossier as inert form data.",
+      "L'interface transforme les reponses en repères cliniques, syntheses utiles et plans candidats sans laisser le dossier sous forme de formulaire brut.",
     icon: "bi bi-cpu"
   }
 ];
 
 const interruptionBlocks = [
   {
-    kicker: "Oxygene",
-    title: "Le manque n'est pas visuel. Il est biologique.",
+    kicker: "Apaisement",
+    title: "Le sevrage a besoin d'un cadre lisible et non agressif.",
     copy:
-      "Le design veut provoquer une prise de conscience avant l'authentification: chaque cigarette consomme du souffle, du budget et de la marge de recuperation."
+      "La landing a ete adoucie pour reduire la surcharge sensorielle et laisser plus de place aux repères utiles: souffle, progression et soutien clinique."
   },
   {
-    kicker: "Dependance",
-    title: "La nicotine s'installe dans les habitudes, le psychisme et le contexte social.",
+    kicker: "Repères",
+    title: "La dependance est physique, psychique et contextuelle.",
     copy:
-      "L'experience raconte cette densite clinique avec une fumee lourde au debut, puis un espace qui se clarifie a mesure que l'utilisateur avance."
+      "Le parcours explique les dimensions du dossier sans dramatiser visuellement, pour aider le patient a rester present et engage."
   },
   {
-    kicker: "Regeneration",
-    title: "Le retour vers la sante doit etre visible, pas abstrait.",
+    kicker: "Recuperation",
+    title: "Le retour vers la sante doit etre visible et rassurant.",
     copy:
-      "Le bio-hologramme pulmonaire montre le cout de la combustion en temps reel, puis rappelle pourquoi l'intervention clinique doit interrompre cette trajectoire."
+      "La scene 3D garde un role pedagogique, mais avec une palette plus douce et une respiration visuelle plus compatible avec un public anxieux ou en manque."
   }
 ];
 
@@ -184,7 +184,7 @@ const Landing = () => {
 
       <section className="landing-scroll-theater" ref={sceneScrollRef}>
         <div className="landing-scroll-sticky">
-          <Suspense fallback={<div className="landing-scene-fallback">Activation du bio-hologramme...</div>}>
+          <Suspense fallback={<div className="landing-scene-fallback">Preparation de la visualisation clinique...</div>}>
             <CinematicLandingScene progress={scrollProgress} scrollVelocity={velocityLevel} />
           </Suspense>
         </div>
@@ -193,23 +193,23 @@ const Landing = () => {
       <section className="landing-command-section">
         <div className="container command-section-inner">
           <div className="command-section-head">
-            <div className="hero-kicker">Command Modules</div>
+            <div className="hero-kicker">Repères cliniques</div>
             <h2 className="section-title">
-              Des modules centraux.
+              Des espaces calmes.
               <br />
-              Pas des widgets secondaires.
+              Pas une interface qui brusque.
             </h2>
             <p className="muted-text">
-              Le calculateur d'impact et l'acces clinique sont places au centre comme deux consoles
-              majeures de decision, dans un langage visuel beaucoup plus medical et cinematographique.
+              Le calculateur d'impact et l'acces clinique restent centraux, mais dans un langage
+              visuel plus respirable, plus doux et plus compatible avec l'accompagnement du sevrage.
             </p>
           </div>
 
           <div className="landing-command-grid">
             <div className="landing-command-card landing-command-card-impact">
               <div className="landing-command-card-head">
-                <span className="landing-command-badge">Savings & CO2 Mirror</span>
-                <strong>Command module A</strong>
+                <span className="landing-command-badge">Repere d'impact</span>
+                <strong>Module patient</strong>
               </div>
 
               <div className="landing-command-body">
@@ -295,20 +295,20 @@ const Landing = () => {
 
             <div className="landing-command-card landing-command-card-auth">
               <div className="landing-command-card-head">
-                <span className="landing-command-badge">Clinical Access</span>
-                <strong>Command module B</strong>
+                <span className="landing-command-badge">Acces clinique</span>
+                <strong>Module d'entree</strong>
               </div>
 
               <div className="landing-auth-module">
                 <h3>Entrer dans l'espace clinique</h3>
                 <p>
-                  Authentifiez-vous pour ouvrir l'evaluation obligatoire, separer le profil personnel
-                  du dossier clinique et activer le parcours de sevrage guide.
+                  Connectez-vous pour commencer par le profil personnel, puis poursuivre l'evaluation
+                  clinique dans un parcours structure et accompagne.
                 </p>
 
                 <div className="landing-auth-actions">
                   <Link to="/login" className="btn btn-dark btn-lg">
-                    Login
+                    Se connecter
                   </Link>
                   <Link to="/register" className="btn btn-outline-dark btn-lg">
                     Creer un compte
@@ -347,15 +347,15 @@ const Landing = () => {
       <section className="landing-roadmap-centered">
         <div className="container roadmap-centered-inner">
           <div className="roadmap-centered-head">
-            <div className="hero-kicker">Phase Roadmap</div>
+            <div className="hero-kicker">Parcours clinique</div>
             <h2 className="section-title">
               Une timeline centrale.
               <br />
-              Des phases plus massives.
+              Des etapes plus lisibles.
             </h2>
             <p className="muted-text">
-              Cliquer sur une phase ouvre une carte centrale dominante qui explique les objectifs cliniques
-              de cette etape du programme.
+              Chaque phase s'ouvre comme un repère explicatif, pour montrer au patient et au medecin
+              ce qui est explore et pourquoi.
             </p>
           </div>
 
@@ -407,11 +407,11 @@ const Landing = () => {
       <section className="landing-final-cta">
         <div className="container landing-final-cta-inner">
           <div>
-            <div className="hero-kicker">Pure Oxygen</div>
-            <h2 className="section-title">La clarte commence quand la combustion s'arrete.</h2>
+            <div className="hero-kicker">Calme clinique</div>
+            <h2 className="section-title">La clarte clinique commence quand l'interface laisse respirer.</h2>
             <p className="muted-text">
-              Landing immersive pour attirer, evaluation structuree pour qualifier, et intelligence clinique
-              pour traduire le dossier en expertise exploitable.
+              Une premiere impression plus apaisante, une evaluation structuree, puis une intelligence
+              clinique qui transforme les reponses en aide exploitable pour le medecin.
             </p>
           </div>
 

@@ -31,6 +31,22 @@ public class DoctorPatientRequestService {
   @Transactional
   public DoctorPatientRequest create(User patientUser, DoctorProfile doctorProfile, String message, DoctorPatientRequest.MatchingMode mode, Integer score) {
     PatientProfile patientProfile = patientProfileService.getOrCreate(patientUser);
+    DoctorPatientRequest existingPending = requestRepository
+        .findFirstByPatientProfileAndDoctorProfileAndStatusOrderByCreatedAtDesc(
+            patientProfile,
+            doctorProfile,
+            DoctorPatientRequest.RequestStatus.PENDING
+        )
+        .orElse(null);
+    if (existingPending != null) {
+      if (message != null && !message.isBlank()) {
+        existingPending.setPatientMessage(message);
+      }
+      existingPending.setMatchingMode(mode);
+      existingPending.setMatchingScore(score);
+      return requestRepository.save(existingPending);
+    }
+
     DoctorPatientRequest request = new DoctorPatientRequest();
     request.setPatientProfile(patientProfile);
     request.setDoctorProfile(doctorProfile);
@@ -73,6 +89,19 @@ public class DoctorPatientRequestService {
       assignment.setActive(true);
       assignment.setAssignedAt(Instant.now());
       assignmentRepository.save(assignment);
+
+      requestRepository.findAllByDoctorProfileAndPatientProfileAndStatus(
+              doctorProfile,
+              request.getPatientProfile(),
+              DoctorPatientRequest.RequestStatus.PENDING
+          ).stream()
+          .filter(candidate -> !candidate.getId().equals(saved.getId()))
+          .forEach(candidate -> {
+            candidate.setStatus(DoctorPatientRequest.RequestStatus.CANCELLED);
+            candidate.setDoctorResponseNote("Une autre demande pour ce patient a deja ete traitee.");
+            candidate.setAnsweredAt(Instant.now());
+            requestRepository.save(candidate);
+          });
     }
     return saved;
   }

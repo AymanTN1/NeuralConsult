@@ -15,7 +15,7 @@ const TopNav = () => {
             <i className="bi bi-plus-square-fill" />
           </span>
           <span>
-            <span className="public-brand-eyebrow">Sevrage intelligence</span>
+            <span className="public-brand-eyebrow">Accompagnement clinique</span>
             <span className="public-brand-title">NeuralConsult</span>
           </span>
         </Link>
@@ -38,10 +38,10 @@ const TopNav = () => {
           ) : (
             <>
               <Link to="/login" className="btn btn-outline-dark btn-sm">
-                Login
+                Connexion
               </Link>
               <Link to="/register" className="btn btn-dark btn-sm">
-                Get Help
+                Commencer
               </Link>
             </>
           )}

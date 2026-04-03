@@ -39,14 +39,14 @@ public class ClinicalIntelligenceController {
   }
 
   @PostMapping("/generate")
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public ClinicalIntelligenceResponse generate(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return toResponse(clinicalIntelligenceService.generateAndSave(user));
   }
 
   @GetMapping
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public ClinicalIntelligenceResponse current(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return clinicalIntelligenceService.getCurrent(user).map(this::toResponse).orElse(null);

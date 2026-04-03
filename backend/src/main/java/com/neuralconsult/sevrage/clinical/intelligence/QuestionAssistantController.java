@@ -27,7 +27,7 @@ public class QuestionAssistantController {
   }
 
   @PostMapping("/assist")
-  @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public QuestionAssistantResponse assist(@AuthenticationPrincipal UserDetails principal,
                                           @RequestBody QuestionAssistantRequest request) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();

@@ -2,8 +2,8 @@ import React, { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-const SMOKE_COUNT = 980;
-const SOOT_COUNT = 320;
+const SMOKE_COUNT = 620;
+const SOOT_COUNT = 140;
 const SMOKE_PLUMES = Array.from({ length: 11 }, (_, index) => ({
   id: index,
   drift: ((index % 4) - 1.5) * 16,
@@ -249,27 +249,27 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
 
   const burnProgress = THREE.MathUtils.clamp(progress, 0, 1);
   const shellColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#a92f38"), new THREE.Color("#545051"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#bd8c83"), new THREE.Color("#7a7972"), burnProgress),
     [burnProgress]
   );
   const tarColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#5a4337"), new THREE.Color("#272424"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#8f7a6d"), new THREE.Color("#58574f"), burnProgress),
     [burnProgress]
   );
   const clinicalGlow = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#61161b"), new THREE.Color("#2c2828"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#6c8d87"), new THREE.Color("#4f5a55"), burnProgress),
     [burnProgress]
   );
   const fissureColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#7f252c"), new THREE.Color("#1f1c1c"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#8d6b65"), new THREE.Color("#4f4d48"), burnProgress),
     [burnProgress]
   );
   const branchColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#8f4f4f"), new THREE.Color("#343030"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#8aa19c"), new THREE.Color("#5f6864"), burnProgress),
     [burnProgress]
   );
   const smokeColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#c6c8ca"), new THREE.Color("#55504f"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#d7dfdb"), new THREE.Color("#909791"), burnProgress),
     [burnProgress]
   );
 
@@ -278,8 +278,8 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
     const lungPulse = 1 + Math.sin(elapsed * 1.25) * 0.018;
     const breathCompression = 1 - burnProgress * 0.16;
     const toxicShift = 0.18 + burnProgress * 0.62;
-    const smokeOpacity = THREE.MathUtils.clamp(0.18 + burnProgress * 0.52 + scrollVelocity * 0.2, 0.18, 0.94);
-    const sootOpacity = THREE.MathUtils.clamp(0.08 + burnProgress * 0.52, 0.08, 0.82);
+    const smokeOpacity = THREE.MathUtils.clamp(0.12 + burnProgress * 0.28 + scrollVelocity * 0.12, 0.12, 0.48);
+    const sootOpacity = THREE.MathUtils.clamp(0.04 + burnProgress * 0.28, 0.04, 0.36);
 
     [leftShellRef.current, rightShellRef.current].forEach((lung) => {
       if (!lung) return;
@@ -391,7 +391,7 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
       ].map((lung) => (
         <group key={lung.id} position={[lung.x, -0.08, 0]} rotation={lung.rotation}>
           <mesh ref={lung.shellRef} geometry={lung.geometry}>
-            <meshStandardMaterial color="#a92f38" emissive="#5a181d" emissiveIntensity={0.03} roughness={0.86} metalness={0.02} />
+            <meshStandardMaterial color="#bd8c83" emissive="#6c8d87" emissiveIntensity={0.03} roughness={0.86} metalness={0.02} />
           </mesh>
 
           <mesh ref={lung.tarRef} geometry={lung.geometry} position={[0, 0, 0.06]} renderOrder={2}>
@@ -458,12 +458,12 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
           />
         </bufferGeometry>
         <pointsMaterial
-          color="#c9cbcf"
-          size={0.16}
-          transparent
-          opacity={0.42}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
+              color="#d7dfdb"
+              size={0.16}
+              transparent
+              opacity={0.24}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
         />
       </points>
 
@@ -476,7 +476,7 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
             itemSize={3}
           />
         </bufferGeometry>
-        <pointsMaterial color="#251815" size={0.08} transparent opacity={0.26} depthWrite={false} />
+        <pointsMaterial color="#6a655f" size={0.06} transparent opacity={0.12} depthWrite={false} />
       </points>
     </group>
   );
@@ -485,12 +485,12 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
 const HologramScene = ({ progress, scrollVelocity }) => (
   <div className="cinematic-canvas-shell" aria-hidden="true">
     <Canvas camera={{ position: [0, 0.3, 8.2], fov: 32 }}>
-      <color attach="background" args={["#050811"]} />
-      <fog attach="fog" args={["#050811", 8, 17]} />
-      <ambientLight intensity={0.14} color="#452323" />
-      <directionalLight position={[4, 4, 6]} intensity={0.42} color="#ffcdc4" />
-      <pointLight position={[0, 2.6, 2.2]} intensity={0.34} color="#ff8573" />
-      <pointLight position={[0, -1.4, 1.8]} intensity={0.22} color="#d0d0d0" />
+      <color attach="background" args={["#0f1716"]} />
+      <fog attach="fog" args={["#0f1716", 8, 17]} />
+      <ambientLight intensity={0.24} color="#88a69f" />
+      <directionalLight position={[4, 4, 6]} intensity={0.46} color="#f2e0cf" />
+      <pointLight position={[0, 2.6, 2.2]} intensity={0.28} color="#9fbba4" />
+      <pointLight position={[0, -1.4, 1.8]} intensity={0.22} color="#b8cbd2" />
       <BioLungSystem progress={progress} scrollVelocity={scrollVelocity} />
     </Canvas>
   </div>
@@ -499,31 +499,31 @@ const HologramScene = ({ progress, scrollVelocity }) => (
 const CinematicLandingScene = ({ progress, scrollVelocity }) => {
   const burnProgress = THREE.MathUtils.clamp(progress, 0, 1);
   const cigaretteBodyScale = Math.max(0.12, 1 - burnProgress * 0.84);
-  const smokeDensity = THREE.MathUtils.clamp(0.34 + burnProgress * 0.56 + scrollVelocity * 0.2, 0.34, 1);
-  const emberGlow = 18 + burnProgress * 28 + scrollVelocity * 16;
-  const statusTone = burnProgress < 0.34 ? "Etat sain" : burnProgress < 0.68 ? "Etat altere" : "Etat critique";
+  const smokeDensity = THREE.MathUtils.clamp(0.18 + burnProgress * 0.3 + scrollVelocity * 0.12, 0.18, 0.62);
+  const emberGlow = 8 + burnProgress * 12 + scrollVelocity * 8;
+  const statusTone = burnProgress < 0.34 ? "Repere initial" : burnProgress < 0.68 ? "Repere en cours" : "Repere de vigilance";
 
   return (
     <div className="cinematic-stage">
       <HologramScene progress={burnProgress} scrollVelocity={scrollVelocity} />
 
       <div className="cinematic-stage-copy">
-        <div className="hero-kicker">Cinematic Clinical</div>
+        <div className="hero-kicker">Restorative Clinical</div>
         <h1 className="landing-title cinematic-title">
-          Mirror the burn.
+          Respirez plus calmement.
           <br />
-          Recover the breath.
+          Reprenez de l'air.
         </h1>
         <p className="landing-lead cinematic-lead">
-          The cigarette burns in place while the lung hologram records the biological cost in real time:
-          more tar, less reserve, and a clearer reason to interrupt the trajectory clinically.
+          La scene 3D reste pedagogique, mais avec une palette plus douce: elle montre la recuperation
+          respiratoire, le poids de la dependance et le besoin d'un accompagnement clinique stable.
         </p>
       </div>
 
       <div className="sticky-cigarette-shell">
         <div className="sticky-cigarette-caption">
-          <span>Chronic cigarette</span>
-          <strong>{Math.round(burnProgress * 100)}% consumed</strong>
+          <span>Repere de consommation</span>
+          <strong>{Math.round(burnProgress * 100)}% du parcours visuel</strong>
           <em>{statusTone}</em>
         </div>
         <div className="sticky-cigarette-rail">
@@ -535,7 +535,7 @@ const CinematicLandingScene = ({ progress, scrollVelocity }) => {
           <div
             className="sticky-cigarette-ember"
             style={{
-              boxShadow: `0 0 ${emberGlow}px rgba(255, 81, 44, 0.78), 0 0 ${emberGlow * 0.46}px rgba(255, 215, 153, 0.42)`
+              boxShadow: `0 0 ${emberGlow}px rgba(201, 169, 135, 0.42), 0 0 ${emberGlow * 0.46}px rgba(244, 232, 209, 0.24)`
             }}
           />
 

@@ -6,29 +6,56 @@ import com.neuralconsult.sevrage.onboarding.dto.OnboardingRequest;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.user.User;
-import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class OnboardingService {
+
+  private static final Logger log = LoggerFactory.getLogger(OnboardingService.class);
 
   private final OnboardingRepository repository;
   private final PatientProfileService patientProfileService;
   private final ClinicalNotesService clinicalNotesService;
   private final ClinicalIntelligenceService clinicalIntelligenceService;
+  private final TransactionTemplate transactionTemplate;
 
   public OnboardingService(OnboardingRepository repository,
                            PatientProfileService patientProfileService,
                            ClinicalNotesService clinicalNotesService,
-                           ClinicalIntelligenceService clinicalIntelligenceService) {
+                           ClinicalIntelligenceService clinicalIntelligenceService,
+                           PlatformTransactionManager transactionManager) {
     this.repository = repository;
     this.patientProfileService = patientProfileService;
     this.clinicalNotesService = clinicalNotesService;
     this.clinicalIntelligenceService = clinicalIntelligenceService;
+    this.transactionTemplate = new TransactionTemplate(transactionManager);
+  }
+
+  public OnboardingAssessment save(User user, OnboardingRequest request) {
+    OnboardingAssessment saved = transactionTemplate.execute(status -> persistOnboarding(user, request));
+    if (saved == null) {
+      throw new IllegalStateException("Onboarding persistence returned no assessment.");
+    }
+
+    safelyGenerateClinicalNotes(user);
+    safelyGenerateClinicalIntelligence(user);
+
+    return saved;
   }
 
   @Transactional
-  public OnboardingAssessment save(User user, OnboardingRequest request) {
+  public OnboardingAssessment get(User user) {
+    PatientProfile profile = patientProfileService.getOrCreate(user);
+    return repository.findByPatientProfile(profile).orElse(null);
+  }
+
+  @Transactional
+  protected OnboardingAssessment persistOnboarding(User user, OnboardingRequest request) {
     PatientProfile profile = patientProfileService.getOrCreate(user);
     applyProfile(profile, request);
     if (!profile.isOnboardingComplete()) {
@@ -43,18 +70,7 @@ public class OnboardingService {
 
     applyAssessment(assessment, request);
     computeDerivedScores(assessment);
-    OnboardingAssessment saved = repository.save(assessment);
-
-    clinicalNotesService.generateAndSave(user);
-    clinicalIntelligenceService.generateAndSave(user);
-
-    return saved;
-  }
-
-  @Transactional
-  public OnboardingAssessment get(User user) {
-    PatientProfile profile = patientProfileService.getOrCreate(user);
-    return repository.findByPatientProfile(profile).orElse(null);
+    return repository.save(assessment);
   }
 
   private void applyProfile(PatientProfile profile, OnboardingRequest request) {
@@ -244,5 +260,23 @@ public class OnboardingService {
       }
     }
     return total;
+  }
+
+  private void safelyGenerateClinicalNotes(User user) {
+    try {
+      clinicalNotesService.generateAndSave(user);
+    } catch (RuntimeException exception) {
+      log.warn("Clinical notes generation failed after onboarding save for user {}. Keeping onboarding data persisted.",
+          user.getEmail(), exception);
+    }
+  }
+
+  private void safelyGenerateClinicalIntelligence(User user) {
+    try {
+      clinicalIntelligenceService.generateAndSave(user);
+    } catch (RuntimeException exception) {
+      log.warn("Clinical intelligence generation failed after onboarding save for user {}. Keeping onboarding data persisted.",
+          user.getEmail(), exception);
+    }
   }
 }

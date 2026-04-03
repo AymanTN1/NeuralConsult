@@ -50,7 +50,9 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
   }
 
   private boolean isPatient(User user) {
-    return user.getRoles().isEmpty() || user.getRoles().contains("ROLE_PATIENT");
+    return user.getRoles().isEmpty()
+        || user.getRoles().contains("ROLE_PATIENT")
+        || user.getRoles().contains("ROLE_USER");
   }
 
   @Override

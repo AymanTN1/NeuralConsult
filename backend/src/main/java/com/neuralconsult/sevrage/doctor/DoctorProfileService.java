@@ -4,9 +4,11 @@ import com.neuralconsult.sevrage.doctor.dto.DoctorProfileRequest;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.user.User;
+import com.neuralconsult.sevrage.user.UserRepository;
 import jakarta.transaction.Transactional;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,11 +16,14 @@ public class DoctorProfileService {
 
   private final DoctorProfileRepository doctorProfileRepository;
   private final PatientProfileService patientProfileService;
+  private final UserRepository userRepository;
 
   public DoctorProfileService(DoctorProfileRepository doctorProfileRepository,
-                              PatientProfileService patientProfileService) {
+                              PatientProfileService patientProfileService,
+                              UserRepository userRepository) {
     this.doctorProfileRepository = doctorProfileRepository;
     this.patientProfileService = patientProfileService;
+    this.userRepository = userRepository;
   }
 
   @Transactional
@@ -26,7 +31,7 @@ public class DoctorProfileService {
     DoctorProfile profile = doctorProfileRepository.findByUser(user).orElseGet(DoctorProfile::new);
     profile.setUser(user);
     profile.setCity(request.city());
-    profile.setCountryCode(request.countryCode());
+    profile.setCountryCode(normalizeCountryCode(request.countryCode()));
     profile.setSpecialty(request.specialty());
     profile.setBio(request.bio());
     profile.setAcceptsTeleconsultation(Boolean.TRUE.equals(request.acceptsTeleconsultation()));
@@ -42,9 +47,35 @@ public class DoctorProfileService {
   @Transactional
   public List<DoctorMatch> listMatchesForPatient(User user) {
     PatientProfile patientProfile = patientProfileService.getOrCreate(user);
-    return doctorProfileRepository.findAllByActiveTrue().stream()
+    List<DoctorProfile> doctors = ensureMoroccanDoctorProfiles();
+    return doctors.stream()
         .map(doctor -> new DoctorMatch(doctor, matchingMode(patientProfile, doctor), matchingScore(patientProfile, doctor)))
         .sorted(Comparator.comparingInt(DoctorMatch::matchingScore).reversed())
+        .toList();
+  }
+
+  @Transactional
+  protected List<DoctorProfile> ensureMoroccanDoctorProfiles() {
+    List<User> doctorUsers = userRepository.findAllByRole("ROLE_DOCTOR");
+    for (User doctorUser : doctorUsers) {
+      doctorProfileRepository.findByUser(doctorUser).orElseGet(() -> {
+        DoctorProfile profile = new DoctorProfile();
+        profile.setUser(doctorUser);
+        profile.setCountryCode("MA");
+        profile.setSpecialty("Tabacologie");
+        profile.setBio("Profil medecin disponible pour l'accompagnement tabacologique.");
+        profile.setAcceptsTeleconsultation(true);
+        profile.setActive(true);
+        return doctorProfileRepository.save(profile);
+      });
+    }
+
+    return doctorProfileRepository.findAllByActiveTrue().stream()
+        .peek(profile -> {
+          if (profile.getCountryCode() == null || profile.getCountryCode().isBlank()) {
+            profile.setCountryCode("MA");
+          }
+        })
         .toList();
   }
 
@@ -52,17 +83,11 @@ public class DoctorProfileService {
     if (same(patient.getCity(), doctor.getCity())) {
       return DoctorPatientRequest.MatchingMode.SAME_CITY;
     }
-    if (same(patient.getCountryCode(), doctor.getCountryCode())) {
-      return DoctorPatientRequest.MatchingMode.SAME_COUNTRY;
-    }
     return DoctorPatientRequest.MatchingMode.TELECONSULTATION;
   }
 
   private int matchingScore(PatientProfile patient, DoctorProfile doctor) {
     int score = 10;
-    if (same(patient.getCountryCode(), doctor.getCountryCode())) {
-      score += 30;
-    }
     if (same(patient.getCity(), doctor.getCity())) {
       score += 50;
     }
@@ -77,6 +102,13 @@ public class DoctorProfileService {
 
   private boolean same(String left, String right) {
     return left != null && right != null && left.equalsIgnoreCase(right);
+  }
+
+  private String normalizeCountryCode(String countryCode) {
+    if (countryCode == null || countryCode.isBlank()) {
+      return "MA";
+    }
+    return countryCode.trim().toUpperCase(Locale.ROOT);
   }
 
   public record DoctorMatch(

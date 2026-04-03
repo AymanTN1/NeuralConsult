@@ -5,6 +5,8 @@ import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.user.dto.PatientProfileResponse;
 import com.neuralconsult.sevrage.user.dto.ScoresResponse;
 import com.neuralconsult.sevrage.user.dto.UserProfileResponse;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,12 +41,22 @@ public class UserController {
         profile != null
             ? new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
             : null,
-        user.getRoles()
+        normalizeRoles(user)
     );
   }
 
   private boolean isPatient(User user) {
-    return user.getRoles().isEmpty() || user.getRoles().contains("ROLE_PATIENT");
+    return user.getRoles().isEmpty()
+        || user.getRoles().contains("ROLE_PATIENT")
+        || user.getRoles().contains("ROLE_USER");
+  }
+
+  private Set<String> normalizeRoles(User user) {
+    Set<String> roles = new HashSet<>(user.getRoles());
+    if (roles.contains("ROLE_USER")) {
+      roles.add("ROLE_PATIENT");
+    }
+    return roles;
   }
 
   private PatientProfileResponse toProfileResponse(PatientProfile profile) {
