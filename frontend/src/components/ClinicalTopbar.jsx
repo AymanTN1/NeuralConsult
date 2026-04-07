@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { isDoctor, isPatient } from "../utils/roles";
+import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const pageMeta = {
   "/dashboard": {
@@ -37,8 +37,11 @@ const pageMeta = {
 const ClinicalTopbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const adminMode = isAdmin(user);
   const doctorMode = isDoctor(user);
-  const meta = doctorMode
+  const meta = adminMode
+    ? { eyebrow: "Validation clinique", title: "Comptes medecins en attente de validation" }
+    : doctorMode
     ? location.pathname === "/profile"
       ? { eyebrow: "Identite praticien", title: "Profil medecin et positionnement" }
       : { eyebrow: "Espace medecin", title: "Demandes, dossiers et validation de plans" }
@@ -59,8 +62,8 @@ const ClinicalTopbar = () => {
 
       <div className="topbar-actions">
         <div className={`clinical-score-chip severity-${riskScore >= 11 ? "critical" : riskScore >= 8 ? "warning" : "stable"}`}>
-          <span className="clinical-score-chip-label">{doctorMode ? "Role" : "Repere"}</span>
-          <span className="clinical-score-chip-value">{doctorMode ? "MD" : riskScore}</span>
+          <span className="clinical-score-chip-label">{doctorMode || adminMode ? "Role" : "Repere"}</span>
+          <span className="clinical-score-chip-value">{adminMode ? "ADMIN" : doctorMode ? "MD" : riskScore}</span>
         </div>
         <div className={`clinical-score-chip ${onboardingComplete ? "severity-stable" : "severity-warning"}`}>
           <span className="clinical-score-chip-label">Profiling</span>

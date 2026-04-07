@@ -214,7 +214,8 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     ["Specialite", profile?.specialty || "Tabacologie"],
     ["Annees d'experience", profile?.yearsExperience],
     ["Teleconsultation", profile?.acceptsTeleconsultation ? "Oui" : "Non"],
-    ["Score de suivi", profile?.successScore ?? "A definir"]
+    ["Score de suivi", profile?.successScore ?? "A definir"],
+    ["Validation admin", profile?.active ? "Valide" : "En attente"]
   ];
 
   const patientCards = [
@@ -358,6 +359,13 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       {message && (
         <div className={`alert mt-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`}>
           {message.text}
+        </div>
+      )}
+
+      {profile && !profile.active && (
+        <div className="alert alert-warning mt-3">
+          Votre compte medecin est en attente de validation administrateur. Le profil reste modifiable, mais le compte
+          n'est pas encore visible pour les patients.
         </div>
       )}
 

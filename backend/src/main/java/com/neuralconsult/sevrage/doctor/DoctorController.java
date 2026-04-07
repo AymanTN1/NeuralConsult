@@ -128,6 +128,31 @@ public class DoctorController {
         .toList();
   }
 
+  @GetMapping("/admin/pending")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public List<DoctorProfileResponse> listPendingDoctors(@AuthenticationPrincipal UserDetails principal) {
+    userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return doctorProfileService.listPendingApproval().stream()
+        .map(profile -> toResponse(profile, null, null))
+        .toList();
+  }
+
+  @PostMapping("/admin/{doctorProfileId}/approve")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public DoctorProfileResponse approveDoctor(@AuthenticationPrincipal UserDetails principal,
+                                             @PathVariable UUID doctorProfileId) {
+    User adminUser = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toResponse(doctorProfileService.approve(adminUser, doctorProfileId), null, null);
+  }
+
+  @PostMapping("/admin/{doctorProfileId}/reject")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public DoctorProfileResponse rejectDoctor(@AuthenticationPrincipal UserDetails principal,
+                                            @PathVariable UUID doctorProfileId) {
+    User adminUser = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toResponse(doctorProfileService.reject(adminUser, doctorProfileId), null, null);
+  }
+
   @PostMapping("/requests")
   @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
   public DoctorPatientRequestResponse sendRequest(@AuthenticationPrincipal UserDetails principal,
@@ -301,6 +326,7 @@ public class DoctorController {
         profile.getYearsExperience(),
         profile.getSuccessScore(),
         profile.isActive(),
+        profile.getUser().getStatus().name(),
         matchingMode,
         matchingScore
     );

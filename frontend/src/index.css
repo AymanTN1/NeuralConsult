@@ -71,7 +71,9 @@ a {
 .topbar-eyebrow,
 .sidebar-eyebrow,
 .public-brand-eyebrow {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.73rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -3170,6 +3172,360 @@ textarea.form-control:focus {
   margin-top: 1.8rem;
 }
 
+.landing-cinematic > section {
+  position: relative;
+  z-index: 2;
+}
+
+.landing-persistent-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.landing-scroll-theater-persistent {
+  min-height: 180vh;
+}
+
+.landing-scroll-copy-anchor {
+  min-height: 180vh;
+}
+
+.command-section-inner,
+.roadmap-centered-inner,
+.landing-final-cta-inner,
+.interruption-cinematic-inner {
+  position: relative;
+  z-index: 3;
+}
+
+.auth-stage-grid {
+  min-height: calc(100vh - 6rem);
+  align-items: center;
+}
+
+.auth-story {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.auth-story .auth-copy,
+.auth-story .muted-text {
+  margin-inline: auto;
+}
+
+.auth-story-pulse,
+.auth-feature-list,
+.auth-story-matrix {
+  margin-inline: auto;
+}
+
+.auth-card-shell {
+  align-items: center;
+}
+
+.auth-card {
+  display: grid;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.auth-card .hero-kicker,
+.auth-card-title,
+.auth-alt-link {
+  justify-self: center;
+}
+
+.auth-form {
+  text-align: left;
+}
+
+.auth-doctor-grid {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.4rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(151, 175, 166, 0.12);
+}
+
+.auth-doctor-grid-head {
+  display: grid;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.auth-inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  justify-self: flex-start;
+}
+
+.landing-roadmap-vertical {
+  position: relative;
+  display: grid;
+  gap: 1.55rem;
+  width: min(100%, 1040px);
+  margin-inline: auto;
+  padding: 2rem 0 0.5rem;
+}
+
+.landing-roadmap-vertical::before {
+  content: "";
+  position: absolute;
+  left: 15rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(151, 175, 166, 0.06), rgba(151, 175, 166, 0.28), rgba(151, 175, 166, 0.06));
+  box-shadow: 0 0 22px rgba(143, 182, 192, 0.12);
+}
+
+.landing-roadmap-row {
+  display: grid;
+  grid-template-columns: 11rem 4rem minmax(0, 1fr);
+  gap: 1.35rem;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+}
+
+.landing-roadmap-row-phase {
+  justify-self: end;
+  color: #d5e5de;
+  font-size: 0.86rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.landing-roadmap-row-line {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+}
+
+.landing-roadmap-row-node {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9fd3d8, #a5c8ab);
+  box-shadow:
+    0 0 0 0.5rem rgba(143, 182, 192, 0.12),
+    0 0 26px rgba(143, 182, 192, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+}
+
+.landing-roadmap-row-card {
+  padding: 1.45rem 1.55rem;
+  border-radius: 1.7rem;
+  background: rgba(23, 34, 32, 0.82);
+  border: 1px solid rgba(151, 175, 166, 0.18);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.landing-roadmap-row:hover .landing-roadmap-row-card,
+.landing-roadmap-row:focus-visible .landing-roadmap-row-card,
+.landing-roadmap-row.is-selected .landing-roadmap-row-card {
+  transform: translateY(-4px);
+  background: rgba(28, 40, 38, 0.96);
+  border-color: rgba(151, 175, 166, 0.34);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 0 24px rgba(143, 182, 192, 0.08);
+}
+
+.landing-roadmap-row-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  color: #bcd2cb;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.landing-roadmap-row-card strong {
+  display: block;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  margin-bottom: 0.55rem;
+}
+
+.landing-roadmap-row-card p {
+  margin: 0;
+  color: #cfdbd5;
+  line-height: 1.65;
+}
+
+.landing-roadmap-row-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.landing-roadmap-row-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(151, 175, 166, 0.12);
+  color: #d8e4de;
+  font-size: 0.86rem;
+}
+
+.evaluation-timeline-stage {
+  display: grid;
+  gap: 2rem;
+  padding: 1rem 0 2rem;
+}
+
+.evaluation-journey-head {
+  width: min(100%, 780px);
+  margin-inline: auto;
+  text-align: center;
+}
+
+.evaluation-timeline-centered {
+  position: relative;
+  display: grid;
+  gap: 1.4rem;
+  width: min(100%, 980px);
+  margin-inline: auto;
+  padding: 1rem 0 2rem;
+}
+
+.evaluation-timeline-centered::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(151, 175, 166, 0.04), rgba(143, 182, 192, 0.26), rgba(151, 175, 166, 0.04));
+  box-shadow: 0 0 24px rgba(143, 182, 192, 0.08);
+}
+
+.evaluation-timeline-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 12rem 4.4rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.evaluation-timeline-row-label {
+  justify-self: end;
+  color: #cfe0d9;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.evaluation-timeline-row-center {
+  display: grid;
+  place-items: center;
+  min-height: 7rem;
+}
+
+.evaluation-timeline-row-node {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Sora", sans-serif;
+  color: #081414;
+  background: linear-gradient(135deg, #9fd3d8, #a5c8ab);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  box-shadow:
+    0 0 0 0.55rem rgba(143, 182, 192, 0.12),
+    0 0 24px rgba(143, 182, 192, 0.18);
+}
+
+.evaluation-timeline-row-copy {
+  padding: 1.35rem 1.45rem;
+  border-radius: 1.5rem;
+  background: rgba(23, 34, 32, 0.82);
+  border: 1px solid rgba(151, 175, 166, 0.16);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.evaluation-timeline-row-copy strong {
+  display: block;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+  margin-bottom: 0.45rem;
+}
+
+.evaluation-timeline-row-copy p {
+  margin: 0;
+  color: #cad7d1;
+  line-height: 1.6;
+}
+
+.evaluation-timeline-row:hover .evaluation-timeline-row-copy,
+.evaluation-timeline-row:focus-visible .evaluation-timeline-row-copy,
+.evaluation-timeline-row.is-active .evaluation-timeline-row-copy,
+.evaluation-timeline-row.is-visited .evaluation-timeline-row-copy {
+  transform: translateY(-3px);
+  border-color: rgba(151, 175, 166, 0.3);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 0 18px rgba(143, 182, 192, 0.08);
+}
+
+.evaluation-phase-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: rgba(9, 15, 16, 0.62);
+  backdrop-filter: blur(18px);
+}
+
+.evaluation-phase-modal-dialog {
+  width: min(100%, 1040px);
+  max-height: min(90vh, 980px);
+  overflow-y: auto;
+}
+
+.evaluation-main-panel-modal {
+  padding: 1.5rem !important;
+}
+
+.evaluation-phase-close {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(151, 175, 166, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eaf1ed;
+}
+
 @keyframes drift-smoke {
   0% {
     transform: translate3d(0, 0, 0) scale(0.86);
@@ -3311,6 +3667,29 @@ textarea.form-control:focus {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .landing-roadmap-vertical::before,
+  .evaluation-timeline-centered::before {
+    left: 1.35rem;
+    transform: none;
+  }
+
+  .landing-roadmap-row,
+  .evaluation-timeline-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .landing-roadmap-row-phase,
+  .evaluation-timeline-row-label {
+    justify-self: flex-start;
+  }
+
+  .landing-roadmap-row-line,
+  .evaluation-timeline-row-center {
+    justify-content: flex-start;
+    min-height: auto;
+  }
+
   .landing-floating-cigarette {
     left: auto;
     right: 2rem;
@@ -3411,6 +3790,22 @@ textarea.form-control:focus {
 
   .landing-roadmap-hover-head {
     flex-direction: column;
+  }
+
+  .evaluation-phase-modal {
+    padding: 1rem;
+  }
+
+  .auth-card,
+  .auth-story {
+    justify-items: stretch;
+    text-align: left;
+  }
+
+  .auth-card .hero-kicker,
+  .auth-card-title,
+  .auth-alt-link {
+    justify-self: flex-start;
   }
 
   .profile-card-grid,

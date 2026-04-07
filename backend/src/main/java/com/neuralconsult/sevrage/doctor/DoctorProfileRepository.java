@@ -9,4 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, UUID> {
   Optional<DoctorProfile> findByUser(User user);
   List<DoctorProfile> findAllByActiveTrue();
+  List<DoctorProfile> findAllByActiveFalseOrderByCreatedAtAsc();
 }

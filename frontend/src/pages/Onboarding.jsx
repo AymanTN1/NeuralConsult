@@ -136,6 +136,7 @@ const Onboarding = () => {
   const [scores, setScores] = useState(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantField, setAssistantField] = useState(null);
+  const [isPhasePanelOpen, setIsPhasePanelOpen] = useState(false);
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -174,6 +175,16 @@ const Onboarding = () => {
     if (!fieldName) return;
     setAssistantField(fieldName);
     setAssistantOpen(true);
+  };
+
+  const openPhasePanel = (phaseId) => {
+    setStep(phaseId);
+    setIsPhasePanelOpen(true);
+  };
+
+  const closePhasePanel = () => {
+    setAssistantOpen(false);
+    setIsPhasePanelOpen(false);
   };
 
   const applyAssistantSuggestion = (rawValue) => {
@@ -241,6 +252,7 @@ const Onboarding = () => {
       const { data } = await api.post("/api/onboarding", payload);
       setScores(data?.assessment || null);
       await refetch();
+      setIsPhasePanelOpen(false);
       setMessage({ type: "success", text: "Profiling enregistre. Vous pouvez naviguer dans l'application." });
     } catch (err) {
       const apiError = err?.response?.data?.error || err?.response?.data?.message;
@@ -304,8 +316,19 @@ const Onboarding = () => {
         </div>
       )}
 
-      <div className="evaluation-layout">
-        <aside className="evaluation-timeline">
+      <div className="evaluation-timeline-stage">
+        <div className="evaluation-journey-head">
+          <div>
+            <div className="hero-kicker">Parcours initial</div>
+            <h3 className="mb-2">Cliquez sur une phase pour ouvrir le panel central de questions.</h3>
+            <p className="muted-text mb-0">
+              Le patient ne voit plus une colonne technique et un formulaire brut: il avance par etapes visibles,
+              puis ouvre chaque bloc au centre de l'ecran.
+            </p>
+          </div>
+        </div>
+
+        <div className="evaluation-timeline-centered">
           {CLINICAL_PHASES.map((phase) => {
             const isActive = phase.id === step;
             const isVisited = visitedSteps.includes(phase.id);
@@ -313,32 +336,40 @@ const Onboarding = () => {
               <button
                 key={phase.id}
                 type="button"
-                className={`timeline-phase-card ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}`}
-                onClick={() => setStep(phase.id)}
+                className={`evaluation-timeline-row ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}`}
+                onClick={() => openPhasePanel(phase.id)}
               >
-                <span className="timeline-phase-index">{phase.id}</span>
-                <div>
-                  <div className="timeline-phase-label">{phase.label}</div>
+                <div className="evaluation-timeline-row-label">{phase.label}</div>
+                <div className="evaluation-timeline-row-center">
+                  <span className="evaluation-timeline-row-node">{phase.id}</span>
+                </div>
+                <div className="evaluation-timeline-row-copy">
                   <strong>{phase.title}</strong>
-                  <p>{phase.questionRange}</p>
+                  <p>{phase.summary}</p>
                 </div>
               </button>
             );
           })}
-        </aside>
+        </div>
+      </div>
 
-        <form
-          ref={formRef}
-          onSubmit={handleSubmit}
-          className="card form-card p-3 evaluation-main-panel"
-        >
+      {isPhasePanelOpen && (
+        <div className="evaluation-phase-modal" role="presentation" onClick={closePhasePanel}>
+          <div className="evaluation-phase-modal-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="card form-card p-3 evaluation-main-panel evaluation-main-panel-modal"
+            >
           <div className="evaluation-main-head">
             <div>
               <div className="evaluation-phase-kicker">{selectedPhase.label}</div>
               <h3>{selectedPhase.title}</h3>
               <p className="muted-text mb-0">{selectedPhase.summary}</p>
             </div>
-            <div className="evaluation-range-chip">{selectedPhase.questionRange}</div>
+            <button type="button" className="evaluation-phase-close" onClick={closePhasePanel} aria-label="Fermer la phase">
+              <i className="bi bi-x-lg" />
+            </button>
           </div>
 
           <div className="evaluation-goals-inline">
@@ -924,22 +955,36 @@ const Onboarding = () => {
           </div>
         )}
 
-          <div className="evaluation-footer-actions">
-          <button type="button" className="btn btn-outline-dark" onClick={() => setStep((prev) => Math.max(1, prev - 1))} disabled={step === 1}>
-            Phase precedente
-          </button>
-          {step < CLINICAL_PHASES.length ? (
-            <button type="button" className="btn btn-dark" onClick={() => setStep((prev) => Math.min(CLINICAL_PHASES.length, prev + 1))}>
-              Phase suivante
-            </button>
-          ) : (
-            <button type="submit" className="btn btn-dark">
-              Enregistrer l'evaluation
-            </button>
-          )}
+              <div className="evaluation-footer-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline-dark"
+                  onClick={() => setStep((prev) => Math.max(1, prev - 1))}
+                  disabled={step === 1}
+                >
+                  Phase precedente
+                </button>
+                {step < CLINICAL_PHASES.length ? (
+                  <button
+                    type="button"
+                    className="btn btn-dark"
+                    onClick={() => {
+                      setStep((prev) => Math.min(CLINICAL_PHASES.length, prev + 1));
+                      closePhasePanel();
+                    }}
+                  >
+                    Valider cette phase
+                  </button>
+                ) : (
+                  <button type="submit" className="btn btn-dark">
+                    Enregistrer l'evaluation
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
 
       {user?.profile?.onboardingComplete && (
         <div className="mt-3 text-end">

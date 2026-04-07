@@ -7,6 +7,13 @@ public record RegisterRequest(
     @Email @NotBlank String email,
     @NotBlank String password,
     @NotBlank String fullName,
-    String accountType
+    String accountType,
+    String phoneNumber,
+    String city,
+    String countryCode,
+    String specialty,
+    String bio,
+    Boolean acceptsTeleconsultation,
+    Integer yearsExperience
 ) {
 }

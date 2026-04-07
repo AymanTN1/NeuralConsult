@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { isDoctor, isPatient } from "../utils/roles";
+import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const patientNavItems = [
   { to: "/dashboard", icon: "bi bi-activity", label: "Tableau de bord" },
@@ -18,16 +18,23 @@ const doctorNavItems = [
   { to: "/profile", icon: "bi bi-person-badge", label: "Doctor Profile" }
 ];
 
+const adminNavItems = [
+  { to: "/dashboard", icon: "bi bi-shield-check", label: "Validation medecins" }
+];
+
 const ClinicalSidebar = () => {
   const { user } = useAuth();
   const profile = user?.profile;
+  const adminMode = isAdmin(user);
   const doctorMode = isDoctor(user);
-  const statusLabel = doctorMode
+  const statusLabel = adminMode
+    ? "Administrateur"
+    : doctorMode
     ? "Medecin"
     : profile?.onboardingComplete
       ? "Patient actif"
       : "Candidat";
-  const navItems = doctorMode ? doctorNavItems : patientNavItems;
+  const navItems = adminMode ? adminNavItems : doctorMode ? doctorNavItems : patientNavItems;
 
   return (
     <aside className="clinical-sidebar">
@@ -42,7 +49,7 @@ const ClinicalSidebar = () => {
       </div>
 
       <div className="sidebar-patient">
-        <div className="sidebar-patient-label">{doctorMode ? "Session en cours" : "Dossier en cours"}</div>
+        <div className="sidebar-patient-label">{doctorMode || adminMode ? "Session en cours" : "Dossier en cours"}</div>
         <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
         <div className="sidebar-status-pill">{statusLabel}</div>
       </div>
@@ -61,7 +68,9 @@ const ClinicalSidebar = () => {
       <div className="sidebar-footer">
         <div className="sidebar-footer-label">{isPatient(user) ? "Repere clinique" : "Pilotage clinique"}</div>
         <div className="sidebar-footer-copy">
-          {doctorMode
+          {adminMode
+            ? "Vue admin: valider les comptes medecins avant leur mise en relation avec les patients."
+            : doctorMode
             ? "Vue medecin: lire le dossier, comprendre la progression et valider un plan adapte."
             : "Une interface plus douce pour aider le patient a rester engage sans surcharge."}
         </div>

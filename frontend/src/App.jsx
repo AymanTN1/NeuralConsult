@@ -5,13 +5,14 @@ import TopNav from "./components/TopNav";
 import ClinicalSidebar from "./components/ClinicalSidebar";
 import ClinicalTopbar from "./components/ClinicalTopbar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { isPatient } from "./utils/roles";
+import { isAdmin, isPatient } from "./utils/roles";
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DoctorDirectory = lazy(() => import("./pages/DoctorDirectory"));
 const DoctorWorkspace = lazy(() => import("./pages/DoctorWorkspace"));
+const AdminWorkspace = lazy(() => import("./pages/AdminWorkspace"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Tests = lazy(() => import("./pages/Tests"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -31,6 +32,7 @@ const AppShell = () => {
   const { user } = useAuth();
   const location = useLocation();
   const isPublicRoute = PUBLIC_PATHS.has(location.pathname);
+  const adminMode = isAdmin(user);
 
   if (isPublicRoute) {
     return (
@@ -55,7 +57,7 @@ const AppShell = () => {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    {isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
+                    {adminMode ? <AdminWorkspace /> : isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
                   </ProtectedRoute>
                 }
               />
@@ -63,7 +65,7 @@ const AppShell = () => {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    {isPatient(user) ? <Profile /> : <DoctorWorkspace mode="profile" />}
+                    {adminMode ? <AdminWorkspace /> : isPatient(user) ? <Profile /> : <DoctorWorkspace mode="profile" />}
                   </ProtectedRoute>
                 }
               />
@@ -129,7 +131,7 @@ const AppShell = () => {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    {isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
+                    {adminMode ? <AdminWorkspace /> : isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
                   </ProtectedRoute>
                 }
               />
@@ -137,7 +139,7 @@ const AppShell = () => {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    {isPatient(user) ? <Profile /> : <DoctorWorkspace mode="profile" />}
+                    {adminMode ? <AdminWorkspace /> : isPatient(user) ? <Profile /> : <DoctorWorkspace mode="profile" />}
                   </ProtectedRoute>
                 }
               />
@@ -177,7 +179,7 @@ const AppShell = () => {
                 path="*"
                 element={
                   <ProtectedRoute>
-                    {isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
+                    {adminMode ? <AdminWorkspace /> : isPatient(user) ? <Dashboard /> : <DoctorWorkspace mode="workspace" />}
                   </ProtectedRoute>
                 }
               />

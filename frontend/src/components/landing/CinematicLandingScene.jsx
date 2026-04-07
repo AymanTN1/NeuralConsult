@@ -496,7 +496,7 @@ const HologramScene = ({ progress, scrollVelocity }) => (
   </div>
 );
 
-const CinematicLandingScene = ({ progress, scrollVelocity }) => {
+const CinematicLandingScene = ({ progress, scrollVelocity, copyVisibility = 1 }) => {
   const burnProgress = THREE.MathUtils.clamp(progress, 0, 1);
   const cigaretteBodyScale = Math.max(0.12, 1 - burnProgress * 0.84);
   const smokeDensity = THREE.MathUtils.clamp(0.18 + burnProgress * 0.3 + scrollVelocity * 0.12, 0.18, 0.62);
@@ -507,16 +507,16 @@ const CinematicLandingScene = ({ progress, scrollVelocity }) => {
     <div className="cinematic-stage">
       <HologramScene progress={burnProgress} scrollVelocity={scrollVelocity} />
 
-      <div className="cinematic-stage-copy">
+      <div className="cinematic-stage-copy" style={{ opacity: copyVisibility }}>
         <div className="hero-kicker">Restorative Clinical</div>
         <h1 className="landing-title cinematic-title">
-          Respirez plus calmement.
+          Reprendre le souffle.
           <br />
-          Reprenez de l'air.
+          Reouvrir la possibilite d'arreter.
         </h1>
         <p className="landing-lead cinematic-lead">
-          La scene 3D reste pedagogique, mais avec une palette plus douce: elle montre la recuperation
-          respiratoire, le poids de la dependance et le besoin d'un accompagnement clinique stable.
+          Le repere visuel montre l'impact progressif du tabac, puis laisse les poumons en arriere-plan pour rappeler
+          qu'un sevrage stable repose sur le temps, le suivi et l'alliance therapeutique.
         </p>
       </div>
 

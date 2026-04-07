@@ -30,12 +30,7 @@ const PhaseSpotlightModal = ({ phase, onClose }) => {
         <p className="phase-spotlight-summary">{phase.summary}</p>
 
         <div className="phase-spotlight-block">
-          <span className="phase-spotlight-label">Questions couvertes</span>
-          <strong>{phase.questionRange}</strong>
-        </div>
-
-        <div className="phase-spotlight-block">
-          <span className="phase-spotlight-label">Clinical objectives</span>
+          <span className="phase-spotlight-label">Objectifs cliniques</span>
           <div className="phase-spotlight-goals">
             {phase.goals.map((goal) => (
               <div key={goal} className="phase-spotlight-goal">
@@ -44,6 +39,14 @@ const PhaseSpotlightModal = ({ phase, onClose }) => {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="phase-spotlight-block">
+          <span className="phase-spotlight-label">Ce que le patient comprend</span>
+          <p className="phase-spotlight-summary mb-0">
+            Cette phase aide a comprendre pourquoi l'information est recueillie, comment elle eclaire la prise en
+            charge et a quel moment elle sera utile au medecin pour choisir la meilleure orientation.
+          </p>
         </div>
       </div>
     </div>

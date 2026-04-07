@@ -7,13 +7,6 @@ import { CLINICAL_PHASES, CO2_PER_CIGARETTE_KG, LANDING_MILESTONES } from "../da
 
 const CinematicLandingScene = lazy(() => import("../components/landing/CinematicLandingScene"));
 const DEFAULT_PHASE = CLINICAL_PHASES[0];
-const FLOATING_SMOKE_PLUMES = Array.from({ length: 7 }, (_, index) => ({
-  id: index,
-  delay: index * 0.18,
-  duration: 2.3 + index * 0.2,
-  drift: -18 - index * 8,
-  scale: 0.82 + index * 0.08
-}));
 
 const defaultCalculator = {
   cigarettesPerDay: 20,
@@ -23,37 +16,37 @@ const defaultCalculator = {
 
 const commandCards = [
   {
-    title: "Parcours structure",
+    title: "Dossier de premiere consultation",
     copy:
-      "Le premier acces oriente le patient vers une evaluation claire et progressive: contexte, risques, habitudes, dependance et vulnerabilite sociale.",
+      "Le parcours initialise d'abord l'identite patient, puis structure l'evaluation tabacologique, psychologique et sociale dans un ordre compatible avec la pratique clinique.",
     icon: "bi bi-clipboard2-pulse"
   },
   {
-    title: "Aide clinique IA",
+    title: "Synthese et aide medicale",
     copy:
-      "L'interface transforme les reponses en repères cliniques, syntheses utiles et plans candidats sans laisser le dossier sous forme de formulaire brut.",
+      "Les donnees brutes sont ensuite transformees en scores, notes et pistes therapeutiques utiles pour le medecin sans perdre la trace des reponses d'origine.",
     icon: "bi bi-cpu"
   }
 ];
 
 const interruptionBlocks = [
   {
-    kicker: "Apaisement",
-    title: "Le sevrage a besoin d'un cadre lisible et non agressif.",
+    kicker: "Repere clinique",
+    title: "Arreter de fumer ne se resume pas a diminuer des cigarettes.",
     copy:
-      "La landing a ete adoucie pour reduire la surcharge sensorielle et laisser plus de place aux repères utiles: souffle, progression et soutien clinique."
+      "Le sevrage tabagique engage a la fois la dependance physique, les facteurs anxieux, les automatismes du quotidien et le contexte social du patient."
   },
   {
-    kicker: "Repères",
-    title: "La dependance est physique, psychique et contextuelle.",
+    kicker: "Alliance therapeutique",
+    title: "Le patient a besoin d'un espace qui rassure avant de convaincre.",
     copy:
-      "Le parcours explique les dimensions du dossier sans dramatiser visuellement, pour aider le patient a rester present et engage."
+      "L'interface met en avant un langage clinique apaisant, des etapes lisibles et un accompagnement guide pour limiter l'evitement, le stress et la confusion."
   },
   {
-    kicker: "Recuperation",
-    title: "Le retour vers la sante doit etre visible et rassurant.",
+    kicker: "Projection",
+    title: "Chaque jour sans tabac doit devenir visible, compréhensible et concret.",
     copy:
-      "La scene 3D garde un role pedagogique, mais avec une palette plus douce et une respiration visuelle plus compatible avec un public anxieux ou en manque."
+      "Economies, respiration, progression HAD, dependance et suivi quotidien sont utilises comme marqueurs de progression pour soutenir la motivation."
   }
 ];
 
@@ -80,7 +73,7 @@ const Landing = () => {
       ScrollTrigger.create({
         trigger: sceneScrollRef.current,
         start: "top top",
-        end: "bottom bottom",
+        end: "bottom center",
         scrub: true,
         onUpdate: (self) => {
           setScrollProgress(self.progress);
@@ -133,83 +126,44 @@ const Landing = () => {
 
   const velocityLevel = Math.min(scrollVelocity / 1800, 1);
   const roadmapPhase = hoveredPhase || selectedPhase || DEFAULT_PHASE;
-  const floatingCigaretteVisibility = Math.min(Math.max((pageScrollProgress - 0.16) / 0.14, 0), 1);
-  const floatingCigaretteScale = 0.72 + pageScrollProgress * 0.42;
-  const floatingCigaretteRotation = 18 - pageScrollProgress * 28;
-  const floatingCigaretteX = 20 - pageScrollProgress * 2;
-  const floatingCigaretteY = 74 - pageScrollProgress * 32;
-  const floatingCigaretteBodyScale = Math.max(0.18, 1 - scrollProgress * 0.84);
+  const heroCopyVisibility = Math.max(0.08, 1 - pageScrollProgress * 3.8);
 
   return (
     <div className="landing-cinematic" ref={pageRef}>
-      <div
-        className={`landing-floating-cigarette ${floatingCigaretteVisibility > 0.02 ? "is-visible" : ""}`}
-        style={{
-          "--floating-cigarette-scale": floatingCigaretteScale,
-          "--floating-cigarette-rotation": `${floatingCigaretteRotation}deg`,
-          "--floating-cigarette-x": `${floatingCigaretteX}vw`,
-          "--floating-cigarette-y": `${floatingCigaretteY}vh`,
-          "--floating-cigarette-opacity": floatingCigaretteVisibility
-        }}
-        aria-hidden="true"
-      >
-        <div className="landing-floating-cigarette-shadow" />
-        <div className="landing-floating-cigarette-rail">
-          <div className="landing-floating-cigarette-filter" />
-          <div
-            className="landing-floating-cigarette-body"
-            style={{ transform: `scaleX(${floatingCigaretteBodyScale})` }}
-          >
-            <div className="landing-floating-cigarette-stripe" />
-            <div className="landing-floating-cigarette-stripe landing-floating-cigarette-stripe-secondary" />
-          </div>
-          <div className="landing-floating-cigarette-ember" />
-        </div>
-        <div className="landing-floating-cigarette-smoke" aria-hidden="true">
-          {FLOATING_SMOKE_PLUMES.map((plume) => (
-            <span
-              key={plume.id}
-              className="landing-floating-cigarette-plume"
-              style={{
-                "--smoke-delay": `${plume.delay}s`,
-                "--smoke-duration": `${plume.duration}s`,
-                "--smoke-drift": `${plume.drift}px`,
-                "--smoke-scale": plume.scale,
-                opacity: Math.max(0.14, floatingCigaretteVisibility - plume.id * 0.08)
-              }}
-            />
-          ))}
-        </div>
+      <div className="landing-persistent-scene" aria-hidden="true">
+        <Suspense fallback={<div className="landing-scene-fallback">Preparation de la visualisation clinique...</div>}>
+          <CinematicLandingScene
+            progress={scrollProgress}
+            scrollVelocity={velocityLevel}
+            copyVisibility={heroCopyVisibility}
+          />
+        </Suspense>
       </div>
 
-      <section className="landing-scroll-theater" ref={sceneScrollRef}>
-        <div className="landing-scroll-sticky">
-          <Suspense fallback={<div className="landing-scene-fallback">Preparation de la visualisation clinique...</div>}>
-            <CinematicLandingScene progress={scrollProgress} scrollVelocity={velocityLevel} />
-          </Suspense>
-        </div>
+      <section className="landing-scroll-theater landing-scroll-theater-persistent" ref={sceneScrollRef}>
+        <div className="landing-scroll-copy-anchor" />
       </section>
 
       <section className="landing-command-section">
         <div className="container command-section-inner">
           <div className="command-section-head">
-            <div className="hero-kicker">Repères cliniques</div>
+            <div className="hero-kicker">Accompagnement structure</div>
             <h2 className="section-title">
-              Des espaces calmes.
+              Un cadre medical calme.
               <br />
-              Pas une interface qui brusque.
+              Un sevrage lisible des la premiere minute.
             </h2>
             <p className="muted-text">
-              Le calculateur d'impact et l'acces clinique restent centraux, mais dans un langage
-              visuel plus respirable, plus doux et plus compatible avec l'accompagnement du sevrage.
+              NeuralConsult Sevrage relie impact concret, parcours de consultation, scoring officiel et lecture clinique
+              dans une experience qui rassure le patient et facilite la decision therapeutique.
             </p>
           </div>
 
           <div className="landing-command-grid">
             <div className="landing-command-card landing-command-card-impact">
               <div className="landing-command-card-head">
-                <span className="landing-command-badge">Repere d'impact</span>
-                <strong>Module patient</strong>
+                <span className="landing-command-badge">Projection patient</span>
+                <strong>Impact financier et environnemental</strong>
               </div>
 
               <div className="landing-command-body">
@@ -286,8 +240,8 @@ const Landing = () => {
                   </button>
                   <span className="muted-text">
                     {impact.nextMilestone
-                      ? `Prochaine cible: ${impact.nextMilestone.label}`
-                      : "Tous les paliers proposes sont atteints"}
+                      ? `Prochain palier motive: ${impact.nextMilestone.label}`
+                      : "Tous les paliers de projection proposes sont atteints"}
                   </span>
                 </div>
               </div>
@@ -295,15 +249,15 @@ const Landing = () => {
 
             <div className="landing-command-card landing-command-card-auth">
               <div className="landing-command-card-head">
-                <span className="landing-command-badge">Acces clinique</span>
-                <strong>Module d'entree</strong>
+                <span className="landing-command-badge">Acces structure</span>
+                <strong>Entrer dans l'espace clinique</strong>
               </div>
 
               <div className="landing-auth-module">
-                <h3>Entrer dans l'espace clinique</h3>
+                <h3>Premier acces patient, medecin et administrateur</h3>
                 <p>
-                  Connectez-vous pour commencer par le profil personnel, puis poursuivre l'evaluation
-                  clinique dans un parcours structure et accompagne.
+                  Le patient commence par son profil personnel puis son evaluation initiale. Le medecin renseigne son
+                  profil des l'inscription et devient visible seulement apres validation administrateur.
                 </p>
 
                 <div className="landing-auth-actions">
@@ -347,37 +301,46 @@ const Landing = () => {
       <section className="landing-roadmap-centered">
         <div className="container roadmap-centered-inner">
           <div className="roadmap-centered-head">
-            <div className="hero-kicker">Parcours clinique</div>
+            <div className="hero-kicker">Parcours de consultation</div>
             <h2 className="section-title">
-              Une timeline centrale.
+              Une timeline plus lisible.
               <br />
-              Des etapes plus lisibles.
+              Des phases qui s'expliquent d'elles-memes.
             </h2>
             <p className="muted-text">
-              Chaque phase s'ouvre comme un repère explicatif, pour montrer au patient et au medecin
-              ce qui est explore et pourquoi.
+              Chaque phase du protocole s'ouvre comme un repere clinique. Le patient comprend la logique du parcours,
+              le medecin retrouve immediatement l'objectif de chaque bloc d'information.
             </p>
           </div>
 
-          <div className="landing-roadmap-central-line">
+          <div className="landing-roadmap-vertical">
             {CLINICAL_PHASES.map((phase) => (
               <button
                 key={phase.id}
                 type="button"
-                className={`landing-roadmap-central-phase ${selectedPhase?.id === phase.id ? "is-selected" : ""}`}
+                className={`landing-roadmap-row ${selectedPhase?.id === phase.id ? "is-selected" : ""}`}
                 onClick={() => setSelectedPhase(phase)}
                 onMouseEnter={() => setHoveredPhase(phase)}
                 onFocus={() => setHoveredPhase(phase)}
                 onMouseLeave={() => setHoveredPhase(selectedPhase || DEFAULT_PHASE)}
-                aria-expanded={selectedPhase?.id === phase.id}
                 aria-label={`${phase.label} ${phase.title}`}
               >
-                <span className="landing-roadmap-central-index">{phase.id}</span>
-                <div className="landing-roadmap-central-copy">
-                  <span>{phase.label}</span>
+                <div className="landing-roadmap-row-phase">{phase.label}</div>
+                <div className="landing-roadmap-row-line">
+                  <span className="landing-roadmap-row-node" />
+                </div>
+                <div className="landing-roadmap-row-card">
+                  <span className="landing-roadmap-row-kicker">Etape clinique</span>
                   <strong>{phase.title}</strong>
-                  <p>{phase.questionRange}</p>
-                  <small className="landing-roadmap-phase-preview">{phase.summary}</small>
+                  <p>{phase.summary}</p>
+                  <div className="landing-roadmap-row-preview">
+                    {phase.goals.slice(0, 2).map((goal) => (
+                      <span key={goal} className="landing-roadmap-row-chip">
+                        <i className="bi bi-check2-circle" />
+                        {goal}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </button>
             ))}
@@ -389,7 +352,7 @@ const Landing = () => {
                 <span className="landing-roadmap-hover-kicker">{roadmapPhase.label}</span>
                 <h3>{roadmapPhase.title}</h3>
               </div>
-              <span className="landing-roadmap-hover-range">{roadmapPhase.questionRange}</span>
+              <span className="landing-roadmap-hover-range">Objectifs cliniques</span>
             </div>
             <p className="landing-roadmap-hover-summary">{roadmapPhase.summary}</p>
             <div className="landing-roadmap-hover-goals">
@@ -407,11 +370,15 @@ const Landing = () => {
       <section className="landing-final-cta">
         <div className="container landing-final-cta-inner">
           <div>
-            <div className="hero-kicker">Calme clinique</div>
-            <h2 className="section-title">La clarte clinique commence quand l'interface laisse respirer.</h2>
+            <div className="hero-kicker">Slogan clinique</div>
+            <h2 className="section-title">
+              Chaque souffle retrouve sa place.
+              <br />
+              Chaque jour sans tabac doit devenir visible.
+            </h2>
             <p className="muted-text">
-              Une premiere impression plus apaisante, une evaluation structuree, puis une intelligence
-              clinique qui transforme les reponses en aide exploitable pour le medecin.
+              Une interface plus calme pour engager, une evaluation plus claire pour comprendre, un dossier plus
+              complet pour aider le medecin a decider vite et juste.
             </p>
           </div>
 

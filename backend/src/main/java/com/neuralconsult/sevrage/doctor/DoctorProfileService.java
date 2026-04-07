@@ -29,6 +29,7 @@ public class DoctorProfileService {
   @Transactional
   public DoctorProfile createOrUpdate(User user, DoctorProfileRequest request) {
     DoctorProfile profile = doctorProfileRepository.findByUser(user).orElseGet(DoctorProfile::new);
+    boolean isNewProfile = profile.getId() == null;
     profile.setUser(user);
     profile.setCity(request.city());
     profile.setCountryCode(normalizeCountryCode(request.countryCode()));
@@ -36,7 +37,9 @@ public class DoctorProfileService {
     profile.setBio(request.bio());
     profile.setAcceptsTeleconsultation(Boolean.TRUE.equals(request.acceptsTeleconsultation()));
     profile.setYearsExperience(request.yearsExperience());
-    profile.setActive(true);
+    if (isNewProfile) {
+      profile.setActive(!needsApproval(user));
+    }
     return doctorProfileRepository.save(profile);
   }
 
@@ -65,7 +68,7 @@ public class DoctorProfileService {
         profile.setSpecialty("Tabacologie");
         profile.setBio("Profil medecin disponible pour l'accompagnement tabacologique.");
         profile.setAcceptsTeleconsultation(true);
-        profile.setActive(true);
+        profile.setActive(!needsApproval(doctorUser));
         return doctorProfileRepository.save(profile);
       });
     }
@@ -77,6 +80,32 @@ public class DoctorProfileService {
           }
         })
         .toList();
+  }
+
+  @Transactional
+  public List<DoctorProfile> listPendingApproval() {
+    return doctorProfileRepository.findAllByActiveFalseOrderByCreatedAtAsc();
+  }
+
+  @Transactional
+  public DoctorProfile approve(User adminUser, java.util.UUID doctorProfileId) {
+    DoctorProfile profile = doctorProfileRepository.findById(doctorProfileId).orElseThrow();
+    profile.setActive(true);
+    User doctorUser = profile.getUser();
+    doctorUser.setStatus(User.UserStatus.ACTIVE);
+    userRepository.save(doctorUser);
+    return doctorProfileRepository.save(profile);
+  }
+
+  @Transactional
+  public DoctorProfile reject(User adminUser, java.util.UUID doctorProfileId) {
+    DoctorProfile profile = doctorProfileRepository.findById(doctorProfileId).orElseThrow();
+    profile.setActive(false);
+    User doctorUser = profile.getUser();
+    doctorUser.setStatus(User.UserStatus.SUSPENDED);
+    doctorUser.setAccountEnabled(false);
+    userRepository.save(doctorUser);
+    return doctorProfileRepository.save(profile);
   }
 
   private DoctorPatientRequest.MatchingMode matchingMode(PatientProfile patient, DoctorProfile doctor) {
@@ -109,6 +138,10 @@ public class DoctorProfileService {
       return "MA";
     }
     return countryCode.trim().toUpperCase(Locale.ROOT);
+  }
+
+  private boolean needsApproval(User user) {
+    return user.getRoles().contains("ROLE_DOCTOR") && user.getStatus() == User.UserStatus.PENDING_VERIFICATION;
   }
 
   public record DoctorMatch(

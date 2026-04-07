@@ -15,6 +15,7 @@ public record DoctorProfileResponse(
     Integer yearsExperience,
     Integer successScore,
     boolean active,
+    String accountStatus,
     String matchingMode,
     Integer matchingScore
 ) {
