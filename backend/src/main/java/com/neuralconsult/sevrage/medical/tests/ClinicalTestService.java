@@ -1,5 +1,6 @@
 package com.neuralconsult.sevrage.medical.tests;
 
+import com.neuralconsult.sevrage.clinical.intelligence.ClinicalIntelligenceService;
 import com.neuralconsult.sevrage.medical.scoring.MedicalScoringService;
 import com.neuralconsult.sevrage.medical.scoring.dto.FagerstromRequest;
 import com.neuralconsult.sevrage.medical.scoring.dto.FagerstromResult;
@@ -13,6 +14,8 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class ClinicalTestService {
@@ -21,15 +24,18 @@ public class ClinicalTestService {
   private final PatientProfileService patientProfileService;
   private final FagerstromTestRepository fagerstromTestRepository;
   private final HadTestRepository hadTestRepository;
+  private final ClinicalIntelligenceService clinicalIntelligenceService;
 
   public ClinicalTestService(MedicalScoringService scoringService,
                              PatientProfileService patientProfileService,
                              FagerstromTestRepository fagerstromTestRepository,
-                             HadTestRepository hadTestRepository) {
+                             HadTestRepository hadTestRepository,
+                             ClinicalIntelligenceService clinicalIntelligenceService) {
     this.scoringService = scoringService;
     this.patientProfileService = patientProfileService;
     this.fagerstromTestRepository = fagerstromTestRepository;
     this.hadTestRepository = hadTestRepository;
+    this.clinicalIntelligenceService = clinicalIntelligenceService;
   }
 
   @Transactional
@@ -43,6 +49,7 @@ public class ClinicalTestService {
     FagerstromTest saved = fagerstromTestRepository.save(test);
 
     patientProfileService.updateScores(user, new ScoreUpdateRequest(result.totalScore(), null, null));
+    syncPatientJourneyState(user, profile);
     return saved;
   }
 
@@ -55,6 +62,7 @@ public class ClinicalTestService {
     applyFagerstrom(test, request, result);
     FagerstromTest saved = fagerstromTestRepository.save(test);
     patientProfileService.updateScores(user, new ScoreUpdateRequest(result.totalScore(), null, null));
+    syncPatientJourneyState(user, profile);
     return saved;
   }
 
@@ -68,6 +76,7 @@ public class ClinicalTestService {
         .map(FagerstromTest::getTotalScore)
         .orElse(null);
     patientProfileService.setScores(user, latestScore, profile.getHadAnxietyScore(), profile.getHadDepressionScore());
+    syncPatientJourneyState(user, profile);
   }
 
   @Transactional
@@ -86,6 +95,7 @@ public class ClinicalTestService {
     applyHad(test, request, result);
     HadTest saved = hadTestRepository.save(test);
     patientProfileService.updateScores(user, new ScoreUpdateRequest(null, result.anxietyScore(), result.depressionScore()));
+    syncPatientJourneyState(user, profile);
     return saved;
   }
 
@@ -98,6 +108,7 @@ public class ClinicalTestService {
     applyHad(test, request, result);
     HadTest saved = hadTestRepository.save(test);
     patientProfileService.updateScores(user, new ScoreUpdateRequest(null, result.anxietyScore(), result.depressionScore()));
+    syncPatientJourneyState(user, profile);
     return saved;
   }
 
@@ -111,6 +122,7 @@ public class ClinicalTestService {
     Integer anxiety = latest != null ? latest.getAnxietyScore() : null;
     Integer depression = latest != null ? latest.getDepressionScore() : null;
     patientProfileService.setScores(user, profile.getFagerstromScore(), anxiety, depression);
+    syncPatientJourneyState(user, profile);
   }
 
   @Transactional
@@ -149,5 +161,30 @@ public class ClinicalTestService {
     test.setDepressionScore(result.depressionScore());
     test.setAnxietyInterpretation(result.anxietyInterpretation());
     test.setDepressionInterpretation(result.depressionInterpretation());
+  }
+
+  private void syncPatientJourneyState(User user, PatientProfile profile) {
+    boolean testsComplete =
+        fagerstromTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(profile).isPresent()
+            && hadTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(profile).isPresent();
+    patientProfileService.markTestsComplete(user, testsComplete);
+    if (profile.isOnboardingComplete() && testsComplete) {
+      if (TransactionSynchronizationManager.isSynchronizationActive()) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            try {
+              clinicalIntelligenceService.generateAndSave(user);
+            } catch (RuntimeException ignored) {
+            }
+          }
+        });
+      } else {
+        try {
+          clinicalIntelligenceService.generateAndSave(user);
+        } catch (RuntimeException ignored) {
+        }
+      }
+    }
   }
 }

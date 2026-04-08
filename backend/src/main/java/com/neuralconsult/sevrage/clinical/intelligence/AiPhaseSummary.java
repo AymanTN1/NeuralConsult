@@ -34,6 +34,9 @@ public class AiPhaseSummary extends AuditableEntity {
   @Column(name = "summary", nullable = false, length = 4000)
   private String summary;
 
+  @Column(name = "doctor_note", length = 4000)
+  private String doctorNote;
+
   @ElementCollection
   @CollectionTable(name = "ai_phase_summary_attention_points", joinColumns = @JoinColumn(name = "summary_id"))
   @Column(name = "attention_point", length = 600)

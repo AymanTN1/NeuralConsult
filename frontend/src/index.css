@@ -3849,3 +3849,39 @@ textarea.form-control:focus {
   margin: 0;
   padding-left: 1.2rem;
 }
+
+.evaluation-goal-chip.is-active {
+  border-color: rgba(88, 153, 175, 0.45);
+  background: rgba(88, 153, 175, 0.16);
+  box-shadow: 0 12px 28px rgba(31, 71, 84, 0.18);
+}
+
+.support-thread {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.support-bubble {
+  border: 1px solid rgba(124, 151, 155, 0.18);
+  border-radius: 1.2rem;
+  padding: 1rem 1.05rem;
+  background: rgba(9, 17, 24, 0.88);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.support-bubble small {
+  color: var(--text-soft);
+}
+
+.support-bubble.is-patient {
+  background: linear-gradient(135deg, rgba(48, 90, 89, 0.42), rgba(11, 24, 30, 0.94));
+}
+
+.support-bubble.is-ai {
+  background: linear-gradient(135deg, rgba(36, 57, 68, 0.64), rgba(11, 23, 30, 0.94));
+}
+
+.support-bubble.is-system {
+  background: linear-gradient(135deg, rgba(74, 73, 51, 0.35), rgba(13, 21, 29, 0.94));
+}

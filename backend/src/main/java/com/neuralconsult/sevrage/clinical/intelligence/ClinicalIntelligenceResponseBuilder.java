@@ -21,6 +21,7 @@ public final class ClinicalIntelligenceResponseBuilder {
                 item.getPhaseId(),
                 item.getPhaseTitle(),
                 item.getSummary(),
+                item.getDoctorNote(),
                 item.getAttentionPoints(),
                 item.getMissingInformation(),
                 item.getModelName(),

@@ -18,6 +18,9 @@ const Tests = lazy(() => import("./pages/Tests"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Plan = lazy(() => import("./pages/Plan"));
 const DailyReport = lazy(() => import("./pages/DailyReport"));
+const Appointments = lazy(() => import("./pages/Appointments"));
+const Support = lazy(() => import("./pages/Support"));
+const Communities = lazy(() => import("./pages/Communities"));
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
 
@@ -101,6 +104,30 @@ const AppShell = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <Appointments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/support"
+                element={
+                  <ProtectedRoute>
+                    <Support />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communities"
+                element={
+                  <ProtectedRoute>
+                    <Communities />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </Suspense>
         </main>
@@ -172,6 +199,30 @@ const AppShell = () => {
                 element={
                   <ProtectedRoute>
                     <DailyReport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <Appointments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/support"
+                element={
+                  <ProtectedRoute>
+                    <Support />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/communities"
+                element={
+                  <ProtectedRoute>
+                    <Communities />
                   </ProtectedRoute>
                 }
               />

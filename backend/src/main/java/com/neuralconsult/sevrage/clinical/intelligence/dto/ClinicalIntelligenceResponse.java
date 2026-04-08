@@ -15,6 +15,7 @@ public record ClinicalIntelligenceResponse(
       Integer phaseId,
       String phaseTitle,
       String summary,
+      String doctorNote,
       List<String> attentionPoints,
       List<String> missingInformation,
       String modelName,

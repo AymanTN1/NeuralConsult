@@ -6,15 +6,21 @@ import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 const patientNavItems = [
   { to: "/dashboard", icon: "bi bi-activity", label: "Tableau de bord" },
   { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Evaluation" },
-  { to: "/doctors", icon: "bi bi-person-heart", label: "Medecins" },
   { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests" },
-  { to: "/plan", icon: "bi bi-diagram-3", label: "Plan" },
   { to: "/journal", icon: "bi bi-journal-medical", label: "Journal" },
+  { to: "/plan", icon: "bi bi-diagram-3", label: "Plan" },
+  { to: "/doctors", icon: "bi bi-person-heart", label: "Medecins" },
+  { to: "/appointments", icon: "bi bi-calendar2-heart", label: "Rendez-vous" },
+  { to: "/support", icon: "bi bi-chat-heart", label: "IA 24/7" },
+  { to: "/communities", icon: "bi bi-people-fill", label: "Communautes" },
   { to: "/profile", icon: "bi bi-person-vcard", label: "Personal Profile" }
 ];
 
 const doctorNavItems = [
   { to: "/dashboard", icon: "bi bi-speedometer2", label: "Doctor Workspace" },
+  { to: "/appointments", icon: "bi bi-calendar2-week", label: "Rendez-vous" },
+  { to: "/support", icon: "bi bi-chat-square-heart", label: "Conversations IA" },
+  { to: "/communities", icon: "bi bi-people", label: "Communautes" },
   { to: "/profile", icon: "bi bi-person-badge", label: "Doctor Profile" }
 ];
 

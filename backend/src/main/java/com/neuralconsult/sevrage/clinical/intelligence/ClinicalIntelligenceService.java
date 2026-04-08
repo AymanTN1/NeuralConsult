@@ -13,8 +13,11 @@ import com.neuralconsult.sevrage.onboarding.OnboardingAssessment;
 import com.neuralconsult.sevrage.onboarding.OnboardingRepository;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
+import com.neuralconsult.sevrage.report.DailyReport;
+import com.neuralconsult.sevrage.report.DailyReportRepository;
 import com.neuralconsult.sevrage.user.User;
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +32,7 @@ public class ClinicalIntelligenceService {
   private final OnboardingRepository onboardingRepository;
   private final FagerstromTestRepository fagerstromTestRepository;
   private final HadTestRepository hadTestRepository;
+  private final DailyReportRepository dailyReportRepository;
   private final AiClinicalIntelligenceClient aiClinicalIntelligenceClient;
   private final AiPhaseSummaryRepository aiPhaseSummaryRepository;
   private final AiGlobalSummaryRepository aiGlobalSummaryRepository;
@@ -40,6 +44,7 @@ public class ClinicalIntelligenceService {
       OnboardingRepository onboardingRepository,
       FagerstromTestRepository fagerstromTestRepository,
       HadTestRepository hadTestRepository,
+      DailyReportRepository dailyReportRepository,
       AiClinicalIntelligenceClient aiClinicalIntelligenceClient,
       AiPhaseSummaryRepository aiPhaseSummaryRepository,
       AiGlobalSummaryRepository aiGlobalSummaryRepository,
@@ -50,6 +55,7 @@ public class ClinicalIntelligenceService {
     this.onboardingRepository = onboardingRepository;
     this.fagerstromTestRepository = fagerstromTestRepository;
     this.hadTestRepository = hadTestRepository;
+    this.dailyReportRepository = dailyReportRepository;
     this.aiClinicalIntelligenceClient = aiClinicalIntelligenceClient;
     this.aiPhaseSummaryRepository = aiPhaseSummaryRepository;
     this.aiGlobalSummaryRepository = aiGlobalSummaryRepository;
@@ -63,8 +69,15 @@ public class ClinicalIntelligenceService {
     OnboardingAssessment assessment = onboardingRepository.findByPatientProfile(profile).orElse(null);
     FagerstromTest latestFager = fagerstromTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(profile).orElse(null);
     HadTest latestHad = hadTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(profile).orElse(null);
+    List<FagerstromTest> fagerHistory = fagerstromTestRepository.findAllByPatientProfileOrderByCreatedAtDesc(profile);
+    List<HadTest> hadHistory = hadTestRepository.findAllByPatientProfileOrderByCreatedAtDesc(profile);
+    List<DailyReport> dailyReports = dailyReportRepository.findAllByPatientProfileAndReportDateBetween(
+        profile,
+        LocalDate.now().minusDays(30),
+        LocalDate.now()
+    );
 
-    Map<String, Object> facts = assembleFacts(profile, assessment, latestFager, latestHad);
+    Map<String, Object> facts = assembleFacts(profile, assessment, latestFager, latestHad, fagerHistory, hadHistory, dailyReports);
     ClinicalIntelligenceAiGenerateResponse ai = aiClinicalIntelligenceClient.generate(facts);
 
     aiPhaseSummaryRepository.deleteAllByPatientProfile(profile);
@@ -127,7 +140,10 @@ public class ClinicalIntelligenceService {
   private Map<String, Object> assembleFacts(PatientProfile profile,
                                             OnboardingAssessment assessment,
                                             FagerstromTest latestFager,
-                                            HadTest latestHad) {
+                                            HadTest latestHad,
+                                            List<FagerstromTest> fagerHistory,
+                                            List<HadTest> hadHistory,
+                                            List<DailyReport> dailyReports) {
     Map<String, Object> root = new LinkedHashMap<>();
 
     Map<String, Object> patient = new LinkedHashMap<>();
@@ -190,7 +206,48 @@ public class ClinicalIntelligenceService {
       tests.put("had_latest", h);
     }
     root.put("tests", tests);
+
+    Map<String, Object> history = new LinkedHashMap<>();
+    history.put("fagerstrom_history", fagerHistory.stream().limit(10).map(item -> {
+      Map<String, Object> row = new LinkedHashMap<>();
+      row.put("created_at", item.getCreatedAt());
+      row.put("total_score", item.getTotalScore());
+      row.put("dependence_level", item.getDependenceLevel() != null ? item.getDependenceLevel().name() : null);
+      return row;
+    }).toList());
+    history.put("had_history", hadHistory.stream().limit(10).map(item -> {
+      Map<String, Object> row = new LinkedHashMap<>();
+      row.put("created_at", item.getCreatedAt());
+      row.put("anxiety_score", item.getAnxietyScore());
+      row.put("depression_score", item.getDepressionScore());
+      row.put("anxiety_interpretation", item.getAnxietyInterpretation() != null ? item.getAnxietyInterpretation().name() : null);
+      row.put("depression_interpretation", item.getDepressionInterpretation() != null ? item.getDepressionInterpretation().name() : null);
+      return row;
+    }).toList());
+    history.put("daily_reports", dailyReports.stream().map(item -> {
+      Map<String, Object> row = new LinkedHashMap<>();
+      row.put("report_date", item.getReportDate());
+      row.put("cigarettes_smoked", item.getCigarettesSmoked());
+      row.put("cravings_intensity", item.getCravingsIntensity());
+      row.put("mood_score", item.getMoodScore());
+      row.put("stress_score", item.getStressScore());
+      row.put("used_nrt", item.getUsedNrt());
+      row.put("relapse_event", item.getRelapseEvent());
+      row.put("notes", item.getNotes());
+      return row;
+    }).toList());
+    root.put("history", history);
     return root;
+  }
+
+  @Transactional
+  public AiPhaseSummary updateDoctorPhaseNote(PatientProfile patientProfile, java.util.UUID phaseSummaryId, String doctorNote) {
+    AiPhaseSummary summary = aiPhaseSummaryRepository.findById(phaseSummaryId).orElseThrow();
+    if (!summary.getPatientProfile().getId().equals(patientProfile.getId())) {
+      throw new IllegalArgumentException("Phase summary does not belong to this patient.");
+    }
+    summary.setDoctorNote(doctorNote);
+    return aiPhaseSummaryRepository.save(summary);
   }
 
   @Transactional

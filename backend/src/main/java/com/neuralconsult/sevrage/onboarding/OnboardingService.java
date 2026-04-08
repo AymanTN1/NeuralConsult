@@ -61,6 +61,8 @@ public class OnboardingService {
     if (!profile.isOnboardingComplete()) {
       profile.setOnboardingComplete(true);
     }
+    profile.setTestsComplete(false);
+    profile.setJournalComplete(false);
 
     OnboardingAssessment assessment = repository.findByPatientProfile(profile).orElseGet(() -> {
       OnboardingAssessment created = new OnboardingAssessment();

@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const DailyReport = () => {
+  const { refetch } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     reportDate: todayISO(),
     cigarettesSmoked: "",
@@ -45,10 +49,12 @@ const DailyReport = () => {
       stressScore: toNumber(form.stressScore)
     };
     await api.post("/api/daily-reports", payload);
-    setMessage(editingId ? "Journal mis a jour." : "Journal enregistre.");
+    await refetch();
+    setMessage(editingId ? "Journal mis a jour." : "Journal enregistre. Le parcours initial est complet.");
     setEditingId(null);
     setForm((prev) => ({ ...prev, reportDate: todayISO() }));
     await loadReports();
+    navigate("/dashboard");
   };
 
   const handleEdit = (report) => {

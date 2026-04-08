@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS patient_profile (
   dependence_level VARCHAR(24),
   medical_history_notes VARCHAR(1000),
   is_onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE,
+  are_tests_complete BOOLEAN NOT NULL DEFAULT FALSE,
+  is_journal_complete BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   created_by VARCHAR(64) NOT NULL,

@@ -94,6 +94,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [decisionNotes, setDecisionNotes] = useState({});
   const [planNotes, setPlanNotes] = useState({});
+  const [phaseDoctorNotes, setPhaseDoctorNotes] = useState({});
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dossierLoading, setDossierLoading] = useState(false);
@@ -154,6 +155,14 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
     loadDossier();
   }, [mode, selectedPatientId]);
+
+  useEffect(() => {
+    const nextNotes = {};
+    (dossier?.clinicalIntelligence?.phaseSummaries || []).forEach((item) => {
+      nextNotes[item.id] = item.doctorNote || "";
+    });
+    setPhaseDoctorNotes(nextNotes);
+  }, [dossier]);
 
   const pendingRequests = useMemo(
     () => dedupeRequestsByPatient(requests.filter((request) => request.status === "PENDING")),
@@ -285,6 +294,22 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
       setMessage({ type: "error", text: apiError || "Validation du plan impossible." });
+    }
+  };
+
+  const savePhaseDoctorNote = async (phaseSummaryId) => {
+    if (!selectedPatientId) return;
+    setMessage(null);
+    try {
+      await api.post(`/api/doctors/patients/${selectedPatientId}/phase-summaries/${phaseSummaryId}/doctor-note`, {
+        doctorNote: phaseDoctorNotes[phaseSummaryId] || null
+      });
+      const { data } = await api.get(`/api/doctors/patients/${selectedPatientId}/dossier`);
+      setDossier(data);
+      setMessage({ type: "success", text: "Resume medecin enregistre pour cette phase." });
+    } catch (error) {
+      const apiError = error?.response?.data?.message || error?.response?.data?.error;
+      setMessage({ type: "error", text: apiError || "Impossible d'enregistrer la note medecin." });
     }
   };
 
@@ -550,6 +575,98 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
                     <div className="doctor-focus-list">
                       {(dossier.clinicalIntelligence?.globalSummary?.doctorFocusPoints || []).map((item) => <span key={item} className="evaluation-goal-chip">{item}</span>)}
                     </div>
+                    {dossier.clinicalIntelligence?.globalSummary?.patientReadiness && (
+                      <div className="doctor-note-critical mt-3">
+                        Readiness patient: {dossier.clinicalIntelligence.globalSummary.patientReadiness}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="doctor-dossier-section">
+                    <strong>Resumes de phase</strong>
+                    {(dossier.clinicalIntelligence?.phaseSummaries || []).length === 0 ? (
+                      <p className="muted-text mb-0 mt-3">Aucun resume IA de phase pour le moment.</p>
+                    ) : (
+                      <div className="doctor-plan-stack mt-3">
+                        {(dossier.clinicalIntelligence?.phaseSummaries || []).map((phase) => (
+                          <div key={phase.id} className="doctor-plan-card">
+                            <div className="doctor-plan-card-head">
+                              <div>
+                                <span className="profile-data-label">Phase {phase.phaseId}</span>
+                                <strong>{phase.phaseTitle}</strong>
+                              </div>
+                              <span className="doctor-status-chip status-accepted">IA + medecin</span>
+                            </div>
+                            <p>{phase.summary}</p>
+                            {(phase.attentionPoints || []).length > 0 && (
+                              <div className="doctor-focus-list">
+                                {phase.attentionPoints.map((item) => (
+                                  <span key={item} className="evaluation-goal-chip">{item}</span>
+                                ))}
+                              </div>
+                            )}
+                            <label className="form-label mt-3">Resume libre du medecin</label>
+                            <textarea
+                              className="form-control"
+                              rows="3"
+                              placeholder="Votre lecture clinique personnelle de cette phase..."
+                              value={phaseDoctorNotes[phase.id] || ""}
+                              onChange={(e) => setPhaseDoctorNotes((previous) => ({ ...previous, [phase.id]: e.target.value }))}
+                            />
+                            <div className="doctor-card-actions">
+                              <button type="button" className="btn btn-outline-dark" onClick={() => savePhaseDoctorNote(phase.id)}>
+                                Enregistrer la note phase
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="doctor-dossier-section">
+                    <strong>Conversations IA 24/7</strong>
+                    {!dossier.supportConversation ? (
+                      <p className="muted-text mb-0 mt-3">Aucune conversation IA rattachee au patient pour le moment.</p>
+                    ) : (
+                      <>
+                        <div className="doctor-score-grid mt-3">
+                          <div className="doctor-score-card"><span>Risque</span><strong>{displayValue(dossier.supportConversation.latestRiskLevel)}</strong><p>{displayValue(dossier.supportConversation.latestSummary)}</p></div>
+                          <div className="doctor-score-card"><span>Alertes</span><strong>{dossier.supportAlerts?.length || 0}</strong><p>Signaux remontes au medecin</p></div>
+                        </div>
+                        <div className="support-thread mt-3">
+                          {(dossier.supportConversation.messages || []).map((item) => (
+                            <div key={item.id} className={`support-bubble ${item.senderType === "PATIENT" ? "is-patient" : item.senderType === "AI" ? "is-ai" : "is-system"}`}>
+                              <span className="profile-data-label">{item.senderType}</span>
+                              <p className="mb-0">{item.content}</p>
+                              {item.riskLevel && <small>Risque {item.riskLevel}</small>}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="doctor-dossier-section">
+                    <strong>Rendez-vous patient</strong>
+                    {!dossier.appointments || dossier.appointments.length === 0 ? (
+                      <p className="muted-text mb-0 mt-3">Aucun rendez-vous lie a ce patient pour le moment.</p>
+                    ) : (
+                      <div className="doctor-request-stack mt-3">
+                        {dossier.appointments.map((appointment) => (
+                          <div key={appointment.id} className="doctor-request-card">
+                            <div className="doctor-request-card-head">
+                              <div>
+                                <strong>{new Date(appointment.startsAt).toLocaleString("fr-FR")}</strong>
+                                <p className="mb-0 muted-text">{appointment.durationMinutes} min · {appointment.reason || "Motif non renseigne"}</p>
+                              </div>
+                              <span className={`doctor-status-chip status-${String(appointment.status || "").toLowerCase()}`}>{appointment.status}</span>
+                            </div>
+                            {appointment.doctorNote && <p className="muted-text mb-0">{appointment.doctorNote}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="doctor-dossier-section">

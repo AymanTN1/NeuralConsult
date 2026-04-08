@@ -14,6 +14,8 @@ public record PatientProfileResponse(
     Integer cigarettesPerDay,
     Integer smokingStartAge,
     boolean onboardingComplete,
+    boolean testsComplete,
+    boolean journalComplete,
     String dependenceLevel,
     String medicalHistoryNotes
 ) {

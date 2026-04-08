@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 const Tests = () => {
   const { refetch, user } = useAuth();
+  const navigate = useNavigate();
   const [fagerstromResult, setFagerstromResult] = useState(null);
   const [hadResult, setHadResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [fagerstromHistory, setFagerstromHistory] = useState([]);
   const [hadHistory, setHadHistory] = useState([]);
   const [editingFagerId, setEditingFagerId] = useState(null);
@@ -199,27 +201,44 @@ const Tests = () => {
   const submitFagerstrom = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const response = editingFagerId
-      ? await api.put(`/api/tests/fagerstrom/${editingFagerId}`, fagerstromForm)
-      : await api.post("/api/tests/fagerstrom", fagerstromForm);
-    setFagerstromResult(response.data);
-    await refetch();
-    await loadHistory();
-    setEditingFagerId(null);
-    setLoading(false);
+    setError(null);
+    try {
+      const response = editingFagerId
+        ? await api.put(`/api/tests/fagerstrom/${editingFagerId}`, fagerstromForm)
+        : await api.post("/api/tests/fagerstrom", fagerstromForm);
+      setFagerstromResult(response.data);
+      await refetch();
+      await loadHistory();
+      setEditingFagerId(null);
+    } catch (err) {
+      const apiError = err?.response?.data?.message || err?.response?.data?.error;
+      setError(apiError || "Impossible d'enregistrer le test de Fagerstrom.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitHad = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const response = editingHadId
-      ? await api.put(`/api/tests/had/${editingHadId}`, hadForm)
-      : await api.post("/api/tests/had", hadForm);
-    setHadResult(response.data);
-    await refetch();
-    await loadHistory();
-    setEditingHadId(null);
-    setLoading(false);
+    setError(null);
+    try {
+      const response = editingHadId
+        ? await api.put(`/api/tests/had/${editingHadId}`, hadForm)
+        : await api.post("/api/tests/had", hadForm);
+      setHadResult(response.data);
+      const me = await refetch();
+      await loadHistory();
+      setEditingHadId(null);
+      if (me?.profile?.testsComplete && !me?.profile?.journalComplete) {
+        navigate("/journal");
+      }
+    } catch (err) {
+      const apiError = err?.response?.data?.message || err?.response?.data?.error;
+      setError(apiError || "Impossible d'enregistrer l'echelle HAD.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const editFagerstrom = (item) => {
@@ -279,6 +298,8 @@ const Tests = () => {
         <h2 className="fw-bold mb-0">Tests cliniques</h2>
         <span className="badge text-bg-light">INPES 2007</span>
       </div>
+
+      {error && <div className="alert alert-danger mb-4">{error}</div>}
 
       <div className="card form-card mb-4">
         <div className="card-body">

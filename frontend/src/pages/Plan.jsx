@@ -3,16 +3,22 @@ import api from "../services/api";
 
 const Plan = () => {
   const [plan, setPlan] = useState(null);
+  const [clinical, setClinical] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
 
   const loadPlan = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/sevrage-plan/current");
-      setPlan(data);
+      const [planResp, clinicalResp] = await Promise.allSettled([
+        api.get("/api/sevrage-plan/current"),
+        api.get("/api/clinical-intelligence")
+      ]);
+      setPlan(planResp.status === "fulfilled" ? planResp.value.data : null);
+      setClinical(clinicalResp.status === "fulfilled" ? clinicalResp.value.data : null);
     } catch (err) {
       setPlan(null);
+      setClinical(null);
     } finally {
       setLoading(false);
     }
@@ -51,6 +57,41 @@ const Plan = () => {
       {message && <div className="alert alert-success">{message}</div>}
       {loading && <div className="alert alert-info">Chargement du plan clinique...</div>}
       {!loading && !plan && <div className="alert alert-warning">Aucun plan disponible. Cliquez sur Generer.</div>}
+
+      {(clinical?.phaseSummaries || []).length > 0 && (
+        <section className="milestone-stack">
+          <div className="chart-card-head">
+            <div>
+              <div className="hero-kicker">Synthese par phase</div>
+              <h3>Resumes IA du dossier</h3>
+            </div>
+          </div>
+          {clinical?.globalSummary?.summary && (
+            <div className="doctor-note-critical mt-3">{clinical.globalSummary.summary}</div>
+          )}
+          <div className="doctor-plan-stack mt-3">
+            {clinical.phaseSummaries.map((phase) => (
+              <div className="doctor-plan-card" key={phase.id}>
+                <div className="doctor-plan-card-head">
+                  <div>
+                    <span className="profile-data-label">Phase {phase.phaseId}</span>
+                    <strong>{phase.phaseTitle}</strong>
+                  </div>
+                  <span className="doctor-status-chip status-accepted">IA</span>
+                </div>
+                <p>{phase.summary}</p>
+                {(phase.attentionPoints || []).length > 0 && (
+                  <div className="doctor-focus-list">
+                    {phase.attentionPoints.map((item) => (
+                      <span key={item} className="evaluation-goal-chip">{item}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {plan && (
         <>

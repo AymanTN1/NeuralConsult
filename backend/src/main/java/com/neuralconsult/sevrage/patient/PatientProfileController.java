@@ -92,6 +92,8 @@ public class PatientProfileController {
         profile.getCigarettesPerDay(),
         profile.getSmokingStartAge(),
         profile.isOnboardingComplete(),
+        profile.isTestsComplete(),
+        profile.isJournalComplete(),
         profile.getDependenceLevel() != null ? profile.getDependenceLevel().name() : null,
         profile.getMedicalHistoryNotes()
     );

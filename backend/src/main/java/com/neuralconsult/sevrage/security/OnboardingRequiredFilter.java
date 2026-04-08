@@ -38,9 +38,15 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
       if (user != null && isPatient(user)) {
         PatientProfile profile = patientProfileService.getOrCreate(user);
         if (!profile.isOnboardingComplete()) {
-          response.setStatus(428);
-          response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-          response.getWriter().write("{\"error\":\"ONBOARDING_REQUIRED\"}");
+          writePrecondition(response, "ONBOARDING_REQUIRED");
+          return;
+        }
+        if (!profile.isTestsComplete()) {
+          writePrecondition(response, "TESTS_REQUIRED");
+          return;
+        }
+        if (!profile.isJournalComplete()) {
+          writePrecondition(response, "JOURNAL_REQUIRED");
           return;
         }
       }
@@ -55,6 +61,12 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
         || user.getRoles().contains("ROLE_USER");
   }
 
+  private void writePrecondition(HttpServletResponse response, String code) throws IOException {
+    response.setStatus(428);
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.getWriter().write("{\"error\":\"" + code + "\"}");
+  }
+
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
@@ -64,6 +76,8 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
     return path.startsWith("/api/auth")
         || path.startsWith("/api/onboarding")
         || path.startsWith("/api/ai-assistant")
+        || path.startsWith("/api/tests")
+        || path.startsWith("/api/daily-reports")
         || path.startsWith("/api/me")
         || path.startsWith("/actuator");
   }

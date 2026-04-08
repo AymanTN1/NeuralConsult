@@ -1,7 +1,10 @@
 package com.neuralconsult.sevrage.patient;
 
+import com.neuralconsult.sevrage.medical.tests.FagerstromTestRepository;
+import com.neuralconsult.sevrage.medical.tests.HadTestRepository;
 import com.neuralconsult.sevrage.patient.dto.ScoreUpdateRequest;
 import com.neuralconsult.sevrage.patient.dto.UpdateProfileRequest;
+import com.neuralconsult.sevrage.report.DailyReportRepository;
 import com.neuralconsult.sevrage.user.User;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -10,18 +13,46 @@ import org.springframework.stereotype.Service;
 public class PatientProfileService {
 
   private final PatientProfileRepository repository;
+  private final FagerstromTestRepository fagerstromTestRepository;
+  private final HadTestRepository hadTestRepository;
+  private final DailyReportRepository dailyReportRepository;
 
-  public PatientProfileService(PatientProfileRepository repository) {
+  public PatientProfileService(PatientProfileRepository repository,
+                               FagerstromTestRepository fagerstromTestRepository,
+                               HadTestRepository hadTestRepository,
+                               DailyReportRepository dailyReportRepository) {
     this.repository = repository;
+    this.fagerstromTestRepository = fagerstromTestRepository;
+    this.hadTestRepository = hadTestRepository;
+    this.dailyReportRepository = dailyReportRepository;
   }
 
   @Transactional
   public PatientProfile getOrCreate(User user) {
-    return repository.findByUser(user).orElseGet(() -> {
-      PatientProfile profile = new PatientProfile();
-      profile.setUser(user);
-      return repository.save(profile);
+    PatientProfile profile = repository.findByUser(user).orElseGet(() -> {
+      PatientProfile createdProfile = new PatientProfile();
+      createdProfile.setUser(user);
+      return repository.save(createdProfile);
     });
+    return synchronizeProgress(profile);
+  }
+
+  @Transactional
+  public PatientProfile synchronizeProgress(PatientProfile profile) {
+    boolean testsComplete = fagerstromTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(profile).isPresent()
+        && hadTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(profile).isPresent();
+    boolean journalComplete = !dailyReportRepository.findAllByPatientProfileAndReportDateBetween(
+        profile,
+        java.time.LocalDate.now().minusYears(5),
+        java.time.LocalDate.now()
+    ).isEmpty();
+
+    if (profile.isTestsComplete() != testsComplete || profile.isJournalComplete() != journalComplete) {
+      profile.setTestsComplete(testsComplete);
+      profile.setJournalComplete(journalComplete);
+      return repository.save(profile);
+    }
+    return profile;
   }
 
   @Transactional
@@ -37,6 +68,20 @@ public class PatientProfileService {
     profile.setCigarettesPerDay(request.cigarettesPerDay());
     profile.setSmokingStartAge(request.smokingStartAge());
     profile.setMedicalHistoryNotes(request.medicalHistoryNotes());
+    return repository.save(profile);
+  }
+
+  @Transactional
+  public PatientProfile markTestsComplete(User user, boolean testsComplete) {
+    PatientProfile profile = getOrCreate(user);
+    profile.setTestsComplete(testsComplete);
+    return repository.save(profile);
+  }
+
+  @Transactional
+  public PatientProfile markJournalComplete(User user, boolean journalComplete) {
+    PatientProfile profile = getOrCreate(user);
+    profile.setJournalComplete(journalComplete);
     return repository.save(profile);
   }
 
@@ -73,6 +118,9 @@ public class PatientProfileService {
     profile.setHadDepressionScore(null);
     profile.setDependenceLevel(null);
     profile.setMedicalHistoryNotes(null);
+    profile.setOnboardingComplete(false);
+    profile.setTestsComplete(false);
+    profile.setJournalComplete(false);
     return repository.save(profile);
   }
 

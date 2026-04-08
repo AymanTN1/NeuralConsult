@@ -20,8 +20,22 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (isPatient(user) && user?.profile?.onboardingComplete === false && location.pathname !== "/evaluation") {
-    return <Navigate to="/evaluation" replace />;
+  if (isPatient(user)) {
+    const onboardingComplete = !!user?.profile?.onboardingComplete;
+    const testsComplete = !!user?.profile?.testsComplete;
+    const journalComplete = !!user?.profile?.journalComplete;
+
+    if (!onboardingComplete && location.pathname !== "/evaluation") {
+      return <Navigate to="/evaluation" replace />;
+    }
+
+    if (onboardingComplete && !testsComplete && location.pathname !== "/tests") {
+      return <Navigate to="/tests" replace />;
+    }
+
+    if (onboardingComplete && testsComplete && !journalComplete && location.pathname !== "/journal") {
+      return <Navigate to="/journal" replace />;
+    }
   }
 
   return children;

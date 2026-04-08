@@ -1,12 +1,16 @@
 package com.neuralconsult.sevrage.doctor;
 
+import com.neuralconsult.sevrage.appointment.AppointmentService;
+import com.neuralconsult.sevrage.appointment.dto.AppointmentResponse;
 import com.neuralconsult.sevrage.clinical.intelligence.AiGlobalSummary;
 import com.neuralconsult.sevrage.clinical.intelligence.AiGlobalSummaryRepository;
 import com.neuralconsult.sevrage.clinical.intelligence.AiPhaseSummary;
 import com.neuralconsult.sevrage.clinical.intelligence.AiPhaseSummaryRepository;
 import com.neuralconsult.sevrage.clinical.intelligence.AiPlanCandidate;
 import com.neuralconsult.sevrage.clinical.intelligence.AiPlanCandidateRepository;
+import com.neuralconsult.sevrage.clinical.intelligence.ClinicalIntelligenceController;
 import com.neuralconsult.sevrage.clinical.intelligence.ClinicalIntelligenceResponseBuilder;
+import com.neuralconsult.sevrage.clinical.intelligence.ClinicalIntelligenceService;
 import com.neuralconsult.sevrage.clinical.intelligence.ValidatedTreatmentPlan;
 import com.neuralconsult.sevrage.clinical.intelligence.ValidatedTreatmentPlanRepository;
 import com.neuralconsult.sevrage.clinical.notes.ClinicalNote;
@@ -34,6 +38,13 @@ import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.report.DailyReport;
 import com.neuralconsult.sevrage.report.DailyReportRepository;
 import com.neuralconsult.sevrage.report.dto.DailyReportResponse;
+import com.neuralconsult.sevrage.support.DoctorAlert;
+import com.neuralconsult.sevrage.support.DoctorAlertRepository;
+import com.neuralconsult.sevrage.support.SupportConversation;
+import com.neuralconsult.sevrage.support.SupportConversationRepository;
+import com.neuralconsult.sevrage.support.SupportService;
+import com.neuralconsult.sevrage.support.dto.DoctorAlertResponse;
+import com.neuralconsult.sevrage.support.dto.SupportConversationResponse;
 import com.neuralconsult.sevrage.user.dto.PatientProfileResponse;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
@@ -69,6 +80,11 @@ public class DoctorController {
   private final AiGlobalSummaryRepository aiGlobalSummaryRepository;
   private final AiPlanCandidateRepository aiPlanCandidateRepository;
   private final ValidatedTreatmentPlanRepository validatedTreatmentPlanRepository;
+  private final AppointmentService appointmentService;
+  private final SupportService supportService;
+  private final SupportConversationRepository supportConversationRepository;
+  private final DoctorAlertRepository doctorAlertRepository;
+  private final ClinicalIntelligenceService clinicalIntelligenceService;
 
   public DoctorController(
       DoctorProfileService doctorProfileService,
@@ -84,7 +100,12 @@ public class DoctorController {
       AiPhaseSummaryRepository aiPhaseSummaryRepository,
       AiGlobalSummaryRepository aiGlobalSummaryRepository,
       AiPlanCandidateRepository aiPlanCandidateRepository,
-      ValidatedTreatmentPlanRepository validatedTreatmentPlanRepository
+      ValidatedTreatmentPlanRepository validatedTreatmentPlanRepository,
+      AppointmentService appointmentService,
+      SupportService supportService,
+      SupportConversationRepository supportConversationRepository,
+      DoctorAlertRepository doctorAlertRepository,
+      ClinicalIntelligenceService clinicalIntelligenceService
   ) {
     this.doctorProfileService = doctorProfileService;
     this.doctorProfileRepository = doctorProfileRepository;
@@ -100,6 +121,11 @@ public class DoctorController {
     this.aiGlobalSummaryRepository = aiGlobalSummaryRepository;
     this.aiPlanCandidateRepository = aiPlanCandidateRepository;
     this.validatedTreatmentPlanRepository = validatedTreatmentPlanRepository;
+    this.appointmentService = appointmentService;
+    this.supportService = supportService;
+    this.supportConversationRepository = supportConversationRepository;
+    this.doctorAlertRepository = doctorAlertRepository;
+    this.clinicalIntelligenceService = clinicalIntelligenceService;
   }
 
   @PostMapping("/profile")
@@ -237,17 +263,7 @@ public class DoctorController {
                                                         @PathVariable UUID patientProfileId) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     DoctorProfile doctorProfile = doctorProfileRepository.findByUser(user).orElseThrow();
-    Optional<PatientProfile> assignedPatient = assignmentRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile).stream()
-        .map(DoctorPatientAssignment::getPatientProfile)
-        .filter(profile -> profile.getId().equals(patientProfileId))
-        .findFirst();
-    PatientProfile patientProfile = assignedPatient.orElseGet(() ->
-        requestService.listForDoctor(user).stream()
-            .map(DoctorPatientRequest::getPatientProfile)
-            .filter(profile -> profile.getId().equals(patientProfileId))
-            .findFirst()
-            .orElseThrow()
-    );
+    PatientProfile patientProfile = getAccessiblePatientProfile(doctorProfile, user, patientProfileId);
 
     OnboardingAssessment assessment = onboardingRepository.findByPatientProfile(patientProfile).orElse(null);
     FagerstromTest latestFager = fagerstromTestRepository.findFirstByPatientProfileOrderByCreatedAtDesc(patientProfile).orElse(null);
@@ -264,6 +280,30 @@ public class DoctorController {
     AiGlobalSummary globalSummary = aiGlobalSummaryRepository.findByPatientProfile(patientProfile).orElse(null);
     List<AiPlanCandidate> planCandidates = aiPlanCandidateRepository.findAllByPatientProfileOrderByTrackAsc(patientProfile);
     ValidatedTreatmentPlan validatedPlan = validatedTreatmentPlanRepository.findByPatientProfile(patientProfile).orElse(null);
+    if ((globalSummary == null || phaseSummaries.isEmpty())
+        && patientProfile.isOnboardingComplete()
+        && patientProfile.isTestsComplete()
+        && patientProfile.isJournalComplete()) {
+      try {
+        clinicalIntelligenceService.generateAndSave(patientProfile.getUser());
+        phaseSummaries = aiPhaseSummaryRepository.findAllByPatientProfileOrderByPhaseIdAsc(patientProfile);
+        globalSummary = aiGlobalSummaryRepository.findByPatientProfile(patientProfile).orElse(null);
+        planCandidates = aiPlanCandidateRepository.findAllByPatientProfileOrderByTrackAsc(patientProfile);
+        validatedPlan = validatedTreatmentPlanRepository.findByPatientProfile(patientProfile).orElse(null);
+      } catch (Exception ignored) {
+        // Le dossier reste consultable meme si la regeneration IA echoue ponctuellement.
+      }
+    }
+    List<AppointmentResponse> appointments = appointmentService.listForDoctor(user).stream()
+        .filter(appointment -> appointment.getPatientProfile().getId().equals(patientProfileId))
+        .map(this::toResponse)
+        .toList();
+    SupportConversation conversation = supportConversationRepository.findByPatientProfile(patientProfile).orElse(null);
+    SupportConversationResponse supportConversation = supportService.getForDoctor(user, patientProfileId);
+    List<DoctorAlertResponse> supportAlerts = doctorAlertRepository.findAllByPatientProfileOrderByCreatedAtDesc(patientProfile).stream()
+        .filter(alert -> alert.getDoctorProfile().getId().equals(doctorProfile.getId()))
+        .map(this::toAlertResponse)
+        .toList();
 
     return new DoctorPatientDossierResponse(
         patientProfile.getId(),
@@ -308,7 +348,44 @@ public class DoctorController {
             globalSummary,
             planCandidates,
             validatedPlan
-        )
+        ),
+        appointments,
+        supportConversation,
+        supportAlerts
+    );
+  }
+
+  @PostMapping("/patients/{patientProfileId}/phase-summaries/{phaseSummaryId}/doctor-note")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  @Transactional
+  public ClinicalIntelligenceController.DoctorNoteRequest updateDoctorPhaseNote(
+      @AuthenticationPrincipal UserDetails principal,
+      @PathVariable UUID patientProfileId,
+      @PathVariable UUID phaseSummaryId,
+      @RequestBody ClinicalIntelligenceController.DoctorNoteRequest request
+  ) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    DoctorProfile doctorProfile = doctorProfileRepository.findByUser(user).orElseThrow();
+    PatientProfile patientProfile = getAccessiblePatientProfile(doctorProfile, user, patientProfileId);
+    AiPhaseSummary updated = clinicalIntelligenceService.updateDoctorPhaseNote(
+        patientProfile,
+        phaseSummaryId,
+        request != null ? request.doctorNote() : null
+    );
+    return new ClinicalIntelligenceController.DoctorNoteRequest(updated.getDoctorNote());
+  }
+
+  private PatientProfile getAccessiblePatientProfile(DoctorProfile doctorProfile, User user, UUID patientProfileId) {
+    Optional<PatientProfile> assignedPatient = assignmentRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile).stream()
+        .map(DoctorPatientAssignment::getPatientProfile)
+        .filter(profile -> profile.getId().equals(patientProfileId))
+        .findFirst();
+    return assignedPatient.orElseGet(() ->
+        requestService.listForDoctor(user).stream()
+            .map(DoctorPatientRequest::getPatientProfile)
+            .filter(profile -> profile.getId().equals(patientProfileId))
+            .findFirst()
+            .orElseThrow()
     );
   }
 
@@ -361,6 +438,8 @@ public class DoctorController {
         profile.getCigarettesPerDay(),
         profile.getSmokingStartAge(),
         profile.isOnboardingComplete(),
+        profile.isTestsComplete(),
+        profile.isJournalComplete(),
         profile.getDependenceLevel() != null ? profile.getDependenceLevel().name() : null,
         profile.getMedicalHistoryNotes()
     );
@@ -534,6 +613,38 @@ public class DoctorController {
         report.getUsedNrt(),
         report.getRelapseEvent(),
         report.getNotes()
+    );
+  }
+
+  private AppointmentResponse toResponse(com.neuralconsult.sevrage.appointment.Appointment appointment) {
+    return new AppointmentResponse(
+        appointment.getId(),
+        appointment.getPatientProfile().getId(),
+        appointment.getPatientProfile().getUser().getFullName(),
+        appointment.getDoctorProfile().getId(),
+        appointment.getDoctorProfile().getUser().getFullName(),
+        appointment.getStartsAt(),
+        appointment.getDurationMinutes(),
+        appointment.getStatus().name(),
+        appointment.getReason(),
+        appointment.getDoctorNote(),
+        appointment.isTriggeredByAiAlert(),
+        appointment.getCreatedAt(),
+        appointment.getUpdatedAt()
+    );
+  }
+
+  private DoctorAlertResponse toAlertResponse(DoctorAlert alert) {
+    return new DoctorAlertResponse(
+        alert.getId(),
+        alert.getPatientProfile().getId(),
+        alert.getPatientProfile().getUser().getFullName(),
+        alert.getLevel().name(),
+        alert.getTitle(),
+        alert.getSummary(),
+        alert.getStatus().name(),
+        alert.getCreatedAt(),
+        alert.getAcknowledgedAt()
     );
   }
 }

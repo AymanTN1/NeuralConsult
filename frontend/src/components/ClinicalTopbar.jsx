@@ -28,6 +28,18 @@ const pageMeta = {
     eyebrow: "Suivi quotidien",
     title: "Respiration, cravings et rechute"
   },
+  "/appointments": {
+    eyebrow: "Rendez-vous clinique",
+    title: "Organisation des seances et soutien psychique"
+  },
+  "/support": {
+    eyebrow: "Soutien 24/7",
+    title: "Conversations IA, signaux de risque et escalade medecin"
+  },
+  "/communities": {
+    eyebrow: "Communautes patients",
+    title: "Salons d'entraide, discussions et moderation"
+  },
   "/profile": {
     eyebrow: "Identite patient",
     title: "Personal Profile"
@@ -44,6 +56,12 @@ const ClinicalTopbar = () => {
     : doctorMode
     ? location.pathname === "/profile"
       ? { eyebrow: "Identite praticien", title: "Profil medecin et positionnement" }
+      : location.pathname === "/appointments"
+        ? { eyebrow: "Rendez-vous medecin", title: "Planning, confirmations et seances completes" }
+        : location.pathname === "/support"
+          ? { eyebrow: "Conversations assistees", title: "Alertes IA et suivi psychologique continu" }
+          : location.pathname === "/communities"
+            ? { eyebrow: "Communautes cliniques", title: "Groupes d'entraide et moderation" }
       : { eyebrow: "Espace medecin", title: "Demandes, dossiers et validation de plans" }
     : (pageMeta[location.pathname] || pageMeta["/dashboard"]);
   const riskScore = Math.max(

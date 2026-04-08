@@ -1,5 +1,6 @@
 package com.neuralconsult.sevrage.report;
 
+import com.neuralconsult.sevrage.clinical.intelligence.ClinicalIntelligenceService;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.report.dto.DailyReportRequest;
@@ -8,16 +9,22 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class DailyReportService {
 
   private final DailyReportRepository repository;
   private final PatientProfileService patientProfileService;
+  private final ClinicalIntelligenceService clinicalIntelligenceService;
 
-  public DailyReportService(DailyReportRepository repository, PatientProfileService patientProfileService) {
+  public DailyReportService(DailyReportRepository repository,
+                            PatientProfileService patientProfileService,
+                            ClinicalIntelligenceService clinicalIntelligenceService) {
     this.repository = repository;
     this.patientProfileService = patientProfileService;
+    this.clinicalIntelligenceService = clinicalIntelligenceService;
   }
 
   @Transactional
@@ -41,7 +48,27 @@ public class DailyReportService {
     report.setRelapseEvent(request.relapseEvent());
     report.setNotes(request.notes());
 
-    return repository.save(report);
+    DailyReport saved = repository.save(report);
+    patientProfileService.markJournalComplete(user, true);
+    if (profile.isOnboardingComplete() && profile.isTestsComplete()) {
+      if (TransactionSynchronizationManager.isSynchronizationActive()) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            try {
+              clinicalIntelligenceService.generateAndSave(user);
+            } catch (RuntimeException ignored) {
+            }
+          }
+        });
+      } else {
+        try {
+          clinicalIntelligenceService.generateAndSave(user);
+        } catch (RuntimeException ignored) {
+        }
+      }
+    }
+    return saved;
   }
 
   @Transactional
@@ -57,5 +84,11 @@ public class DailyReportService {
     PatientProfile profile = patientProfileService.getOrCreate(user);
     DailyReport report = repository.findByIdAndPatientProfile(id, profile).orElseThrow();
     repository.delete(report);
+    boolean hasRemainingReports = !repository.findAllByPatientProfileAndReportDateBetween(
+        profile,
+        LocalDate.now().minusYears(5),
+        LocalDate.now()
+    ).isEmpty();
+    patientProfileService.markJournalComplete(user, hasRemainingReports);
   }
 }

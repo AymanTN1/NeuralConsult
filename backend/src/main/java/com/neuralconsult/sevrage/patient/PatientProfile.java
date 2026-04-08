@@ -71,6 +71,12 @@ public class PatientProfile extends AuditableEntity {
   @Column(name = "is_onboarding_complete", nullable = false)
   private boolean onboardingComplete;
 
+  @Column(name = "are_tests_complete")
+  private boolean testsComplete;
+
+  @Column(name = "is_journal_complete")
+  private boolean journalComplete;
+
   public enum Sex {
     FEMALE,
     MALE,

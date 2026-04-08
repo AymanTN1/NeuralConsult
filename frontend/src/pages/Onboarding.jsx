@@ -253,7 +253,8 @@ const Onboarding = () => {
       setScores(data?.assessment || null);
       await refetch();
       setIsPhasePanelOpen(false);
-      setMessage({ type: "success", text: "Profiling enregistre. Vous pouvez naviguer dans l'application." });
+      setMessage({ type: "success", text: "Evaluation enregistree. Passage automatique vers les tests cliniques." });
+      navigate("/tests");
     } catch (err) {
       const apiError = err?.response?.data?.error || err?.response?.data?.message;
       setMessage({ type: "error", text: apiError ? `Erreur: ${apiError}` : "Erreur lors de l'enregistrement. Verifiez les champs." });
@@ -988,8 +989,8 @@ const Onboarding = () => {
 
       {user?.profile?.onboardingComplete && (
         <div className="mt-3 text-end">
-          <button className="btn btn-outline-dark" onClick={() => navigate("/dashboard")}>
-            Aller au tableau de bord
+          <button className="btn btn-outline-dark" onClick={() => navigate("/tests")}>
+            Continuer vers les tests
           </button>
         </div>
       )}
