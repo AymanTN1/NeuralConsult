@@ -1,10 +1,19 @@
 package com.neuralconsult.sevrage.community;
 
+import com.neuralconsult.sevrage.community.dto.CommunityCommentCreateRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityConnectionResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityDetailResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityDirectMessageRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityDirectMessageResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityMessageCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityMessageResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityPostCreateRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityPostResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityReactionRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityServerCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityServerResponse;
+import com.neuralconsult.sevrage.community.dto.CommunitySocialOverviewResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityUserSummaryResponse;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
 import java.util.List;
@@ -32,35 +41,35 @@ public class CommunityController {
 
   @GetMapping("/servers")
   public List<CommunityServerResponse> listServers(@AuthenticationPrincipal UserDetails principal) {
-    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    User user = currentUser(principal);
     return communityService.listServers(user);
   }
 
   @PostMapping("/servers")
   public CommunityServerResponse createServer(@AuthenticationPrincipal UserDetails principal,
                                               @RequestBody CommunityServerCreateRequest request) {
-    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    User user = currentUser(principal);
     return communityService.createServer(user, request);
   }
 
   @PostMapping("/servers/{serverId}/join")
   public CommunityServerResponse join(@AuthenticationPrincipal UserDetails principal,
                                       @PathVariable UUID serverId) {
-    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    User user = currentUser(principal);
     return communityService.join(user, serverId);
   }
 
   @GetMapping("/servers/{serverId}")
   public CommunityDetailResponse detail(@AuthenticationPrincipal UserDetails principal,
                                         @PathVariable UUID serverId) {
-    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    User user = currentUser(principal);
     return communityService.detail(user, serverId);
   }
 
   @GetMapping("/channels/{channelId}/messages")
   public List<CommunityMessageResponse> messages(@AuthenticationPrincipal UserDetails principal,
                                                  @PathVariable UUID channelId) {
-    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    User user = currentUser(principal);
     return communityService.listMessages(user, channelId);
   }
 
@@ -68,7 +77,73 @@ public class CommunityController {
   public CommunityMessageResponse post(@AuthenticationPrincipal UserDetails principal,
                                        @PathVariable UUID channelId,
                                        @RequestBody CommunityMessageCreateRequest request) {
-    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    User user = currentUser(principal);
     return communityService.postMessage(user, channelId, request);
+  }
+
+  @GetMapping("/social")
+  public CommunitySocialOverviewResponse social(@AuthenticationPrincipal UserDetails principal) {
+    return communityService.socialOverview(currentUser(principal));
+  }
+
+  @PostMapping("/social/posts")
+  public CommunityPostResponse createPost(@AuthenticationPrincipal UserDetails principal,
+                                          @RequestBody CommunityPostCreateRequest request) {
+    return communityService.createPost(currentUser(principal), request);
+  }
+
+  @PostMapping("/social/posts/{postId}/reactions")
+  public CommunityPostResponse react(@AuthenticationPrincipal UserDetails principal,
+                                     @PathVariable UUID postId,
+                                     @RequestBody CommunityReactionRequest request) {
+    return communityService.reactToPost(currentUser(principal), postId, request);
+  }
+
+  @PostMapping("/social/posts/{postId}/comments")
+  public CommunityPostResponse comment(@AuthenticationPrincipal UserDetails principal,
+                                       @PathVariable UUID postId,
+                                       @RequestBody CommunityCommentCreateRequest request) {
+    return communityService.commentOnPost(currentUser(principal), postId, request);
+  }
+
+  @PostMapping("/social/users/{targetUserId}/follow")
+  public CommunityUserSummaryResponse follow(@AuthenticationPrincipal UserDetails principal,
+                                             @PathVariable UUID targetUserId) {
+    return communityService.toggleFollow(currentUser(principal), targetUserId);
+  }
+
+  @PostMapping("/social/users/{targetUserId}/connections")
+  public CommunityConnectionResponse connect(@AuthenticationPrincipal UserDetails principal,
+                                             @PathVariable UUID targetUserId) {
+    return communityService.sendConnectionRequest(currentUser(principal), targetUserId);
+  }
+
+  @PostMapping("/social/connections/{connectionId}/accept")
+  public CommunityConnectionResponse acceptConnection(@AuthenticationPrincipal UserDetails principal,
+                                                      @PathVariable UUID connectionId) {
+    return communityService.acceptConnection(currentUser(principal), connectionId);
+  }
+
+  @PostMapping("/social/connections/{connectionId}/decline")
+  public CommunityConnectionResponse declineConnection(@AuthenticationPrincipal UserDetails principal,
+                                                       @PathVariable UUID connectionId) {
+    return communityService.declineConnection(currentUser(principal), connectionId);
+  }
+
+  @GetMapping("/social/direct/{counterpartId}")
+  public List<CommunityDirectMessageResponse> directThread(@AuthenticationPrincipal UserDetails principal,
+                                                           @PathVariable UUID counterpartId) {
+    return communityService.directThread(currentUser(principal), counterpartId);
+  }
+
+  @PostMapping("/social/direct/{counterpartId}")
+  public CommunityDirectMessageResponse sendDirectMessage(@AuthenticationPrincipal UserDetails principal,
+                                                          @PathVariable UUID counterpartId,
+                                                          @RequestBody CommunityDirectMessageRequest request) {
+    return communityService.sendDirectMessage(currentUser(principal), counterpartId, request);
+  }
+
+  private User currentUser(UserDetails principal) {
+    return userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
   }
 }

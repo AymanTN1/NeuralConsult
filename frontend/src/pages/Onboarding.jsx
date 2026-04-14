@@ -282,7 +282,7 @@ const Onboarding = () => {
 
   return (
     <div className="container py-4 app-shell">
-      <div className="evaluation-page-header">
+      <div className="evaluation-page-header" data-guide-id="evaluation-header">
         <div>
           <div className="hero-kicker">Mandatory Evaluation Timeline</div>
           <h2 className="fw-bold mb-1">Consultation initiale du patient</h2>
@@ -317,7 +317,7 @@ const Onboarding = () => {
         </div>
       )}
 
-      <div className="evaluation-timeline-stage">
+      <div className="evaluation-timeline-stage" data-guide-id="evaluation-timeline">
         <div className="evaluation-journey-head">
           <div>
             <div className="hero-kicker">Parcours initial</div>

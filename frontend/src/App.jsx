@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import TopNav from "./components/TopNav";
 import ClinicalSidebar from "./components/ClinicalSidebar";
 import ClinicalTopbar from "./components/ClinicalTopbar";
+import PatientGuide from "./components/PatientGuide";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { isAdmin, isPatient } from "./utils/roles";
 const Landing = lazy(() => import("./pages/Landing"));
@@ -238,6 +239,7 @@ const AppShell = () => {
           </Suspense>
         </main>
       </div>
+      <PatientGuide />
     </div>
   );
 };

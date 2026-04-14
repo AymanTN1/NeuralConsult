@@ -92,12 +92,12 @@ const DailyReport = () => {
 
   return (
     <div className="container py-4 app-shell">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3" data-guide-id="journal-header">
         <h2 className="fw-bold mb-0">Journal quotidien</h2>
         <span className="badge text-bg-light">7 derniers jours</span>
       </div>
       {message && <div className="alert alert-success">{message}</div>}
-      <form onSubmit={handleSubmit} className="card form-card p-3 mb-4">
+        <form onSubmit={handleSubmit} className="card form-card p-3 mb-4" data-guide-id="journal-form">
         <div className="row g-3">
           <div className="col-12 col-md-4">
             <label className="form-label">Date</label>

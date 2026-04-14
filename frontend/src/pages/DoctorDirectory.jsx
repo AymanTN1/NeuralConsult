@@ -120,7 +120,7 @@ const DoctorDirectory = () => {
 
   return (
     <div className="container py-4 app-shell">
-      <div className="profile-page-header">
+        <div className="profile-page-header" data-guide-id="doctor-directory-header">
         <div>
           <div className="hero-kicker">Annuaire medecins Maroc</div>
           <h2 className="fw-bold mb-1">Trouver un medecin tabacologue rapidement</h2>
@@ -139,7 +139,7 @@ const DoctorDirectory = () => {
 
       {error && <div className="alert alert-danger mt-3">{error}</div>}
 
-      <section className="card form-card mt-4">
+        <section className="card form-card mt-4" data-guide-id="doctor-directory-list">
         <div className="section-title-sm">Filtres de recherche</div>
         <div className="doctor-filter-grid mt-3">
           <div>

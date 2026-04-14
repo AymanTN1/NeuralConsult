@@ -36,8 +36,8 @@ const Plan = () => {
   };
 
   return (
-    <div className="app-page">
-      <section className="dashboard-command">
+    <div className="app-page" data-guide-id="plan-main">
+      <section className="dashboard-command" data-guide-id="plan-header">
         <div className="dashboard-command-copy">
           <div className="hero-kicker">Therapeutic pathway</div>
           <h2 className="dashboard-title">Le plan doit paraitre prescrit, pas simplement affiche.</h2>

@@ -1,20 +1,20 @@
 export const chartTheme = {
-  grid: "rgba(151, 175, 166, 0.18)",
-  axis: "#afbeb6",
+  grid: "rgba(37, 99, 235, 0.14)",
+  axis: "#5b7293",
   tooltip: {
-    background: "rgba(22, 32, 30, 0.94)",
-    border: "1px solid rgba(151, 175, 166, 0.22)",
+    background: "rgba(255, 255, 255, 0.96)",
+    border: "1px solid rgba(96, 165, 250, 0.28)",
     borderRadius: 18,
-    color: "#eef3ef"
+    color: "#102a43"
   },
-  anxiety: "#87aeb8",
-  depression: "#c4978f",
-  dependence: "#99b29c",
-  cravings: "#8fb7c1",
-  cravingsFillTop: "rgba(143, 183, 193, 0.34)",
-  cravingsFillBottom: "rgba(143, 183, 193, 0)",
-  stress: "#c8a79d",
-  stressFillTop: "rgba(200, 167, 157, 0.28)",
-  stressFillBottom: "rgba(200, 167, 157, 0)",
-  cigarettes: "#eef3ef"
+  anxiety: "#2563eb",
+  depression: "#0ea5e9",
+  dependence: "#1d4ed8",
+  cravings: "#38bdf8",
+  cravingsFillTop: "rgba(56, 189, 248, 0.28)",
+  cravingsFillBottom: "rgba(56, 189, 248, 0)",
+  stress: "#60a5fa",
+  stressFillTop: "rgba(96, 165, 250, 0.24)",
+  stressFillBottom: "rgba(96, 165, 250, 0)",
+  cigarettes: "#0f172a"
 };

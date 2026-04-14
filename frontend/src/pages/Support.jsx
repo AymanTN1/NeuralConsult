@@ -104,8 +104,8 @@ const Support = () => {
   };
 
   return (
-    <div className="container py-4 app-shell">
-      <div className="profile-page-header">
+      <div className="container py-4 app-shell" data-guide-id="support-main">
+        <div className="profile-page-header" data-guide-id="support-header">
         <div>
           <div className="hero-kicker">Soutien 24/7</div>
           <h2 className="fw-bold mb-1">{doctorMode ? "Alertes et conversations IA" : "Psychologue IA disponible a tout moment"}</h2>

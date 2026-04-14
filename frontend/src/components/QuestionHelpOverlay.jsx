@@ -1,4 +1,5 @@
 import React, { useCallback, useLayoutEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 const CONTROL_SELECTOR = "input[name], select[name], textarea[name]";
 
@@ -23,6 +24,24 @@ const findAnchorHost = (control, container) => {
   return control.parentElement;
 };
 
+const findQuestionLabel = (host) => {
+  if (!host) {
+    return null;
+  }
+
+  const formCheckLabel = host.querySelector(".form-check-label");
+  if (formCheckLabel && isVisible(formCheckLabel)) {
+    return formCheckLabel;
+  }
+
+  const formLabel = host.querySelector(".form-label");
+  if (formLabel && isVisible(formLabel)) {
+    return formLabel;
+  }
+
+  return null;
+};
+
 const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
   const [anchors, setAnchors] = useState([]);
 
@@ -32,8 +51,6 @@ const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
       setAnchors([]);
       return;
     }
-
-    const containerRect = container.getBoundingClientRect();
     const seenFields = new Set();
     const nextAnchors = [];
 
@@ -52,12 +69,17 @@ const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
         return;
       }
 
+      const label = findQuestionLabel(host);
+      if (!label) {
+        return;
+      }
+
       seenFields.add(fieldName);
-      const hostRect = host.getBoundingClientRect();
+      host.classList.add("question-help-host");
       nextAnchors.push({
         fieldName,
-        top: hostRect.top - containerRect.top + 10,
-        left: hostRect.right - containerRect.left - 42
+        host,
+        label
       });
     });
 
@@ -84,26 +106,24 @@ const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
     };
   }, [containerRef, phaseId, recalculateAnchors]);
 
-  if (!anchors.length) {
-    return null;
-  }
-
-  return (
-    <div className="question-help-overlay" aria-hidden="true">
-      {anchors.map((anchor) => (
-        <button
-          key={`${phaseId}-${anchor.fieldName}`}
-          type="button"
-          className="question-help-anchor"
-          style={{ top: anchor.top, left: anchor.left }}
-          onClick={() => onOpenQuestionHelp?.(anchor.fieldName)}
-          aria-label={`Ouvrir l'aide IA pour ${anchor.fieldName}`}
-          title="Aide IA"
-        >
-          <i className="bi bi-patch-question-fill" />
-        </button>
-      ))}
-    </div>
+  return anchors.map((anchor) =>
+    createPortal(
+      <button
+        key={`${phaseId}-${anchor.fieldName}`}
+        type="button"
+        className={`question-help-inline-btn ${anchor.label?.classList?.contains("form-check-label") ? "is-checkbox" : ""}`}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOpenQuestionHelp?.(anchor.fieldName);
+        }}
+        aria-label={`Ouvrir l'aide IA pour ${anchor.fieldName}`}
+        title="Aide IA"
+      >
+        <i className="bi bi-patch-question-fill" />
+      </button>,
+      anchor.host
+    )
   );
 };
 

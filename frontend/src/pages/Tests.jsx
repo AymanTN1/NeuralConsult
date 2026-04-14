@@ -301,7 +301,7 @@ const Tests = () => {
 
       {error && <div className="alert alert-danger mb-4">{error}</div>}
 
-      <div className="card form-card mb-4">
+      <div className="card form-card mb-4" data-guide-id="tests-clinical">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">
             <div>

@@ -125,7 +125,7 @@ const Dashboard = () => {
 
   return (
     <div className={`app-page dashboard-stage dashboard-stage-${stage}`}>
-      <section className="dashboard-command">
+      <section className="dashboard-command" data-guide-id="dashboard-command">
         <div className="dashboard-command-copy">
           <div className="hero-kicker">Tableau de bord clinique</div>
           <h2 className="dashboard-title">Un espace plus calme pour lire la trajectoire du patient sans surcharge visuelle.</h2>

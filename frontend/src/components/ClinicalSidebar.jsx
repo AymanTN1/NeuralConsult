@@ -4,16 +4,16 @@ import { useAuth } from "../context/AuthContext";
 import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const patientNavItems = [
-  { to: "/dashboard", icon: "bi bi-activity", label: "Tableau de bord" },
-  { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Evaluation" },
-  { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests" },
-  { to: "/journal", icon: "bi bi-journal-medical", label: "Journal" },
-  { to: "/plan", icon: "bi bi-diagram-3", label: "Plan" },
-  { to: "/doctors", icon: "bi bi-person-heart", label: "Medecins" },
-  { to: "/appointments", icon: "bi bi-calendar2-heart", label: "Rendez-vous" },
-  { to: "/support", icon: "bi bi-chat-heart", label: "IA 24/7" },
-  { to: "/communities", icon: "bi bi-people-fill", label: "Communautes" },
-  { to: "/profile", icon: "bi bi-person-vcard", label: "Personal Profile" }
+  { to: "/dashboard", icon: "bi bi-activity", label: "Tableau de bord", guideId: "nav-dashboard" },
+  { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Evaluation", guideId: "nav-evaluation" },
+  { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests", guideId: "nav-tests" },
+  { to: "/journal", icon: "bi bi-journal-medical", label: "Journal", guideId: "nav-journal" },
+  { to: "/plan", icon: "bi bi-diagram-3", label: "Plan", guideId: "nav-plan" },
+  { to: "/doctors", icon: "bi bi-person-heart", label: "Medecins", guideId: "nav-doctors" },
+  { to: "/appointments", icon: "bi bi-calendar2-heart", label: "Rendez-vous", guideId: "nav-appointments" },
+  { to: "/support", icon: "bi bi-chat-heart", label: "IA 24/7", guideId: "nav-support" },
+  { to: "/communities", icon: "bi bi-people-fill", label: "Communautes", guideId: "nav-communities" },
+  { to: "/profile", icon: "bi bi-person-vcard", label: "Personal Profile", guideId: "nav-profile" }
 ];
 
 const doctorNavItems = [
@@ -60,9 +60,14 @@ const ClinicalSidebar = () => {
         <div className="sidebar-status-pill">{statusLabel}</div>
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" data-guide-id="sidebar-nav">
         {navItems.map((item) => (
-          <NavLink key={item.to} className="sidebar-link" to={item.to}>
+          <NavLink
+            key={item.to}
+            className="sidebar-link"
+            to={item.to}
+            data-guide-id={item.guideId}
+          >
             <span className="sidebar-link-icon">
               <i className={item.icon} />
             </span>

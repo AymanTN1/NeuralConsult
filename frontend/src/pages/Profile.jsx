@@ -136,8 +136,8 @@ const Profile = () => {
   );
 
   return (
-    <div className="container py-4 app-shell">
-      <div className="profile-page-header">
+      <div className="container py-4 app-shell" data-guide-id="profile-main">
+        <div className="profile-page-header" data-guide-id="profile-header">
         <div>
           <div className="hero-kicker">Personal Profile</div>
           <h2 className="fw-bold mb-1">Fiche d'identite patient</h2>
