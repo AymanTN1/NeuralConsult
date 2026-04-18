@@ -3,6 +3,7 @@ package com.neuralconsult.sevrage.plan;
 import com.neuralconsult.sevrage.plan.dto.SevragePlanResponse;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
+import java.util.ArrayList;
 import java.util.Collections;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -49,7 +50,7 @@ public class SevragePlanController {
         plan.getRelapseProtocol(),
         plan.getStartDate(),
         plan.getTargetQuitDate(),
-        plan.getSteps() != null ? plan.getSteps() : Collections.emptyList()
+        plan.getSteps() != null ? new ArrayList<>(plan.getSteps()) : Collections.emptyList()
     );
   }
 }

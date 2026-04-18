@@ -245,13 +245,24 @@ public class DoctorController {
   public List<DoctorPatientSummaryResponse> listAssignedPatients(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return requestService.listAssignments(user).stream()
+        .sorted((left, right) -> right.getAssignedAt().compareTo(left.getAssignedAt()))
         .map(assignment -> new DoctorPatientSummaryResponse(
             assignment.getPatientProfile().getId(),
             assignment.getPatientProfile().getUser().getFullName(),
+            assignment.getPatientProfile().getUser().getEmail(),
+            assignment.getPatientProfile().getDateOfBirth(),
+            assignment.getPatientProfile().getCity(),
+            assignment.getPatientProfile().getOccupation(),
             assignment.getPatientProfile().getFagerstromScore(),
             assignment.getPatientProfile().getHadAnxietyScore(),
             assignment.getPatientProfile().getHadDepressionScore(),
-            assignment.getPatientProfile().isOnboardingComplete()
+            assignment.getPatientProfile().isOnboardingComplete(),
+            assignment.getPatientProfile().isTestsComplete(),
+            assignment.getPatientProfile().isJournalComplete(),
+            assignment.getPatientProfile().getDependenceLevel() != null
+                ? assignment.getPatientProfile().getDependenceLevel().name()
+                : null,
+            assignment.getAssignedAt()
         ))
         .toList();
   }

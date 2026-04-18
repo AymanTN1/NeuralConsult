@@ -249,27 +249,27 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
 
   const burnProgress = THREE.MathUtils.clamp(progress, 0, 1);
   const shellColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#bd8c83"), new THREE.Color("#7a7972"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#c84f5b"), new THREE.Color("#71767b"), burnProgress),
     [burnProgress]
   );
   const tarColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#8f7a6d"), new THREE.Color("#58574f"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#8f5257"), new THREE.Color("#5e6268"), burnProgress),
     [burnProgress]
   );
   const clinicalGlow = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#6c8d87"), new THREE.Color("#4f5a55"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#ff9ca3"), new THREE.Color("#838992"), burnProgress),
     [burnProgress]
   );
   const fissureColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#8d6b65"), new THREE.Color("#4f4d48"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#944149"), new THREE.Color("#52575d"), burnProgress),
     [burnProgress]
   );
   const branchColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#8aa19c"), new THREE.Color("#5f6864"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#b35e66"), new THREE.Color("#737980"), burnProgress),
     [burnProgress]
   );
   const smokeColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#d7dfdb"), new THREE.Color("#909791"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#edf4ff"), new THREE.Color("#959ea8"), burnProgress),
     [burnProgress]
   );
 
@@ -355,7 +355,7 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
     <group position={[0, 0.38, 0]} scale={[0.82, 0.82, 0.82]}>
       <mesh ref={tracheaRef} position={[0, 2.16, 0.08]}>
         <cylinderGeometry args={[0.16, 0.18, 1.18, 36]} />
-        <meshStandardMaterial color="#9a6161" emissive="#5a2629" emissiveIntensity={0.03} roughness={0.58} metalness={0.03} />
+        <meshStandardMaterial color="#b16069" emissive="#6f2f39" emissiveIntensity={0.04} roughness={0.58} metalness={0.03} />
       </mesh>
 
       <mesh position={[-0.32, 1.48, 0.08]} rotation={[0, 0, -0.82]}>
@@ -391,7 +391,7 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
       ].map((lung) => (
         <group key={lung.id} position={[lung.x, -0.08, 0]} rotation={lung.rotation}>
           <mesh ref={lung.shellRef} geometry={lung.geometry}>
-            <meshStandardMaterial color="#bd8c83" emissive="#6c8d87" emissiveIntensity={0.03} roughness={0.86} metalness={0.02} />
+            <meshStandardMaterial color="#c84f5b" emissive="#ff9ca3" emissiveIntensity={0.04} roughness={0.84} metalness={0.02} />
           </mesh>
 
           <mesh ref={lung.tarRef} geometry={lung.geometry} position={[0, 0, 0.06]} renderOrder={2}>
@@ -485,12 +485,32 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
 const HologramScene = ({ progress, scrollVelocity }) => (
   <div className="cinematic-canvas-shell" aria-hidden="true">
     <Canvas camera={{ position: [0, 0.3, 8.2], fov: 32 }}>
-      <color attach="background" args={["#0f1716"]} />
-      <fog attach="fog" args={["#0f1716", 8, 17]} />
-      <ambientLight intensity={0.24} color="#88a69f" />
-      <directionalLight position={[4, 4, 6]} intensity={0.46} color="#f2e0cf" />
-      <pointLight position={[0, 2.6, 2.2]} intensity={0.28} color="#9fbba4" />
-      <pointLight position={[0, -1.4, 1.8]} intensity={0.22} color="#b8cbd2" />
+      <color
+        attach="background"
+        args={[
+          new THREE.Color().lerpColors(
+            new THREE.Color("#081628"),
+            new THREE.Color("#2b3540"),
+            THREE.MathUtils.clamp(progress * 0.9, 0, 1)
+          ).getStyle()
+        ]}
+      />
+      <fog
+        attach="fog"
+        args={[
+          new THREE.Color().lerpColors(
+            new THREE.Color("#0d2038"),
+            new THREE.Color("#434d57"),
+            THREE.MathUtils.clamp(progress * 0.92, 0, 1)
+          ).getStyle(),
+          8,
+          17
+        ]}
+      />
+      <ambientLight intensity={0.26} color="#cfe0ff" />
+      <directionalLight position={[4, 4, 6]} intensity={0.48} color="#ffe0d8" />
+      <pointLight position={[0, 2.6, 2.2]} intensity={0.3} color="#9cc4ff" />
+      <pointLight position={[0, -1.4, 1.8]} intensity={0.22} color="#e7f0ff" />
       <BioLungSystem progress={progress} scrollVelocity={scrollVelocity} />
     </Canvas>
   </div>

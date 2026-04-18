@@ -32,12 +32,16 @@ class ClinicalIntelligenceService:
         if self.llm.is_configured():
             try:
                 generated = await self._generate_with_llm(facts, references)
-                return self._validate_result(generated, references)
+                return self._validate_result(
+                    generated,
+                    references,
+                    model_name=f"{self.llm.provider}:{self.llm.model}",
+                )
             except Exception:
                 pass
 
         fallback = self._fallback(facts, references)
-        return self._validate_result(fallback, references)
+        return self._validate_result(fallback, references, model_name="deterministic-fallback")
 
     async def _generate_with_llm(
         self,
@@ -45,16 +49,29 @@ class ClinicalIntelligenceService:
         references: List[KnowledgeReference],
     ) -> Dict[str, Any]:
         system_prompt = (
-            "You are a clinical intelligence engine for a tobacco cessation platform. "
-            "You summarize patient facts and propose 3 candidate cessation tracks. "
-            "You must stick strictly to the provided facts. "
-            "You must not invent diagnoses. "
-            "Return valid JSON only."
+            "Tu es un moteur d'intelligence clinique pour une plateforme de sevrage tabagique. "
+            "Ta mission est d'aider le medecin a comprendre rapidement le dossier: tu resumes, tu structures, "
+            "tu reperes les signaux de dependance et tu proposes des pistes, sans jamais inventer de diagnostic. "
+            "Tu dois rester strictement base sur les faits fournis: evaluation initiale, scores HAD/Fagerstrom/HONC/CAGE/EPICES, "
+            "journal quotidien et notes. "
+            "Le ton doit etre medical, sobre, lisible par un medecin, avec des phrases courtes en francais. "
+            "Retourne uniquement du JSON valide."
         )
         user_prompt = (
-            "Generate 5 phase summaries, one global summary, and 3 plan candidates.\n\n"
+            "Genere les elements suivants pour le dossier patient:\n"
+            "- 5 resumes IA par phase: 2 a 3 lignes chacun, centres sur ce que les reponses disent de la dependance tabagique, "
+            "des risques et des leviers de sevrage.\n"
+            "- 1 resume global IA de type synthese diagnostique clinique, base sur toutes les phases + tests + journal. "
+            "Il doit aider le medecin a prendre une decision, pas remplacer son jugement.\n"
+            "- 3 plans candidats de sevrage: INTENSIVE, BALANCED, LONG_TERM.\n\n"
             f"Facts:\n{json.dumps(facts, ensure_ascii=True, indent=2)}\n\n"
             f"References:\n{json.dumps([r.__dict__ for r in references], ensure_ascii=True, indent=2)}\n\n"
+            "Contraintes importantes:\n"
+            "- Ne jamais inventer une maladie, un score ou une reponse absente.\n"
+            "- Si une information manque, la mettre dans missing_information.\n"
+            "- Le summary de chaque phase doit etre utile au medecin et comprehensible par le patient.\n"
+            "- Le doctor_note n'est pas rempli par toi: il sera rempli plus tard par le medecin dans l'application.\n"
+            "- Le resume global doit croiser evaluation initiale, tests HAD/Fagerstrom et journal quotidien quand disponibles.\n\n"
             "Return JSON with this exact structure:\n"
             "{\n"
             '  "phase_summaries": [\n'
@@ -257,6 +274,7 @@ class ClinicalIntelligenceService:
         self,
         result: Dict[str, Any],
         references: List[KnowledgeReference],
+        model_name: str,
     ) -> Dict[str, Any]:
         phase_summaries = result.get("phase_summaries") or []
         if len(phase_summaries) != 5:
@@ -271,9 +289,7 @@ class ClinicalIntelligenceService:
             "phase_summaries": phase_summaries,
             "global_summary": result.get("global_summary") or {},
             "plan_candidates": plan_candidates,
-            "model_name": (
-                f"{self.llm.provider}:{self.llm.model}" if self.llm.is_configured() else "deterministic-fallback"
-            ),
+            "model_name": model_name,
             "references": [
                 {"source": ref.source, "title": ref.title, "excerpt": ref.excerpt}
                 for ref in references

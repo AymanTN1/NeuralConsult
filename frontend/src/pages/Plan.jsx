@@ -15,7 +15,16 @@ const Plan = () => {
         api.get("/api/clinical-intelligence")
       ]);
       setPlan(planResp.status === "fulfilled" ? planResp.value.data : null);
-      setClinical(clinicalResp.status === "fulfilled" ? clinicalResp.value.data : null);
+      let clinicalData = clinicalResp.status === "fulfilled" ? clinicalResp.value.data : null;
+      if (!clinicalData) {
+        try {
+          const generated = await api.post("/api/clinical-intelligence/generate");
+          clinicalData = generated.data;
+        } catch (error) {
+          clinicalData = null;
+        }
+      }
+      setClinical(clinicalData);
     } catch (err) {
       setPlan(null);
       setClinical(null);

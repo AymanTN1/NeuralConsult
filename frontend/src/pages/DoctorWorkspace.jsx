@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import Dropdown from "react-bootstrap/Dropdown";
 import {
   Area,
   AreaChart,
@@ -23,18 +24,24 @@ const emptyForm = {
   yearsExperience: ""
 };
 
-const requestStatusCopy = {
-  PENDING: "En attente",
-  ACCEPTED: "Acceptee",
-  REFUSED: "Refusee",
-  CANCELLED: "Annulee"
-};
-
 const matchingCopy = {
   SAME_CITY: "Meme ville",
   SAME_COUNTRY: "Maroc",
   TELECONSULTATION: "Teleconsultation"
 };
+
+const patientWorkspaceViews = [
+  { key: "overview", label: "Vue clinique", icon: "bi bi-grid-1x2-fill" },
+  { key: "profile", label: "Profil", icon: "bi bi-person-vcard-fill" },
+  { key: "evaluation", label: "Dossier medical", icon: "bi bi-journal-medical" },
+  { key: "dashboard", label: "Dashboard", icon: "bi bi-activity" },
+  { key: "journal", label: "Journal", icon: "bi bi-clipboard2-pulse-fill" },
+  { key: "conversation", label: "Conversation", icon: "bi bi-chat-square-heart-fill" },
+  { key: "ai", label: "Synthese IA", icon: "bi bi-cpu-fill" },
+  { key: "appointments", label: "Rendez-vous", icon: "bi bi-calendar2-week-fill" }
+];
+
+const chartTooltipStyle = chartTheme.tooltip;
 
 const displayValue = (value) => {
   if (value === true) return "Oui";
@@ -54,7 +61,20 @@ const formatDate = (value) => {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 };
 
 const calculateAge = (dateOfBirth) => {
@@ -82,14 +102,47 @@ const dedupeRequestsByPatient = (items) => {
   return [...map.values()];
 };
 
-const chartTooltipStyle = chartTheme.tooltip;
+const safeList = (value) => (Array.isArray(value) ? value : []);
+
+const buildProgressBadges = (patient) => {
+  if (!patient) return [];
+  return [
+    { key: "evaluation", label: "Evaluation", done: !!patient.onboardingComplete },
+    { key: "tests", label: "Tests", done: !!patient.testsComplete },
+    { key: "journal", label: "Journal", done: !!patient.journalComplete }
+  ];
+};
+
+const buildProgressLabel = (patient) => {
+  const steps = buildProgressBadges(patient).filter((item) => item.done).length;
+  return `${steps}/3 etapes`;
+};
+
+const buildPatientScoreLine = (patient) => {
+  if (!patient) return "Scores non disponibles";
+  return `Fagerstrom ${displayValue(patient.fagerstromScore)} · HAD A ${displayValue(patient.hadAnxietyScore)} · HAD D ${displayValue(patient.hadDepressionScore)}`;
+};
+
+const resolveNextPatientId = (preferredPatientId, previousPatientId, requestData, patientData) => {
+  const allowedIds = new Set([
+    ...requestData.map((item) => item.patientProfileId),
+    ...patientData.map((item) => item.patientProfileId)
+  ]);
+  const firstPending = dedupeRequestsByPatient(requestData.filter((item) => item.status === "PENDING"))[0]?.patientProfileId;
+  const firstAssigned = patientData[0]?.patientProfileId;
+  return [preferredPatientId, previousPatientId, firstPending, firstAssigned].find(
+    (candidate) => candidate && allowedIds.has(candidate)
+  ) || null;
+};
 
 const DoctorWorkspace = ({ mode = "workspace" }) => {
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [selectedPatientView, setSelectedPatientView] = useState("overview");
   const [dossier, setDossier] = useState(null);
+  const [dossierError, setDossierError] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [decisionNotes, setDecisionNotes] = useState({});
@@ -98,8 +151,31 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dossierLoading, setDossierLoading] = useState(false);
+  const [decisionLoadingId, setDecisionLoadingId] = useState(null);
 
-  const loadWorkspace = async () => {
+  const loadDossierFor = async (patientId) => {
+    if (!patientId) {
+      setDossier(null);
+      setDossierError(null);
+      return null;
+    }
+    setDossierLoading(true);
+    setDossierError(null);
+    try {
+      const { data } = await api.get(`/api/doctors/patients/${patientId}/dossier`);
+      setDossier(data);
+      return data;
+    } catch (error) {
+      const apiError = error?.response?.data?.message || error?.response?.data?.error;
+      setDossier(null);
+      setDossierError(apiError || "Impossible de charger le dossier de ce patient pour le moment.");
+      return null;
+    } finally {
+      setDossierLoading(false);
+    }
+  };
+
+  const loadWorkspace = async (options = {}) => {
     setLoading(true);
     const [profileResp, requestsResp, patientsResp] = await Promise.allSettled([
       api.get("/api/doctors/profile/me"),
@@ -123,12 +199,14 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       yearsExperience: profileData?.yearsExperience || ""
     });
 
-    setSelectedPatientId((previous) => {
-      if (previous) return previous;
-      const firstPending = dedupeRequestsByPatient(requestData.filter((item) => item.status === "PENDING"))[0];
-      return firstPending?.patientProfileId || patientData[0]?.patientProfileId || null;
-    });
+    const nextPatientId = resolveNextPatientId(options.preferredPatientId, selectedPatientId, requestData, patientData);
+    setSelectedPatientId(nextPatientId);
+    if (!nextPatientId) {
+      setDossier(null);
+      setDossierError(null);
+    }
     setLoading(false);
+    return { nextPatientId };
   };
 
   useEffect(() => {
@@ -136,29 +214,22 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   }, []);
 
   useEffect(() => {
-    if (mode !== "workspace" || !selectedPatientId) {
+    if (mode !== "workspace") {
       setDossier(null);
+      setDossierError(null);
       return;
     }
-
-    const loadDossier = async () => {
-      setDossierLoading(true);
-      try {
-        const { data } = await api.get(`/api/doctors/patients/${selectedPatientId}/dossier`);
-        setDossier(data);
-      } catch (error) {
-        setDossier(null);
-      } finally {
-        setDossierLoading(false);
-      }
-    };
-
-    loadDossier();
+    if (!selectedPatientId) {
+      setDossier(null);
+      setDossierError(null);
+      return;
+    }
+    loadDossierFor(selectedPatientId);
   }, [mode, selectedPatientId]);
 
   useEffect(() => {
     const nextNotes = {};
-    (dossier?.clinicalIntelligence?.phaseSummaries || []).forEach((item) => {
+    safeList(dossier?.clinicalIntelligence?.phaseSummaries).forEach((item) => {
       nextNotes[item.id] = item.doctorNote || "";
     });
     setPhaseDoctorNotes(nextNotes);
@@ -167,6 +238,16 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   const pendingRequests = useMemo(
     () => dedupeRequestsByPatient(requests.filter((request) => request.status === "PENDING")),
     [requests]
+  );
+
+  const patientMap = useMemo(
+    () => new Map(patients.map((patient) => [patient.patientProfileId, patient])),
+    [patients]
+  );
+
+  const selectedPatientSummary = useMemo(
+    () => patientMap.get(selectedPatientId) || null,
+    [patientMap, selectedPatientId]
   );
 
   const selectedPendingRequest = useMemo(
@@ -181,7 +262,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   const hadTrend = useMemo(
     () =>
-      [...(dossier?.hadHistory || [])]
+      [...safeList(dossier?.hadHistory)]
         .reverse()
         .map((test) => ({
           date: formatDate(test.createdAt),
@@ -193,7 +274,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   const fagerTrend = useMemo(
     () =>
-      [...(dossier?.fagerstromHistory || [])]
+      [...safeList(dossier?.fagerstromHistory)]
         .reverse()
         .map((test) => ({
           date: formatDate(test.createdAt),
@@ -204,7 +285,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   const dailyTrend = useMemo(
     () =>
-      [...(dossier?.dailyReports || [])]
+      [...safeList(dossier?.dailyReports)]
         .sort((left, right) => String(left.reportDate).localeCompare(String(right.reportDate)))
         .map((report) => ({
           date: report.reportDate ? String(report.reportDate).slice(5) : "-",
@@ -231,7 +312,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     ["Nom complet", dossier?.patientName],
     ["Email", dossier?.patientEmail],
     ["Age", calculateAge(dossier?.profile?.dateOfBirth)],
-    ["Date de naissance", dossier?.profile?.dateOfBirth],
+    ["Date de naissance", formatDate(dossier?.profile?.dateOfBirth)],
     ["Sexe", dossier?.profile?.sex],
     ["Taille", dossier?.profile?.heightCm ? `${dossier.profile.heightCm} cm` : null],
     ["Poids", dossier?.profile?.weightKg ? `${dossier.profile.weightKg} kg` : null],
@@ -239,7 +320,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     ["Profession", dossier?.profile?.occupation],
     ["Cigarettes / jour", dossier?.profile?.cigarettesPerDay],
     ["Age debut tabac", dossier?.profile?.smokingStartAge],
-    ["Dependance", dossier?.profile?.dependenceLevel]
+    ["Dependance", dossier?.profile?.dependenceLevel],
+    ["Evaluation", dossier?.profile?.onboardingComplete ? "Complete" : "Incomplet"],
+    ["Tests", dossier?.profile?.testsComplete ? "Complets" : "Incomplets"],
+    ["Journal", dossier?.profile?.journalComplete ? "Actif" : "A initialiser"]
   ];
 
   const saveProfile = async (event) => {
@@ -260,23 +344,36 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     }
   };
 
+  const openPatientView = async (patientProfileId, view = "overview") => {
+    setSelectedPatientView(view);
+    if (selectedPatientId !== patientProfileId) {
+      setSelectedPatientId(patientProfileId);
+      return;
+    }
+    await loadDossierFor(patientProfileId);
+  };
+
   const decideRequest = async (requestId, action, patientProfileId) => {
     setMessage(null);
+    setDecisionLoadingId(requestId);
     try {
       await api.post(`/api/doctors/requests/${requestId}/${action}`, {
         note: decisionNotes[requestId] || null
       });
-      await loadWorkspace();
+      await loadWorkspace({ preferredPatientId: patientProfileId });
+      setSelectedPatientView("overview");
       if (patientProfileId) {
-        setSelectedPatientId(patientProfileId);
+        await loadDossierFor(patientProfileId);
       }
       setMessage({
         type: "success",
-        text: action === "accept" ? "Patient accepte." : "Demande refusee."
+        text: action === "accept" ? "Patient accepte et dossier recharge." : "Demande refusee."
       });
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
       setMessage({ type: "error", text: apiError || "Decision medecin impossible pour le moment." });
+    } finally {
+      setDecisionLoadingId(null);
     }
   };
 
@@ -287,8 +384,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         doctorNote: planNotes[candidateId] || null
       });
       if (selectedPatientId) {
-        const { data } = await api.get(`/api/doctors/patients/${selectedPatientId}/dossier`);
-        setDossier(data);
+        await loadDossierFor(selectedPatientId);
       }
       setMessage({ type: "success", text: "Plan valide et rattache au patient." });
     } catch (error) {
@@ -304,8 +400,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       await api.post(`/api/doctors/patients/${selectedPatientId}/phase-summaries/${phaseSummaryId}/doctor-note`, {
         doctorNote: phaseDoctorNotes[phaseSummaryId] || null
       });
-      const { data } = await api.get(`/api/doctors/patients/${selectedPatientId}/dossier`);
-      setDossier(data);
+      await loadDossierFor(selectedPatientId);
       setMessage({ type: "success", text: "Resume medecin enregistre pour cette phase." });
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
@@ -328,103 +423,262 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       </div>
 
       <form className="row g-3" onSubmit={saveProfile}>
-        <div className="col-12 col-md-6">
-          <label className="form-label">Ville</label>
-          <input className="form-control" value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} />
-        </div>
-        <div className="col-12 col-md-6">
-          <label className="form-label">Pays</label>
-          <input className="form-control" value={form.countryCode} onChange={(e) => setForm((p) => ({ ...p, countryCode: e.target.value }))} />
-        </div>
-        <div className="col-12 col-md-6">
-          <label className="form-label">Specialite</label>
-          <input className="form-control" value={form.specialty} onChange={(e) => setForm((p) => ({ ...p, specialty: e.target.value }))} />
-        </div>
-        <div className="col-12 col-md-6">
-          <label className="form-label">Annees d'experience</label>
-          <input className="form-control" type="number" value={form.yearsExperience} onChange={(e) => setForm((p) => ({ ...p, yearsExperience: e.target.value }))} />
-        </div>
+        <div className="col-12 col-md-6"><label className="form-label">Ville</label><input className="form-control" value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} /></div>
+        <div className="col-12 col-md-6"><label className="form-label">Pays</label><input className="form-control" value={form.countryCode} onChange={(e) => setForm((p) => ({ ...p, countryCode: e.target.value }))} /></div>
+        <div className="col-12 col-md-6"><label className="form-label">Specialite</label><input className="form-control" value={form.specialty} onChange={(e) => setForm((p) => ({ ...p, specialty: e.target.value }))} /></div>
+        <div className="col-12 col-md-6"><label className="form-label">Annees d'experience</label><input className="form-control" type="number" value={form.yearsExperience} onChange={(e) => setForm((p) => ({ ...p, yearsExperience: e.target.value }))} /></div>
         <div className="col-12 form-check">
-          <input
-            id="doctorTeleconsultation"
-            className="form-check-input"
-            type="checkbox"
-            checked={!!form.acceptsTeleconsultation}
-            onChange={(e) => setForm((p) => ({ ...p, acceptsTeleconsultation: e.target.checked }))}
-          />
+          <input id="doctorTeleconsultation" className="form-check-input" type="checkbox" checked={!!form.acceptsTeleconsultation} onChange={(e) => setForm((p) => ({ ...p, acceptsTeleconsultation: e.target.checked }))} />
           <label className="form-check-label" htmlFor="doctorTeleconsultation">Accepte la teleconsultation</label>
         </div>
-        <div className="col-12">
-          <label className="form-label">Bio / approche clinique</label>
-          <textarea className="form-control" rows="4" value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} />
-        </div>
-        <div className="col-12 d-flex justify-content-end">
-          <button className="btn btn-dark">Enregistrer le profil</button>
-        </div>
+        <div className="col-12"><label className="form-label">Bio / approche clinique</label><textarea className="form-control" rows="4" value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} /></div>
+        <div className="col-12 d-flex justify-content-end"><button className="btn btn-dark">Enregistrer le profil</button></div>
       </form>
     </section>
   );
+
+  const renderPatientHeader = () => {
+    if (!dossier) return null;
+    return (
+      <div className="doctor-selection-header">
+        <div>
+          <div className="section-title-sm">Patient selectionne</div>
+          <h3 className="mb-1">{dossier.patientName}</h3>
+          <p className="muted-text mb-0">{dossier.patientEmail}</p>
+        </div>
+        <div className="doctor-selection-meta">
+          <span className={`doctor-status-chip ${selectedPendingRequest ? "status-pending" : "status-accepted"}`}>{selectedPendingRequest ? "Demande a traiter" : "Patient associe"}</span>
+          <span className="doctor-status-chip status-info">{displayValue(selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel || "A evaluer")}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPatientTabs = () => {
+    if (!dossier) return null;
+    return (
+      <div className="doctor-view-tabs">
+        {patientWorkspaceViews.map((view) => (
+          <button key={view.key} type="button" className={`doctor-view-tab ${selectedPatientView === view.key ? "is-active" : ""}`} onClick={() => setSelectedPatientView(view.key)}>
+            <i className={view.icon} />
+            <span>{view.label}</span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const renderDecisionBox = () => {
+    if (!selectedPendingRequest) return null;
+    const isBusy = decisionLoadingId === selectedPendingRequest.id;
+    return (
+      <div className="doctor-dossier-section doctor-inline-decision-box">
+        <strong>Decision sur cette demande</strong>
+        <p className="muted-text mb-0">Le medecin peut lire tout le dossier, puis accepter ou refuser le patient avec une note de tri.</p>
+        <textarea className="form-control mt-3" rows="2" placeholder="Note medecin optionnelle" value={decisionNotes[selectedPendingRequest.id] || ""} onChange={(e) => setDecisionNotes((previous) => ({ ...previous, [selectedPendingRequest.id]: e.target.value }))} />
+        <div className="doctor-card-actions">
+          <button type="button" className="btn btn-dark" disabled={isBusy} onClick={() => decideRequest(selectedPendingRequest.id, "accept", selectedPendingRequest.patientProfileId)}>{isBusy ? "Traitement..." : "Accepter le patient"}</button>
+          <button type="button" className="btn btn-outline-dark" disabled={isBusy} onClick={() => decideRequest(selectedPendingRequest.id, "refuse", selectedPendingRequest.patientProfileId)}>Refuser</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderOverview = () => (
+    <>
+      {renderDecisionBox()}
+      <div className="doctor-dossier-section">
+        <strong>Vue rapide du patient</strong>
+        <div className="profile-card-grid mt-3">
+          {patientCards.slice(0, 8).map(([label, value]) => (
+            <div key={label} className="profile-data-card">
+              <span className="profile-data-label">{label}</span>
+              <strong>{displayValue(value)}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="doctor-dossier-section">
+        <strong>Indicateurs cles</strong>
+        <div className="doctor-score-grid mt-3">
+          <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(dossier.latestFagerstrom?.totalScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
+          <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(dossier.latestHad?.anxietyScore)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
+          <div className="doctor-score-card"><span>HAD Depression</span><strong>{displayValue(dossier.latestHad?.depressionScore)}</strong><p>{displayValue(dossier.latestHad?.depressionInterpretation)}</p></div>
+          <div className="doctor-score-card"><span>Journal</span><strong>{safeList(dossier.dailyReports).length}</strong><p>Entrees quotidiennes</p></div>
+        </div>
+      </div>
+      <div className="doctor-dossier-section doctor-overview-grid">
+        <div className="doctor-overview-card"><span className="profile-data-label">Resume global IA</span><p className="mb-0">{dossier.clinicalIntelligence?.globalSummary?.summary || "Aucun resume global disponible pour le moment."}</p></div>
+        <div className="doctor-overview-card"><span className="profile-data-label">Note clinique IA</span><p className="mb-0">{dossier.clinicalNote?.medicalSummary || "Aucune note clinique n'a encore ete generee."}</p></div>
+      </div>
+    </>
+  );
+
+  const renderProfileSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Profil personnel du patient</strong>
+      <div className="profile-card-grid mt-3">
+        {patientCards.map(([label, value]) => (
+          <div key={label} className="profile-data-card">
+            <span className="profile-data-label">{label}</span>
+            <strong>{displayValue(value)}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="doctor-bio-card mt-4"><span className="profile-data-label">Notes medicales generales</span><p className="mb-0">{displayValue(dossier.profile?.medicalHistoryNotes)}</p></div>
+    </div>
+  );
+
+  const renderEvaluationSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Dossier medical initial complet</strong>
+      <p className="muted-text mb-0">Toutes les reponses de l'evaluation initiale sont visibles pour l'analyse clinique.</p>
+      <div className="doctor-dossier-answers mt-3">
+        {assessmentEntries.length === 0 ? <p className="muted-text mb-0">Aucune reponse d'evaluation disponible.</p> : assessmentEntries.map(([key, value]) => (
+          <div key={key} className="doctor-answer-row"><span>{humanize(key)}</span><strong>{displayValue(value)}</strong></div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderDashboardSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Dashboard clinique et historiques de tests</strong>
+      <div className="doctor-score-grid mt-3">
+        <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(dossier.latestFagerstrom?.totalScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
+        <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(dossier.latestHad?.anxietyScore)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
+        <div className="doctor-score-card"><span>HAD Depression</span><strong>{displayValue(dossier.latestHad?.depressionScore)}</strong><p>{displayValue(dossier.latestHad?.depressionInterpretation)}</p></div>
+        <div className="doctor-score-card"><span>Progression</span><strong>{buildProgressLabel(selectedPatientSummary || dossier.profile)}</strong><p>{displayValue(selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel)}</p></div>
+      </div>
+      <div className="doctor-dashboard-grid mt-3">
+        <div className="doctor-chart-card">
+          <div className="chart-card-head"><div><div className="hero-kicker">HAD</div><h3>Anxiete vs Depression</h3></div></div>
+          <div className="doctor-chart-wrap">
+            {hadTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique HAD.</p> : <ResponsiveContainer><LineChart data={hadTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Line type="monotone" dataKey="anxiete" stroke={chartTheme.anxiety} strokeWidth={3} dot={{ r: 3 }} /><Line type="monotone" dataKey="depression" stroke={chartTheme.depression} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}
+          </div>
+        </div>
+        <div className="doctor-chart-card">
+          <div className="chart-card-head"><div><div className="hero-kicker">Dependance</div><h3>Evolution Fagerstrom</h3></div></div>
+          <div className="doctor-chart-wrap">
+            {fagerTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique Fagerstrom.</p> : <ResponsiveContainer><LineChart data={fagerTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Line type="monotone" dataKey="score" stroke={chartTheme.dependence} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}
+          </div>
+        </div>
+        <div className="doctor-chart-card doctor-chart-card-wide">
+          <div className="chart-card-head"><div><div className="hero-kicker">Journal</div><h3>Cravings, stress et cigarettes</h3></div></div>
+          <div className="doctor-chart-wrap">
+            {dailyTrend.length === 0 ? <p className="muted-text mb-0">Aucune donnee quotidienne.</p> : <ResponsiveContainer><AreaChart data={dailyTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Area type="monotone" dataKey="cravings" stroke={chartTheme.cravings} fill={chartTheme.cravingsFillTop} strokeWidth={2} /><Area type="monotone" dataKey="stress" stroke={chartTheme.stress} fill={chartTheme.stressFillTop} strokeWidth={2} /><Line type="monotone" dataKey="cigarettes" stroke={chartTheme.cigarettes} strokeWidth={2} dot={false} /></AreaChart></ResponsiveContainer>}
+          </div>
+        </div>
+      </div>
+      <div className="doctor-dual-list mt-3">
+        <div className="doctor-overview-card">
+          <span className="profile-data-label">Historique Fagerstrom</span>
+          {safeList(dossier.fagerstromHistory).length === 0 ? <p className="mb-0 muted-text">Aucun test Fagerstrom enregistre.</p> : <div className="doctor-mini-stack mt-3">{safeList(dossier.fagerstromHistory).slice(0, 6).map((test) => <div key={test.id} className="doctor-mini-row"><span>{formatDateTime(test.createdAt)}</span><strong>{displayValue(test.totalScore)} · {displayValue(test.dependenceLevel)}</strong></div>)}</div>}
+        </div>
+        <div className="doctor-overview-card">
+          <span className="profile-data-label">Historique HAD</span>
+          {safeList(dossier.hadHistory).length === 0 ? <p className="mb-0 muted-text">Aucun test HAD enregistre.</p> : <div className="doctor-mini-stack mt-3">{safeList(dossier.hadHistory).slice(0, 6).map((test) => <div key={test.id} className="doctor-mini-row"><span>{formatDateTime(test.createdAt)}</span><strong>A {displayValue(test.anxietyScore)} · D {displayValue(test.depressionScore)}</strong></div>)}</div>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderJournalSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Journal quotidien du patient</strong>
+      {dailyTrend.length === 0 ? <p className="muted-text mt-3 mb-0">Aucune entree de journal pour le moment.</p> : <>
+        <div className="doctor-chart-card mt-3">
+          <div className="chart-card-head"><div><div className="hero-kicker">Journal</div><h3>Evolution quotidienne detaillee</h3></div></div>
+          <div className="doctor-chart-wrap"><ResponsiveContainer><AreaChart data={dailyTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Area type="monotone" dataKey="cravings" stroke={chartTheme.cravings} fill={chartTheme.cravingsFillTop} strokeWidth={2} /><Area type="monotone" dataKey="stress" stroke={chartTheme.stress} fill={chartTheme.stressFillTop} strokeWidth={2} /><Line type="monotone" dataKey="cigarettes" stroke={chartTheme.cigarettes} strokeWidth={2} dot={false} /></AreaChart></ResponsiveContainer></div>
+        </div>
+        <div className="doctor-request-stack mt-3">{safeList(dossier.dailyReports).slice().sort((left, right) => String(right.reportDate).localeCompare(String(left.reportDate))).map((report) => <div key={report.id} className="doctor-request-card"><div className="doctor-request-card-head"><div><strong>{formatDate(report.reportDate)}</strong><p className="mb-0 muted-text">Cigarettes {displayValue(report.cigarettesSmoked)} · Cravings {displayValue(report.cravingsIntensity)} · Stress {displayValue(report.stressScore)}</p></div><span className="doctor-status-chip status-info">Journal</span></div><p className="muted-text">Humeur: {displayValue(report.mood)} · Symptomes: {displayValue(report.withdrawalSymptoms)} · Declencheurs: {displayValue(report.triggers)}</p></div>)}</div>
+      </>}
+    </div>
+  );
+
+  const renderConversationSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Conversation IA 24/7 et alertes</strong>
+      {!dossier.supportConversation ? <p className="muted-text mt-3 mb-0">Aucune conversation IA rattachee au patient pour le moment.</p> : <>
+        <div className="doctor-score-grid mt-3">
+          <div className="doctor-score-card"><span>Risque detecte</span><strong>{displayValue(dossier.supportConversation.latestRiskLevel)}</strong><p>{displayValue(dossier.supportConversation.latestSummary)}</p></div>
+          <div className="doctor-score-card"><span>Alertes pour le medecin</span><strong>{safeList(dossier.supportAlerts).length}</strong><p>Signaux critiques remontes</p></div>
+        </div>
+        {safeList(dossier.supportAlerts).length > 0 && <div className="doctor-request-stack mt-3">{safeList(dossier.supportAlerts).map((alert) => <div key={alert.id} className="doctor-request-card doctor-alert-card"><div className="doctor-request-card-head"><div><strong>{displayValue(alert.alertType)}</strong><p className="mb-0 muted-text">{formatDateTime(alert.createdAt)}</p></div><span className="doctor-status-chip status-pending">Alerte</span></div><p className="muted-text">{displayValue(alert.summary)}</p></div>)}</div>}
+        <div className="support-thread mt-3">{safeList(dossier.supportConversation.messages).map((item) => <div key={item.id} className={`support-bubble ${item.senderType === "PATIENT" ? "is-patient" : item.senderType === "AI" ? "is-ai" : "is-system"}`}><span className="profile-data-label">{item.senderType}</span><p className="mb-0">{item.content}</p><small>{formatDateTime(item.createdAt)}{item.riskLevel ? ` · Risque ${item.riskLevel}` : ""}</small></div>)}</div>
+      </>}
+    </div>
+  );
+
+  const renderAiSection = () => (
+    <>
+      <div className="doctor-dossier-section">
+        <strong>Note clinique IA</strong>
+        <p>{dossier.clinicalNote?.medicalSummary || "Aucune note validee."}</p>
+        <div className="doctor-note-critical">{dossier.clinicalNote?.complementaryNote || "Aucun point critique remonte pour le moment."}</div>
+      </div>
+      <div className="doctor-dossier-section">
+        <strong>Resume global IA</strong>
+        <p>{dossier.clinicalIntelligence?.globalSummary?.summary || "Aucun resume global disponible."}</p>
+        <div className="doctor-focus-list">{safeList(dossier.clinicalIntelligence?.globalSummary?.doctorFocusPoints).map((item) => <span key={item} className="evaluation-goal-chip">{item}</span>)}</div>
+        {dossier.clinicalIntelligence?.globalSummary?.patientReadiness && <div className="doctor-note-critical mt-3">Readiness patient: {dossier.clinicalIntelligence.globalSummary.patientReadiness}</div>}
+      </div>
+      <div className="doctor-dossier-section">
+        <strong>Resumes de phase IA et lecture medecin</strong>
+        {safeList(dossier.clinicalIntelligence?.phaseSummaries).length === 0 ? <p className="muted-text mb-0 mt-3">Aucun resume IA de phase pour le moment.</p> : <div className="doctor-plan-stack mt-3">{safeList(dossier.clinicalIntelligence?.phaseSummaries).map((phase) => <div key={phase.id} className="doctor-plan-card"><div className="doctor-plan-card-head"><div><span className="profile-data-label">Phase {phase.phaseId}</span><strong>{phase.phaseTitle}</strong></div><span className="doctor-status-chip status-accepted">IA + medecin</span></div><div className="profile-data-label mt-2">Resume IA visible patient et medecin</div><p>{phase.summary}</p>{safeList(phase.attentionPoints).length > 0 && <div className="doctor-focus-list">{safeList(phase.attentionPoints).map((item) => <span key={item} className="evaluation-goal-chip">{item}</span>)}</div>}<label className="form-label mt-3">Resume libre du medecin non visible par le patient</label><textarea className="form-control" rows="3" placeholder="Votre lecture clinique personnelle de cette phase..." value={phaseDoctorNotes[phase.id] || ""} onChange={(e) => setPhaseDoctorNotes((previous) => ({ ...previous, [phase.id]: e.target.value }))} /><div className="doctor-card-actions"><button type="button" className="btn btn-outline-dark" onClick={() => savePhaseDoctorNote(phase.id)}>Enregistrer la note phase</button></div></div>)}</div>}
+      </div>
+      <div className="doctor-dossier-section">
+        <strong>Plans IA candidats</strong>
+        {safeList(dossier.clinicalIntelligence?.planCandidates).length === 0 ? <p className="muted-text mb-0 mt-3">Aucun plan candidat disponible.</p> : <div className="doctor-plan-stack mt-3">{safeList(dossier.clinicalIntelligence?.planCandidates).map((plan) => <div key={plan.id} className="doctor-plan-card"><div className="doctor-plan-card-head"><div><span className="profile-data-label">{plan.track}</span><strong>{plan.title}</strong></div><span className="doctor-status-chip status-pending">IA</span></div><p>{plan.rationale}</p><ul>{safeList(plan.steps).map((step) => <li key={step}>{step}</li>)}</ul><textarea className="form-control" rows="2" placeholder="Note medecin avant validation" value={planNotes[plan.id] || ""} onChange={(e) => setPlanNotes((previous) => ({ ...previous, [plan.id]: e.target.value }))} /><div className="doctor-card-actions"><button type="button" className="btn btn-dark" onClick={() => validatePlan(plan.id)}>Valider ce plan</button></div></div>)}</div>}
+      </div>
+    </>
+  );
+
+  const renderAppointmentsSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Rendez-vous patient</strong>
+      {safeList(dossier.appointments).length === 0 ? <p className="muted-text mb-0 mt-3">Aucun rendez-vous lie a ce patient pour le moment.</p> : <div className="doctor-request-stack mt-3">{safeList(dossier.appointments).map((appointment) => <div key={appointment.id} className="doctor-request-card"><div className="doctor-request-card-head"><div><strong>{formatDateTime(appointment.startsAt)}</strong><p className="mb-0 muted-text">{appointment.durationMinutes} min · {appointment.reason || "Motif non renseigne"}</p></div><span className={`doctor-status-chip status-${String(appointment.status || "").toLowerCase()}`}>{appointment.status}</span></div>{appointment.doctorNote && <p className="muted-text mb-0">{appointment.doctorNote}</p>}</div>)}</div>}
+    </div>
+  );
+
+  const renderSelectedPatientContent = () => {
+    if (dossierLoading) return <p className="muted-text mb-0">Chargement du dossier...</p>;
+    if (dossierError) {
+      return <div className="doctor-dossier-empty-state"><p className="mb-3">{dossierError}</p>{selectedPatientId && <button type="button" className="btn btn-dark" onClick={() => loadDossierFor(selectedPatientId)}>Recharger ce dossier</button>}</div>;
+    }
+    if (!dossier) return <p className="muted-text mb-0">Selectionnez une demande ou un patient pour consulter le fichier complet.</p>;
+    switch (selectedPatientView) {
+      case "profile": return renderProfileSection();
+      case "evaluation": return renderEvaluationSection();
+      case "dashboard": return renderDashboardSection();
+      case "journal": return renderJournalSection();
+      case "conversation": return renderConversationSection();
+      case "ai": return renderAiSection();
+      case "appointments": return renderAppointmentsSection();
+      default: return renderOverview();
+    }
+  };
 
   return (
     <div className="container py-4 app-shell">
       <div className="profile-page-header">
         <div>
           <div className="hero-kicker">Espace medecin</div>
-          <h2 className="fw-bold mb-1">
-            {mode === "profile" ? "Profil medecin et positionnement" : "Demandes, dossiers et validation de plans"}
-          </h2>
-          <p className="muted-text mb-0">
-            {mode === "profile"
-              ? "Les informations du medecin sont affichees en lecture. Le formulaire ne revient que si tu choisis de modifier le profil."
-              : "Le medecin doit voir les demandes patient, consulter le dossier complet et suivre l'avancement visuellement."}
-          </p>
+          <h2 className="fw-bold mb-1">{mode === "profile" ? "Profil medecin et positionnement" : "Demandes, dossiers et validation de plans"}</h2>
+          <p className="muted-text mb-0">{mode === "profile" ? "Les informations du medecin sont affichees en lecture. Le formulaire ne revient que si tu choisis de modifier le profil." : "On passe sur un vrai workspace medecin: demandes a trier, liste claire des patients et acces direct au bon module du dossier."}</p>
         </div>
       </div>
-
-      {message && (
-        <div className={`alert mt-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`}>
-          {message.text}
-        </div>
-      )}
-
-      {profile && !profile.active && (
-        <div className="alert alert-warning mt-3">
-          Votre compte medecin est en attente de validation administrateur. Le profil reste modifiable, mais le compte
-          n'est pas encore visible pour les patients.
-        </div>
-      )}
-
-      {loading ? (
-        <div className="muted-text mt-4">Chargement de l'espace medecin...</div>
-      ) : mode === "profile" ? (
+      {message && <div className={`alert mt-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`}>{message.text}</div>}
+      {profile && !profile.active && <div className="alert alert-warning mt-3">Votre compte medecin est en attente de validation administrateur. Le profil reste modifiable, mais le compte n'est pas encore visible pour les patients.</div>}
+      {loading ? <div className="muted-text mt-4">Chargement de l'espace medecin...</div> : mode === "profile" ? (
         <div className="mt-4">
           {profile && !isEditingProfile ? (
             <section className="card form-card">
-              <div className="profile-summary-header">
-                <div>
-                  <div className="section-title-sm">Profil medecin</div>
-                  <p className="muted-text mb-0">Vue lecture du profil praticien.</p>
-                </div>
-                <button className="btn btn-dark btn-sm" onClick={() => setIsEditingProfile(true)}>
-                  Editer le profil
-                </button>
-              </div>
-              <div className="profile-card-grid mt-3">
-                {doctorProfileCards.map(([label, value]) => (
-                  <div key={label} className="profile-data-card">
-                    <span className="profile-data-label">{label}</span>
-                    <strong>{displayValue(value)}</strong>
-                  </div>
-                ))}
-              </div>
-              <div className="doctor-bio-card mt-4">
-                <span className="profile-data-label">Bio / approche clinique</span>
-                <p className="mb-0">{displayValue(profile?.bio)}</p>
-              </div>
+              <div className="profile-summary-header"><div><div className="section-title-sm">Profil medecin</div><p className="muted-text mb-0">Vue lecture du profil praticien.</p></div><button className="btn btn-dark btn-sm" onClick={() => setIsEditingProfile(true)}>Editer le profil</button></div>
+              <div className="profile-card-grid mt-3">{doctorProfileCards.map(([label, value]) => <div key={label} className="profile-data-card"><span className="profile-data-label">{label}</span><strong>{displayValue(value)}</strong></div>)}</div>
+              <div className="doctor-bio-card mt-4"><span className="profile-data-label">Bio / approche clinique</span><p className="mb-0">{displayValue(profile?.bio)}</p></div>
             </section>
-          ) : (
-            renderProfileForm()
-          )}
+          ) : renderProfileForm()}
         </div>
       ) : (
         <div className="doctor-workspace-grid mt-4">
@@ -435,261 +689,17 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
               <div className="doctor-summary-card"><span className="profile-data-label">Specialite</span><strong>{displayValue(profile?.specialty || "Tabacologie")}</strong></div>
               <div className="doctor-summary-card"><span className="profile-data-label">Positionnement</span><strong>{displayValue(profile?.city ? `${profile.city}, ${profile.countryCode || "MA"}` : "A completer")}</strong></div>
             </section>
-
             {!profile && <div className="mt-4">{renderProfileForm()}</div>}
-
             <section className="card form-card mt-4">
-              <div className="section-title-sm">Demandes patients en attente</div>
-              {pendingRequests.length === 0 ? (
-                <p className="muted-text mb-0">Aucune demande pour le moment.</p>
-              ) : (
-                <div className="doctor-request-stack mt-3">
-                  {pendingRequests.map((request) => (
-                    <div key={request.id} className="doctor-request-card">
-                      <div className="doctor-request-card-head">
-                        <div>
-                          <strong>{request.patientName}</strong>
-                          <p className="mb-0 muted-text">{matchingCopy[request.matchingMode] || request.matchingMode} · score {request.matchingScore ?? 0}</p>
-                        </div>
-                        <span className="doctor-status-chip status-pending">{requestStatusCopy[request.status] || request.status}</span>
-                      </div>
-                      <p className="muted-text">{request.patientMessage || "Aucun message additionnel."}</p>
-                      <textarea className="form-control" rows="2" placeholder="Note medecin optionnelle" value={decisionNotes[request.id] || ""} onChange={(e) => setDecisionNotes((p) => ({ ...p, [request.id]: e.target.value }))} />
-                      <div className="doctor-card-actions">
-                        <button type="button" className="btn btn-outline-dark" onClick={() => setSelectedPatientId(request.patientProfileId)}>Consulter le dossier</button>
-                        <button type="button" className="btn btn-dark" onClick={() => decideRequest(request.id, "accept", request.patientProfileId)}>Accepter</button>
-                        <button type="button" className="btn btn-outline-dark" onClick={() => decideRequest(request.id, "refuse", request.patientProfileId)}>Refuser</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="doctor-section-head"><div><div className="section-title-sm">Demandes patients</div><p className="muted-text mb-0">Le medecin voit chaque demande avec des actions explicites et un acces direct au dossier avant decision.</p></div></div>
+              {pendingRequests.length === 0 ? <p className="muted-text mb-0 mt-3">Aucune demande pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th>Matching</th><th>Message</th><th>Demande</th><th className="text-end">Actions</th></tr></thead><tbody>{pendingRequests.map((request) => { const isBusy = decisionLoadingId === request.id; return <tr key={request.id} className={selectedPatientId === request.patientProfileId ? "is-selected" : ""}><td><button type="button" className="doctor-table-link" onClick={() => openPatientView(request.patientProfileId, "overview")}>{request.patientName}</button></td><td><span className="doctor-match-chip">{matchingCopy[request.matchingMode] || request.matchingMode || "Matching standard"}</span></td><td className="doctor-cell-copy">{request.patientMessage || "Aucun message."}</td><td>{formatDateTime(request.createdAt)}</td><td><div className="doctor-row-actions"><button type="button" className="btn btn-dark btn-sm" disabled={isBusy} onClick={() => decideRequest(request.id, "accept", request.patientProfileId)}>{isBusy ? "..." : "Accepter"}</button><button type="button" className="btn btn-outline-dark btn-sm" disabled={isBusy} onClick={() => decideRequest(request.id, "refuse", request.patientProfileId)}>Refuser</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`request-actions-${request.id}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu"><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "overview")}>Vue clinique</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "profile")}>Profil patient</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "evaluation")}>Dossier medical</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "dashboard")}>Dashboard</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "conversation")}>Conversation IA</Dropdown.Item></Dropdown.Menu></Dropdown></div></td></tr>; })}</tbody></table></div>}
             </section>
-
             <section className="card form-card mt-4">
-              <div className="section-title-sm">Patients associes</div>
-              {patients.length === 0 ? (
-                <p className="muted-text mb-0">Aucun patient associe pour le moment.</p>
-              ) : (
-                <div className="doctor-patient-list mt-3">
-                  {patients.map((patient) => (
-                    <button key={patient.patientProfileId} type="button" className={`doctor-patient-item ${selectedPatientId === patient.patientProfileId ? "is-active" : ""}`} onClick={() => setSelectedPatientId(patient.patientProfileId)}>
-                      <div>
-                        <strong>{patient.patientName}</strong>
-                        <p className="mb-0 muted-text">Fagerstrom {patient.fagerstromScore ?? "-"} · HAD A {patient.hadAnxietyScore ?? "-"} · HAD D {patient.hadDepressionScore ?? "-"}</p>
-                      </div>
-                      <span className="doctor-status-chip status-accepted">Associe</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="doctor-section-head"><div><div className="section-title-sm">Patients associes</div><p className="muted-text mb-0">Une liste plus professionnelle: identite, progression, scores et menu d'actions cliniques.</p></div></div>
+              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associe pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th>Naissance</th><th>Ville</th><th>Progression</th><th>Scores</th><th>Dependance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient) => <tr key={patient.patientProfileId} className={selectedPatientId === patient.patientProfileId ? "is-selected" : ""}><td><button type="button" className="doctor-table-link" onClick={() => openPatientView(patient.patientProfileId, "overview")}>{patient.patientName}</button><div className="doctor-table-subcopy">{patient.patientEmail}</div></td><td><div>{formatDate(patient.dateOfBirth)}</div><div className="doctor-table-subcopy">{calculateAge(patient.dateOfBirth)}</div></td><td><div>{displayValue(patient.city)}</div><div className="doctor-table-subcopy">{displayValue(patient.occupation)}</div></td><td><div className="doctor-progress-inline">{buildProgressBadges(patient).map((item) => <span key={item.key} className={`doctor-progress-pill ${item.done ? "is-done" : ""}`}>{item.label}</span>)}</div></td><td className="doctor-cell-copy">{buildPatientScoreLine(patient)}</td><td><span className="doctor-status-chip status-info">{displayValue(patient.dependenceLevel || "A evaluer")}</span></td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-outline-dark btn-sm" onClick={() => openPatientView(patient.patientProfileId, "overview")}>Ouvrir</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`patient-actions-${patient.patientProfileId}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu">{patientWorkspaceViews.map((view) => <Dropdown.Item key={view.key} onClick={() => openPatientView(patient.patientProfileId, view.key)}>{view.label}</Dropdown.Item>)}</Dropdown.Menu></Dropdown></div></td></tr>)}</tbody></table></div>}
             </section>
           </div>
-
-          <aside className="doctor-dossier-panel">
-            <section className="card form-card">
-              <div className="section-title-sm">Dossier patient selectionne</div>
-              {dossierLoading ? (
-                <p className="muted-text mb-0">Chargement du dossier...</p>
-              ) : !dossier ? (
-                <p className="muted-text mb-0">Selectionnez une demande ou un patient pour consulter le fichier complet.</p>
-              ) : (
-                <div className="doctor-dossier-stack">
-                  <div className="doctor-dossier-head">
-                    <div>
-                      <strong>{dossier.patientName}</strong>
-                      <p className="muted-text mb-0">{dossier.patientEmail}</p>
-                    </div>
-                    <span className={`doctor-status-chip ${selectedPendingRequest ? "status-pending" : "status-accepted"}`}>{selectedPendingRequest ? "Demande a trier" : "Patient associe"}</span>
-                  </div>
-
-                  {selectedPendingRequest && (
-                    <div className="doctor-dossier-section">
-                      <strong>Decision rapide</strong>
-                      <p className="muted-text">Le medecin peut lire tout le dossier avant de prendre une decision.</p>
-                      <textarea className="form-control" rows="2" placeholder="Note medecin optionnelle" value={decisionNotes[selectedPendingRequest.id] || ""} onChange={(e) => setDecisionNotes((p) => ({ ...p, [selectedPendingRequest.id]: e.target.value }))} />
-                      <div className="doctor-card-actions">
-                        <button type="button" className="btn btn-dark" onClick={() => decideRequest(selectedPendingRequest.id, "accept", selectedPendingRequest.patientProfileId)}>Accepter ce patient</button>
-                        <button type="button" className="btn btn-outline-dark" onClick={() => decideRequest(selectedPendingRequest.id, "refuse", selectedPendingRequest.patientProfileId)}>Refuser</button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="doctor-dossier-section">
-                    <strong>Informations personnelles</strong>
-                    <div className="profile-card-grid mt-3">
-                      {patientCards.map(([label, value]) => (
-                        <div key={label} className="profile-data-card">
-                          <span className="profile-data-label">{label}</span>
-                          <strong>{displayValue(value)}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Dashboard patient</strong>
-                    <div className="doctor-score-grid mt-3">
-                      <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(dossier.latestFagerstrom?.totalScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
-                      <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(dossier.latestHad?.anxietyScore)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
-                      <div className="doctor-score-card"><span>HAD Depression</span><strong>{displayValue(dossier.latestHad?.depressionScore)}</strong><p>{displayValue(dossier.latestHad?.depressionInterpretation)}</p></div>
-                      <div className="doctor-score-card"><span>Journal quotidien</span><strong>{dailyTrend.length}</strong><p>Entrees disponibles</p></div>
-                    </div>
-                    <div className="doctor-dashboard-grid mt-3">
-                      <div className="doctor-chart-card">
-                        <div className="chart-card-head"><div><div className="hero-kicker">HAD</div><h3>Anxiete vs Depression</h3></div></div>
-                        <div className="doctor-chart-wrap">{hadTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique HAD.</p> : <ResponsiveContainer><LineChart data={hadTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Line type="monotone" dataKey="anxiete" stroke={chartTheme.anxiety} strokeWidth={3} dot={{ r: 3 }} /><Line type="monotone" dataKey="depression" stroke={chartTheme.depression} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}</div>
-                      </div>
-                      <div className="doctor-chart-card">
-                        <div className="chart-card-head"><div><div className="hero-kicker">Dependance</div><h3>Evolution Fagerstrom</h3></div></div>
-                        <div className="doctor-chart-wrap">{fagerTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique Fagerstrom.</p> : <ResponsiveContainer><LineChart data={fagerTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Line type="monotone" dataKey="score" stroke={chartTheme.dependence} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}</div>
-                      </div>
-                      <div className="doctor-chart-card doctor-chart-card-wide">
-                        <div className="chart-card-head"><div><div className="hero-kicker">Journal</div><h3>Cravings, stress et cigarettes</h3></div></div>
-                        <div className="doctor-chart-wrap">{dailyTrend.length === 0 ? <p className="muted-text mb-0">Aucune donnee quotidienne.</p> : <ResponsiveContainer><AreaChart data={dailyTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Area type="monotone" dataKey="cravings" stroke={chartTheme.cravings} fill={chartTheme.cravingsFillTop} strokeWidth={2} /><Area type="monotone" dataKey="stress" stroke={chartTheme.stress} fill={chartTheme.stressFillTop} strokeWidth={2} /><Line type="monotone" dataKey="cigarettes" stroke={chartTheme.cigarettes} strokeWidth={2} dot={false} /></AreaChart></ResponsiveContainer>}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Evaluation initiale complete</strong>
-                    <div className="doctor-dossier-answers mt-3">
-                      {assessmentEntries.length === 0 ? <p className="muted-text mb-0">Aucune reponse d'evaluation disponible.</p> : assessmentEntries.map(([key, value]) => (
-                        <div key={key} className="doctor-answer-row">
-                          <span>{humanize(key)}</span>
-                          <strong>{displayValue(value)}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Note clinique IA</strong>
-                    <p>{dossier.clinicalNote?.medicalSummary || "Aucune note validee."}</p>
-                    <div className="doctor-note-critical">{dossier.clinicalNote?.complementaryNote || "Aucun point critique remonte pour le moment."}</div>
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Resume global IA</strong>
-                    <p>{dossier.clinicalIntelligence?.globalSummary?.summary || "Aucun resume global disponible."}</p>
-                    <div className="doctor-focus-list">
-                      {(dossier.clinicalIntelligence?.globalSummary?.doctorFocusPoints || []).map((item) => <span key={item} className="evaluation-goal-chip">{item}</span>)}
-                    </div>
-                    {dossier.clinicalIntelligence?.globalSummary?.patientReadiness && (
-                      <div className="doctor-note-critical mt-3">
-                        Readiness patient: {dossier.clinicalIntelligence.globalSummary.patientReadiness}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Resumes de phase</strong>
-                    {(dossier.clinicalIntelligence?.phaseSummaries || []).length === 0 ? (
-                      <p className="muted-text mb-0 mt-3">Aucun resume IA de phase pour le moment.</p>
-                    ) : (
-                      <div className="doctor-plan-stack mt-3">
-                        {(dossier.clinicalIntelligence?.phaseSummaries || []).map((phase) => (
-                          <div key={phase.id} className="doctor-plan-card">
-                            <div className="doctor-plan-card-head">
-                              <div>
-                                <span className="profile-data-label">Phase {phase.phaseId}</span>
-                                <strong>{phase.phaseTitle}</strong>
-                              </div>
-                              <span className="doctor-status-chip status-accepted">IA + medecin</span>
-                            </div>
-                            <p>{phase.summary}</p>
-                            {(phase.attentionPoints || []).length > 0 && (
-                              <div className="doctor-focus-list">
-                                {phase.attentionPoints.map((item) => (
-                                  <span key={item} className="evaluation-goal-chip">{item}</span>
-                                ))}
-                              </div>
-                            )}
-                            <label className="form-label mt-3">Resume libre du medecin</label>
-                            <textarea
-                              className="form-control"
-                              rows="3"
-                              placeholder="Votre lecture clinique personnelle de cette phase..."
-                              value={phaseDoctorNotes[phase.id] || ""}
-                              onChange={(e) => setPhaseDoctorNotes((previous) => ({ ...previous, [phase.id]: e.target.value }))}
-                            />
-                            <div className="doctor-card-actions">
-                              <button type="button" className="btn btn-outline-dark" onClick={() => savePhaseDoctorNote(phase.id)}>
-                                Enregistrer la note phase
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Conversations IA 24/7</strong>
-                    {!dossier.supportConversation ? (
-                      <p className="muted-text mb-0 mt-3">Aucune conversation IA rattachee au patient pour le moment.</p>
-                    ) : (
-                      <>
-                        <div className="doctor-score-grid mt-3">
-                          <div className="doctor-score-card"><span>Risque</span><strong>{displayValue(dossier.supportConversation.latestRiskLevel)}</strong><p>{displayValue(dossier.supportConversation.latestSummary)}</p></div>
-                          <div className="doctor-score-card"><span>Alertes</span><strong>{dossier.supportAlerts?.length || 0}</strong><p>Signaux remontes au medecin</p></div>
-                        </div>
-                        <div className="support-thread mt-3">
-                          {(dossier.supportConversation.messages || []).map((item) => (
-                            <div key={item.id} className={`support-bubble ${item.senderType === "PATIENT" ? "is-patient" : item.senderType === "AI" ? "is-ai" : "is-system"}`}>
-                              <span className="profile-data-label">{item.senderType}</span>
-                              <p className="mb-0">{item.content}</p>
-                              {item.riskLevel && <small>Risque {item.riskLevel}</small>}
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Rendez-vous patient</strong>
-                    {!dossier.appointments || dossier.appointments.length === 0 ? (
-                      <p className="muted-text mb-0 mt-3">Aucun rendez-vous lie a ce patient pour le moment.</p>
-                    ) : (
-                      <div className="doctor-request-stack mt-3">
-                        {dossier.appointments.map((appointment) => (
-                          <div key={appointment.id} className="doctor-request-card">
-                            <div className="doctor-request-card-head">
-                              <div>
-                                <strong>{new Date(appointment.startsAt).toLocaleString("fr-FR")}</strong>
-                                <p className="mb-0 muted-text">{appointment.durationMinutes} min · {appointment.reason || "Motif non renseigne"}</p>
-                              </div>
-                              <span className={`doctor-status-chip status-${String(appointment.status || "").toLowerCase()}`}>{appointment.status}</span>
-                            </div>
-                            {appointment.doctorNote && <p className="muted-text mb-0">{appointment.doctorNote}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="doctor-dossier-section">
-                    <strong>Plans IA candidats</strong>
-                    <div className="doctor-plan-stack mt-3">
-                      {(dossier.clinicalIntelligence?.planCandidates || []).map((plan) => (
-                        <div key={plan.id} className="doctor-plan-card">
-                          <div className="doctor-plan-card-head">
-                            <div><span className="profile-data-label">{plan.track}</span><strong>{plan.title}</strong></div>
-                            <span className="doctor-status-chip status-pending">IA</span>
-                          </div>
-                          <p>{plan.rationale}</p>
-                          <ul>{(plan.steps || []).map((step) => <li key={step}>{step}</li>)}</ul>
-                          <textarea className="form-control" rows="2" placeholder="Note medecin avant validation" value={planNotes[plan.id] || ""} onChange={(e) => setPlanNotes((p) => ({ ...p, [plan.id]: e.target.value }))} />
-                          <div className="doctor-card-actions"><button type="button" className="btn btn-dark" onClick={() => validatePlan(plan.id)}>Valider ce plan</button></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
-          </aside>
+          <aside className="doctor-dossier-panel"><section className="card form-card"><div className="section-title-sm">Espace patient selectionne</div>{renderPatientHeader()}{renderPatientTabs()}<div className="doctor-dossier-stack">{renderSelectedPatientContent()}</div></section></aside>
         </div>
       )}
     </div>
