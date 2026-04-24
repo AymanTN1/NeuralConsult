@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { isDoctor } from "../utils/roles";
@@ -25,6 +26,8 @@ const formatDateTime = (value) => {
 const Support = () => {
   const { user } = useAuth();
   const doctorMode = isDoctor(user);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversation, setConversation] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
@@ -76,6 +79,32 @@ const Support = () => {
   useEffect(() => {
     reload();
   }, [doctorMode]);
+
+  useEffect(() => {
+    if (!doctorMode) {
+      return;
+    }
+    const patientId = searchParams.get("patient");
+    if (!patientId) {
+      return;
+    }
+
+    const openFromQuery = async () => {
+      try {
+        setSelectedPatientId(patientId);
+        const { data } = await api.get(`/api/support/doctor/patients/${patientId}`);
+        setConversation(data);
+      } catch (error) {
+        // ignore query-navigation failure, normal screen keeps working
+      } finally {
+        const next = new URLSearchParams(searchParams);
+        next.delete("patient");
+        setSearchParams(next, { replace: true });
+      }
+    };
+
+    openFromQuery();
+  }, [doctorMode, searchParams, setSearchParams]);
 
   const sendMessage = async (event) => {
     event.preventDefault();
@@ -159,6 +188,13 @@ const Support = () => {
                           setConversation(data);
                         }}>
                           Ouvrir la conversation
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-success"
+                          onClick={() => navigate(`/appointments?urgentPatient=${alert.patientProfileId}`)}
+                        >
+                          Consultation urgente
                         </button>
                         {alert.status === "OPEN" && (
                           <button type="button" className="btn btn-dark" onClick={() => acknowledgeAlert(alert.id)}>

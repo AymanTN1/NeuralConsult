@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
 
 const REACTIONS = [
@@ -35,6 +36,7 @@ const formatDate = (value) => {
 const reactionTotal = (post) => Object.values(post?.reactions || {}).reduce((sum, value) => sum + Number(value || 0), 0);
 
 const Communities = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [overview, setOverview] = useState(emptyOverview);
   const [postForm, setPostForm] = useState({ content: "", serverId: "" });
   const [circleForm, setCircleForm] = useState({ name: "", description: "" });
@@ -63,6 +65,26 @@ const Communities = () => {
   useEffect(() => {
     loadOverview();
   }, []);
+
+  useEffect(() => {
+    const chatId = searchParams.get("chat");
+    if (!chatId) {
+      return;
+    }
+
+    const candidate = (overview.conversations || []).find((item) => item.counterpartId === chatId)
+      || (overview.friends || []).find((item) => item.id === chatId)
+      || (overview.people || []).find((item) => item.id === chatId);
+
+    if (!candidate) {
+      return;
+    }
+
+    openChat(candidate);
+    const next = new URLSearchParams(searchParams);
+    next.delete("chat");
+    setSearchParams(next, { replace: true });
+  }, [overview, searchParams, setSearchParams]);
 
   const createPost = async (event) => {
     event.preventDefault();
@@ -413,3 +435,6 @@ const Communities = () => {
 };
 
 export default Communities;
+
+
+

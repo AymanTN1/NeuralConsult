@@ -1,6 +1,7 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const pageMeta = {
@@ -32,6 +33,10 @@ const pageMeta = {
     eyebrow: "Rendez-vous clinique",
     title: "Organisation des seances et soutien psychique"
   },
+  "/notifications": {
+    eyebrow: "Boite de reception clinique",
+    title: "Notifications, rappels et messages importants"
+  },
   "/support": {
     eyebrow: "Soutien 24/7",
     title: "Conversations IA, signaux de risque et escalade medecin"
@@ -42,15 +47,17 @@ const pageMeta = {
   },
   "/profile": {
     eyebrow: "Identite patient",
-    title: "Personal Profile"
+    title: "Profil personnel"
   }
 };
 
 const ClinicalTopbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const adminMode = isAdmin(user);
   const doctorMode = isDoctor(user);
+  const [unreadCount, setUnreadCount] = useState(0);
   const meta = adminMode
     ? { eyebrow: "Validation clinique", title: "Comptes medecins en attente de validation" }
     : doctorMode
@@ -58,6 +65,8 @@ const ClinicalTopbar = () => {
       ? { eyebrow: "Identite praticien", title: "Profil medecin et positionnement" }
       : location.pathname === "/appointments"
         ? { eyebrow: "Rendez-vous medecin", title: "Planning, confirmations et seances completes" }
+        : location.pathname === "/notifications"
+          ? { eyebrow: "Boite de reception medecin", title: "Alertes, rendez-vous et rappels a traiter" }
         : location.pathname === "/support"
           ? { eyebrow: "Conversations assistees", title: "Alertes IA et suivi psychologique continu" }
           : location.pathname === "/communities"
@@ -70,6 +79,30 @@ const ClinicalTopbar = () => {
     user?.scores?.hadDepressionScore || 0
   );
   const onboardingComplete = !isPatient(user) || user?.profile?.onboardingComplete;
+
+  useEffect(() => {
+    let ignore = false;
+    const loadSummary = async () => {
+      try {
+        const { data } = await api.get("/api/notifications/summary");
+        if (!ignore) {
+          setUnreadCount(data?.unreadCount || 0);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setUnreadCount(0);
+        }
+      }
+    };
+
+    if (user) {
+      loadSummary();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [user, location.pathname]);
 
   return (
     <header className="clinical-topbar">
@@ -84,13 +117,17 @@ const ClinicalTopbar = () => {
           <span className="clinical-score-chip-value">{adminMode ? "ADMIN" : doctorMode ? "MD" : riskScore}</span>
         </div>
         <div className={`clinical-score-chip ${onboardingComplete ? "severity-stable" : "severity-warning"}`}>
-          <span className="clinical-score-chip-label">Profiling</span>
+          <span className="clinical-score-chip-label">Parcours</span>
           <span className="clinical-score-chip-value">{onboardingComplete ? "Complet" : "En cours"}</span>
         </div>
         <div className="topbar-user">
           <div className="topbar-user-name">{user?.fullName || "Patient"}</div>
           <div className="topbar-user-copy">{user?.email}</div>
         </div>
+        <button className="btn btn-outline-dark btn-sm topbar-notifications" onClick={() => navigate("/notifications")} aria-label="Ouvrir les notifications" title="Notifications">
+          <i className="bi bi-bell-fill" />
+          {unreadCount > 0 && <span className="topbar-notification-count">{unreadCount}</span>}
+        </button>
         <button className="btn btn-outline-dark btn-sm topbar-logout" onClick={logout}>
           <i className="bi bi-box-arrow-right me-1" />
           Deconnexion

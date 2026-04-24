@@ -284,7 +284,7 @@ const Onboarding = () => {
     <div className="container py-4 app-shell">
       <div className="evaluation-page-header" data-guide-id="evaluation-header">
         <div>
-          <div className="hero-kicker">Mandatory Evaluation Timeline</div>
+          <div className="hero-kicker">Timeline d'evaluation obligatoire</div>
           <h2 className="fw-bold mb-1">Consultation initiale du patient</h2>
           <div className="muted-text">
             Le profil personnel reste distinct. Toute la matiere clinique, tabagique et sociale vit dans cette timeline.
@@ -296,7 +296,7 @@ const Onboarding = () => {
             <strong>{Math.max(scores?.alcoholScore || 0, scores?.honcScore || 0, scores?.cageScore || 0)}</strong>
           </div>
           <div className={`evaluation-status-pill ${user?.profile?.onboardingComplete ? "is-complete" : ""}`}>
-            <span>Profiling</span>
+            <span>Parcours</span>
             <strong>{user?.profile?.onboardingComplete ? "Complet" : `${progressPercent}%`}</strong>
           </div>
         </div>
@@ -728,7 +728,7 @@ const Onboarding = () => {
             <div className="col-12">
               <div className="evaluation-inline-note">
                 <div>
-                  <strong>Dependency scoring timeline</strong>
+                    <strong>Repere de dependance</strong>
                   <p className="mb-0">
                     Cette phase prepare le score de dependance. Le calcul officiel detaille de Fagerstrom
                     reste disponible dans l'espace <Link to="/tests">Tests</Link>.

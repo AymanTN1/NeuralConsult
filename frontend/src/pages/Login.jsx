@@ -22,7 +22,19 @@ const Login = () => {
       await login(form.email, form.password);
       navigate("/dashboard");
     } catch (err) {
-      setError("La connexion a ete refusee. Verifiez l'email et le mot de passe.");
+      const apiError = err?.response?.data;
+      if (apiError?.error === "EMAIL_VERIFICATION_REQUIRED") {
+        const pendingEmail = apiError?.email || form.email;
+        localStorage.setItem("nc_pending_verification_email", pendingEmail);
+        navigate("/verify-email", {
+          state: {
+            email: pendingEmail,
+            message: "Votre compte existe, mais l'adresse email doit encore etre verifiee. Un nouveau code vient d'etre envoye."
+          }
+        });
+        return;
+      }
+      setError(apiError?.message || "La connexion a ete refusee. Verifiez l'email et le mot de passe.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +77,7 @@ const Login = () => {
 
         <div className="auth-card-shell">
           <div className="auth-card">
-            <div className="hero-kicker">Authentication</div>
+            <div className="hero-kicker">Authentification</div>
             <h2 className="auth-card-title">Connexion</h2>
             <p className="muted-text">Accedez a votre espace clinique et reprenez le suivi la ou il s'etait arrete.</p>
 

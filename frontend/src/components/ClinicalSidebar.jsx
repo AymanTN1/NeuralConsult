@@ -1,6 +1,7 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const patientNavItems = [
@@ -13,15 +14,15 @@ const patientNavItems = [
   { to: "/appointments", icon: "bi bi-calendar2-heart", label: "Rendez-vous", guideId: "nav-appointments" },
   { to: "/support", icon: "bi bi-chat-heart", label: "IA 24/7", guideId: "nav-support" },
   { to: "/communities", icon: "bi bi-people-fill", label: "Communautes", guideId: "nav-communities" },
-  { to: "/profile", icon: "bi bi-person-vcard", label: "Personal Profile", guideId: "nav-profile" }
+  { to: "/profile", icon: "bi bi-person-vcard", label: "Profil personnel", guideId: "nav-profile" }
 ];
 
 const doctorNavItems = [
-  { to: "/dashboard", icon: "bi bi-speedometer2", label: "Doctor Workspace" },
+  { to: "/dashboard", icon: "bi bi-speedometer2", label: "Gestion patients" },
   { to: "/appointments", icon: "bi bi-calendar2-week", label: "Rendez-vous" },
   { to: "/support", icon: "bi bi-chat-square-heart", label: "Conversations IA" },
   { to: "/communities", icon: "bi bi-people", label: "Communautes" },
-  { to: "/profile", icon: "bi bi-person-badge", label: "Doctor Profile" }
+  { to: "/profile", icon: "bi bi-person-badge", label: "Profil medecin" }
 ];
 
 const adminNavItems = [
@@ -30,9 +31,39 @@ const adminNavItems = [
 
 const ClinicalSidebar = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const profile = user?.profile;
   const adminMode = isAdmin(user);
   const doctorMode = isDoctor(user);
+  const patientMode = isPatient(user) && !doctorMode && !adminMode;
+  const [hasAssignedDoctor, setHasAssignedDoctor] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAssociation = async () => {
+      if (!patientMode) {
+        setHasAssignedDoctor(false);
+        return;
+      }
+      try {
+        const { data } = await api.get("/api/doctors/association/patient");
+        if (!ignore) {
+          setHasAssignedDoctor(!!data?.doctorProfileId);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setHasAssignedDoctor(false);
+        }
+      }
+    };
+
+    loadAssociation();
+    return () => {
+      ignore = true;
+    };
+  }, [patientMode, user?.userId, location.pathname]);
+
   const statusLabel = adminMode
     ? "Administrateur"
     : doctorMode
@@ -40,7 +71,13 @@ const ClinicalSidebar = () => {
     : profile?.onboardingComplete
       ? "Patient actif"
       : "Candidat";
-  const navItems = adminMode ? adminNavItems : doctorMode ? doctorNavItems : patientNavItems;
+  const navItems = useMemo(() => {
+    if (adminMode) return adminNavItems;
+    if (doctorMode) return doctorNavItems;
+    return hasAssignedDoctor
+      ? patientNavItems.filter((item) => item.to !== "/doctors")
+      : patientNavItems;
+  }, [adminMode, doctorMode, hasAssignedDoctor]);
 
   return (
     <aside className="clinical-sidebar">

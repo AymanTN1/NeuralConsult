@@ -3,8 +3,14 @@ package com.neuralconsult.sevrage.appointment;
 import com.neuralconsult.sevrage.appointment.dto.AppointmentDecisionRequest;
 import com.neuralconsult.sevrage.appointment.dto.AppointmentRequest;
 import com.neuralconsult.sevrage.appointment.dto.AppointmentResponse;
+import com.neuralconsult.sevrage.appointment.dto.AppointmentUpdateRequest;
+import com.neuralconsult.sevrage.appointment.dto.AvailableAppointmentSlotResponse;
+import com.neuralconsult.sevrage.appointment.dto.DoctorAvailabilityRequest;
+import com.neuralconsult.sevrage.appointment.dto.DoctorAvailabilityResponse;
+import com.neuralconsult.sevrage.appointment.dto.DoctorUrgentAppointmentRequest;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/appointments")
+@Transactional
 public class AppointmentController {
 
   private final AppointmentService appointmentService;
@@ -33,6 +40,13 @@ public class AppointmentController {
   public List<AppointmentResponse> listPatientAppointments(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return appointmentService.listForPatient(user).stream().map(this::toResponse).toList();
+  }
+
+  @GetMapping("/availability/patient")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
+  public List<AvailableAppointmentSlotResponse> listPatientAvailableSlots(@AuthenticationPrincipal UserDetails principal) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return appointmentService.listAvailableSlotsForPatient(user);
   }
 
   @PostMapping
@@ -51,11 +65,68 @@ public class AppointmentController {
     return toResponse(appointmentService.cancelAsPatient(user, id));
   }
 
+  @PostMapping("/{id}/patient-update")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
+  public AppointmentResponse updatePatientAppointment(@AuthenticationPrincipal UserDetails principal,
+                                                      @PathVariable java.util.UUID id,
+                                                      @RequestBody AppointmentUpdateRequest request) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toResponse(appointmentService.updateAsPatient(user, id, request));
+  }
+
+  @PostMapping("/{id}/cancel-doctor")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public AppointmentResponse cancelDoctorAppointment(@AuthenticationPrincipal UserDetails principal,
+                                                     @PathVariable java.util.UUID id) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toResponse(appointmentService.cancelAsDoctor(user, id));
+  }
+
   @GetMapping("/doctor")
   @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
   public List<AppointmentResponse> listDoctorAppointments(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return appointmentService.listForDoctor(user).stream().map(this::toResponse).toList();
+  }
+
+  @GetMapping("/availability/doctor")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public List<DoctorAvailabilityResponse> listDoctorAvailabilities(@AuthenticationPrincipal UserDetails principal) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return appointmentService.listAvailabilitiesForDoctor(user).stream().map(this::toAvailabilityResponse).toList();
+  }
+
+  @PostMapping("/availability/doctor")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public DoctorAvailabilityResponse saveDoctorAvailability(@AuthenticationPrincipal UserDetails principal,
+                                                           @RequestBody DoctorAvailabilityRequest request) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toAvailabilityResponse(appointmentService.saveAvailability(user, request));
+  }
+
+  @PostMapping("/availability/doctor/{id}/delete")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public void deleteDoctorAvailability(@AuthenticationPrincipal UserDetails principal,
+                                       @PathVariable java.util.UUID id) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    appointmentService.deleteAvailability(user, id);
+  }
+
+  @PostMapping("/doctor/urgent")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public AppointmentResponse createUrgentAppointment(@AuthenticationPrincipal UserDetails principal,
+                                                     @RequestBody DoctorUrgentAppointmentRequest request) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toResponse(appointmentService.createUrgentAsDoctor(user, request));
+  }
+
+  @PostMapping("/{id}/doctor-update")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public AppointmentResponse updateDoctorAppointment(@AuthenticationPrincipal UserDetails principal,
+                                                     @PathVariable java.util.UUID id,
+                                                     @RequestBody AppointmentUpdateRequest request) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return toResponse(appointmentService.updateAsDoctor(user, id, request));
   }
 
   @PostMapping("/{id}/confirm")
@@ -100,6 +171,16 @@ public class AppointmentController {
         appointment.isTriggeredByAiAlert(),
         appointment.getCreatedAt(),
         appointment.getUpdatedAt()
+    );
+  }
+
+  private DoctorAvailabilityResponse toAvailabilityResponse(DoctorAvailability availability) {
+    return new DoctorAvailabilityResponse(
+        availability.getId(),
+        availability.getDayOfWeek().name(),
+        availability.getStartTime(),
+        availability.getEndTime(),
+        availability.isActive()
     );
   }
 }

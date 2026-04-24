@@ -37,6 +37,7 @@ const getRegionFromCity = (city) => {
 const DoctorDirectory = () => {
   const [doctors, setDoctors] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [assignedDoctor, setAssignedDoctor] = useState(null);
   const [messages, setMessages] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,9 +48,10 @@ const DoctorDirectory = () => {
   const load = async () => {
     setLoading(true);
     setError(null);
-    const [doctorsResp, requestsResp] = await Promise.allSettled([
+    const [doctorsResp, requestsResp, associationResp] = await Promise.allSettled([
       api.get("/api/doctors"),
-      api.get("/api/doctors/requests/patient")
+      api.get("/api/doctors/requests/patient"),
+      api.get("/api/doctors/association/patient")
     ]);
 
     if (doctorsResp.status === "fulfilled") {
@@ -63,6 +65,12 @@ const DoctorDirectory = () => {
       setRequests(requestsResp.value.data || []);
     } else {
       setRequests([]);
+    }
+
+    if (associationResp.status === "fulfilled") {
+      setAssignedDoctor(associationResp.value.data || null);
+    } else {
+      setAssignedDoctor(null);
     }
 
     setLoading(false);
@@ -120,13 +128,14 @@ const DoctorDirectory = () => {
 
   return (
     <div className="container py-4 app-shell">
-        <div className="profile-page-header" data-guide-id="doctor-directory-header">
+      <div className="profile-page-header" data-guide-id="doctor-directory-header">
         <div>
-          <div className="hero-kicker">Annuaire medecins Maroc</div>
-          <h2 className="fw-bold mb-1">Trouver un medecin tabacologue rapidement</h2>
+          <div className="hero-kicker">Alliance medecin-patient</div>
+          <h2 className="fw-bold mb-1">{assignedDoctor ? "Medecin deja associe" : "Trouver un medecin tabacologue rapidement"}</h2>
           <p className="muted-text mb-0">
-            Tous les medecins affiches ici sont consideres comme disponibles au Maroc. Tu peux filtrer par region ou ville
-            pour retrouver plus vite un medecin proche.
+            {assignedDoctor
+              ? "Ton dossier est deja rattache a un medecin. L'annuaire se masque pour garder une navigation simple et eviter les demandes en doublon."
+              : "Tous les medecins affiches ici sont consideres comme disponibles au Maroc. Tu peux filtrer par region ou ville pour retrouver plus vite un medecin proche."}
           </p>
         </div>
       </div>
@@ -139,40 +148,74 @@ const DoctorDirectory = () => {
 
       {error && <div className="alert alert-danger mt-3">{error}</div>}
 
+      {assignedDoctor ? (
         <section className="card form-card mt-4" data-guide-id="doctor-directory-list">
-        <div className="section-title-sm">Filtres de recherche</div>
-        <div className="doctor-filter-grid mt-3">
-          <div>
-            <label className="form-label">Region</label>
-            <select
-              className="form-select"
-              value={selectedRegion}
-              onChange={(event) => {
-                setSelectedRegion(event.target.value);
-                setSelectedCity("all");
-              }}
-            >
-              <option value="all">Toutes les regions</option>
-              {regionOptions.map((region) => (
-                <option key={region} value={region}>
-                  {region}
-                </option>
-              ))}
-            </select>
+          <div className="section-title-sm">Mon medecin referent</div>
+          <div className="doctor-card mt-3">
+            <div className="doctor-card-head">
+              <div>
+                <div className="section-title-sm">{assignedDoctor.doctorName}</div>
+                <p className="muted-text mb-0">{assignedDoctor.specialty || "Tabacologie / suivi clinique"}</p>
+              </div>
+              <span className="doctor-status-chip status-accepted">Associe depuis {assignedDoctor.assignedAt ? new Date(assignedDoctor.assignedAt).toLocaleDateString("fr-FR") : "aujourd'hui"}</span>
+            </div>
+            <div className="doctor-card-grid">
+              <div>
+                <span className="profile-data-label">Ville</span>
+                <strong>{assignedDoctor.city || "Non renseignee"}</strong>
+              </div>
+              <div>
+                <span className="profile-data-label">Pays</span>
+                <strong>{assignedDoctor.countryCode || "MA"}</strong>
+              </div>
+              <div>
+                <span className="profile-data-label">Teleconsultation</span>
+                <strong>{assignedDoctor.acceptsTeleconsultation ? "Oui" : "Non"}</strong>
+              </div>
+              <div>
+                <span className="profile-data-label">Experience</span>
+                <strong>{assignedDoctor.yearsExperience ?? "Non renseignee"} ans</strong>
+              </div>
+            </div>
+            <p className="muted-text mb-0">Les nouvelles demandes medecin sont bloquees tant que cette association reste active. Les rendez-vous se prennent uniquement avec ce praticien.</p>
           </div>
-          <div>
-            <label className="form-label">Ville</label>
-            <select className="form-select" value={selectedCity} onChange={(event) => setSelectedCity(event.target.value)}>
-              <option value="all">Toutes les villes</option>
-              {cityOptions.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
+        </section>
+      ) : (
+        <section className="card form-card mt-4" data-guide-id="doctor-directory-list">
+          <div className="section-title-sm">Filtres de recherche</div>
+          <div className="doctor-filter-grid mt-3">
+            <div>
+              <label className="form-label">Region</label>
+              <select
+                className="form-select"
+                value={selectedRegion}
+                onChange={(event) => {
+                  setSelectedRegion(event.target.value);
+                  setSelectedCity("all");
+                }}
+              >
+                <option value="all">Toutes les regions</option>
+                {regionOptions.map((region) => (
+                  <option key={region} value={region}>
+                    {region}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="form-label">Ville</label>
+              <select className="form-select" value={selectedCity} onChange={(event) => setSelectedCity(event.target.value)}>
+                <option value="all">Toutes les villes</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="card form-card mt-4">
         <div className="section-title-sm">Demandes deja envoyees</div>
@@ -197,80 +240,82 @@ const DoctorDirectory = () => {
         )}
       </section>
 
-      <section className="doctor-grid mt-4">
-        {loading ? (
-          <div className="muted-text">Chargement de l'annuaire medecin...</div>
-        ) : visibleDoctors.length === 0 ? (
-          <div className="muted-text">Aucun medecin ne correspond a ce filtre actuellement.</div>
-        ) : (
-          visibleDoctors.map((doctor) => {
-            const existingRequest = latestRequestByDoctor.get(doctor.id);
-            const region = getRegionFromCity(doctor.city);
+      {!assignedDoctor && (
+        <section className="doctor-grid mt-4">
+          {loading ? (
+            <div className="muted-text">Chargement de l'annuaire medecin...</div>
+          ) : visibleDoctors.length === 0 ? (
+            <div className="muted-text">Aucun medecin ne correspond a ce filtre actuellement.</div>
+          ) : (
+            visibleDoctors.map((doctor) => {
+              const existingRequest = latestRequestByDoctor.get(doctor.id);
+              const region = getRegionFromCity(doctor.city);
 
-            return (
-              <article key={doctor.id} className="card form-card doctor-card">
-                <div className="doctor-card-head">
-                  <div>
-                    <div className="section-title-sm">{doctor.fullName}</div>
-                    <p className="muted-text mb-0">{doctor.specialty || "Tabacologie / suivi clinique"}</p>
+              return (
+                <article key={doctor.id} className="card form-card doctor-card">
+                  <div className="doctor-card-head">
+                    <div>
+                      <div className="section-title-sm">{doctor.fullName}</div>
+                      <p className="muted-text mb-0">{doctor.specialty || "Tabacologie / suivi clinique"}</p>
+                    </div>
+                    <span className="doctor-match-chip">
+                      {matchingCopy[doctor.matchingMode] || "Disponible"}
+                      {doctor.matchingScore ? ` · ${doctor.matchingScore}` : ""}
+                    </span>
                   </div>
-                  <span className="doctor-match-chip">
-                    {matchingCopy[doctor.matchingMode] || "Disponible"}
-                    {doctor.matchingScore ? ` · ${doctor.matchingScore}` : ""}
-                  </span>
-                </div>
 
-                <div className="doctor-card-grid">
-                  <div>
-                    <span className="profile-data-label">Region</span>
-                    <strong>{region}</strong>
+                  <div className="doctor-card-grid">
+                    <div>
+                      <span className="profile-data-label">Region</span>
+                      <strong>{region}</strong>
+                    </div>
+                    <div>
+                      <span className="profile-data-label">Ville</span>
+                      <strong>{doctor.city || "Non renseignee"}</strong>
+                    </div>
+                    <div>
+                      <span className="profile-data-label">Teleconsultation</span>
+                      <strong>{doctor.acceptsTeleconsultation ? "Oui" : "Non"}</strong>
+                    </div>
+                    <div>
+                      <span className="profile-data-label">Score de suivi</span>
+                      <strong>{doctor.successScore ?? "A definir"}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span className="profile-data-label">Ville</span>
-                    <strong>{doctor.city || "Non renseignee"}</strong>
-                  </div>
-                  <div>
-                    <span className="profile-data-label">Teleconsultation</span>
-                    <strong>{doctor.acceptsTeleconsultation ? "Oui" : "Non"}</strong>
-                  </div>
-                  <div>
-                    <span className="profile-data-label">Score de suivi</span>
-                    <strong>{doctor.successScore ?? "A definir"}</strong>
-                  </div>
-                </div>
 
-                <p className="muted-text">{doctor.bio || "Profil medecin en cours de completion."}</p>
+                  <p className="muted-text">{doctor.bio || "Profil medecin en cours de completion."}</p>
 
-                <label className="form-label">Message optionnel au medecin</label>
-                <textarea
-                  className="form-control"
-                  rows="3"
-                  value={messages[doctor.id] || ""}
-                  onChange={(event) =>
-                    setMessages((previous) => ({ ...previous, [doctor.id]: event.target.value }))
-                  }
-                  placeholder="Explique ton contexte ou ce que tu attends du medecin."
-                />
+                  <label className="form-label">Message optionnel au medecin</label>
+                  <textarea
+                    className="form-control"
+                    rows="3"
+                    value={messages[doctor.id] || ""}
+                    onChange={(event) =>
+                      setMessages((previous) => ({ ...previous, [doctor.id]: event.target.value }))
+                    }
+                    placeholder="Explique ton contexte ou ce que tu attends du medecin."
+                  />
 
-                <div className="doctor-card-actions">
-                  <button
-                    type="button"
-                    className="btn btn-dark"
-                    onClick={() => sendRequest(doctor.id)}
-                    disabled={existingRequest?.status === "PENDING" || existingRequest?.status === "ACCEPTED"}
-                  >
-                    {existingRequest?.status === "PENDING"
-                      ? "Demande envoyee"
-                      : existingRequest?.status === "ACCEPTED"
-                        ? "Medecin associe"
-                        : "Envoyer la demande"}
-                  </button>
-                </div>
-              </article>
-            );
-          })
-        )}
-      </section>
+                  <div className="doctor-card-actions">
+                    <button
+                      type="button"
+                      className="btn btn-dark"
+                      onClick={() => sendRequest(doctor.id)}
+                      disabled={existingRequest?.status === "PENDING" || existingRequest?.status === "ACCEPTED"}
+                    >
+                      {existingRequest?.status === "PENDING"
+                        ? "Demande envoyee"
+                        : existingRequest?.status === "ACCEPTED"
+                          ? "Medecin associe"
+                          : "Envoyer la demande"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </section>
+      )}
     </div>
   );
 };

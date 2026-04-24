@@ -23,6 +23,7 @@ import com.neuralconsult.sevrage.doctor.dto.DoctorPatientDossierResponse;
 import com.neuralconsult.sevrage.doctor.dto.DoctorPatientRequestCreateRequest;
 import com.neuralconsult.sevrage.doctor.dto.DoctorPatientRequestResponse;
 import com.neuralconsult.sevrage.doctor.dto.DoctorPatientSummaryResponse;
+import com.neuralconsult.sevrage.doctor.dto.PatientDoctorAssociationResponse;
 import com.neuralconsult.sevrage.doctor.dto.DoctorProfileRequest;
 import com.neuralconsult.sevrage.doctor.dto.DoctorProfileResponse;
 import com.neuralconsult.sevrage.medical.tests.FagerstromTest;
@@ -35,6 +36,7 @@ import com.neuralconsult.sevrage.onboarding.OnboardingAssessment;
 import com.neuralconsult.sevrage.onboarding.OnboardingRepository;
 import com.neuralconsult.sevrage.onboarding.dto.OnboardingAssessmentResponse;
 import com.neuralconsult.sevrage.patient.PatientProfile;
+import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.report.DailyReport;
 import com.neuralconsult.sevrage.report.DailyReportRepository;
 import com.neuralconsult.sevrage.report.dto.DailyReportResponse;
@@ -71,6 +73,7 @@ public class DoctorController {
   private final DoctorPatientRequestService requestService;
   private final DoctorPatientAssignmentRepository assignmentRepository;
   private final UserRepository userRepository;
+  private final PatientProfileService patientProfileService;
   private final OnboardingRepository onboardingRepository;
   private final FagerstromTestRepository fagerstromTestRepository;
   private final HadTestRepository hadTestRepository;
@@ -92,6 +95,7 @@ public class DoctorController {
       DoctorPatientRequestService requestService,
       DoctorPatientAssignmentRepository assignmentRepository,
       UserRepository userRepository,
+      PatientProfileService patientProfileService,
       OnboardingRepository onboardingRepository,
       FagerstromTestRepository fagerstromTestRepository,
       HadTestRepository hadTestRepository,
@@ -112,6 +116,7 @@ public class DoctorController {
     this.requestService = requestService;
     this.assignmentRepository = assignmentRepository;
     this.userRepository = userRepository;
+    this.patientProfileService = patientProfileService;
     this.onboardingRepository = onboardingRepository;
     this.fagerstromTestRepository = fagerstromTestRepository;
     this.hadTestRepository = hadTestRepository;
@@ -199,6 +204,31 @@ public class DoctorController {
   public List<DoctorPatientRequestResponse> listPatientRequests(@AuthenticationPrincipal UserDetails principal) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return requestService.listForPatient(user).stream().map(this::toRequestResponse).toList();
+  }
+
+  @GetMapping("/association/patient")
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
+  @Transactional
+  public PatientDoctorAssociationResponse getPatientAssociation(@AuthenticationPrincipal UserDetails principal) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    PatientProfile patientProfile = patientProfileService.getOrCreate(user);
+    return assignmentRepository.findByPatientProfileAndActiveTrue(patientProfile)
+        .map(assignment -> {
+          DoctorProfile doctor = assignment.getDoctorProfile();
+          return new PatientDoctorAssociationResponse(
+              doctor.getId(),
+              doctor.getUser().getFullName(),
+              doctor.getUser().getEmail(),
+              doctor.getSpecialty(),
+              doctor.getCity(),
+              doctor.getCountryCode(),
+              doctor.isAcceptsTeleconsultation(),
+              doctor.getYearsExperience(),
+              doctor.getSuccessScore(),
+              assignment.getAssignedAt()
+          );
+        })
+        .orElse(null);
   }
 
   @GetMapping("/requests/doctor")

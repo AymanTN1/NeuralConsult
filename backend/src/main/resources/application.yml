@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   application:
     name: neuralconsult-sevrage
   datasource:
@@ -14,6 +14,17 @@
         jdbc:
           time_zone: UTC
     open-in-view: false
+  mail:
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
 
 server:
   port: 8080
@@ -27,6 +38,9 @@ management:
     web:
       exposure:
         include: health,info
+  health:
+    mail:
+      enabled: false
 
 security:
   jwt:
@@ -35,3 +49,10 @@ security:
     accessTokenMinutes: 60
     refreshTokenDays: 14
     cookieSecure: false
+
+app:
+  mail:
+    enabled: ${APP_MAIL_ENABLED:false}
+    fromAddress: ${APP_MAIL_FROM_ADDRESS:no-reply@neuralconsult.local}
+    fromName: ${APP_MAIL_FROM_NAME:NeuralConsult Sevrage}
+    verificationCodeTtlMinutes: ${APP_MAIL_VERIFICATION_CODE_TTL_MINUTES:15}

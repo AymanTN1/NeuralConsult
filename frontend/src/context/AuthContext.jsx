@@ -27,13 +27,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    await api.post("/api/auth/login", { email, password });
+    const { data } = await api.post("/api/auth/login", { email, password });
     await fetchMe();
+    return data;
   };
 
   const register = async (payload) => {
-    await api.post("/api/auth/register", payload);
+    const { data } = await api.post("/api/auth/register", payload);
+    return data;
+  };
+
+  const verifyEmail = async (email, code) => {
+    const { data } = await api.post("/api/auth/verify-email", { email, code });
     await fetchMe();
+    return data;
+  };
+
+  const resendVerification = async (email) => {
+    const { data } = await api.post("/api/auth/resend-verification", { email });
+    return data;
   };
 
   const logout = async () => {
@@ -41,7 +53,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const value = useMemo(() => ({ user, loading, error, login, register, logout, refetch: fetchMe }), [user, loading, error]);
+  const value = useMemo(
+    () => ({ user, loading, error, login, register, verifyEmail, resendVerification, logout, refetch: fetchMe }),
+    [user, loading, error]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

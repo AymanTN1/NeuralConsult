@@ -1,5 +1,9 @@
 package com.neuralconsult.sevrage.doctor;
 
+import com.neuralconsult.sevrage.community.CommunityConnection;
+import com.neuralconsult.sevrage.community.CommunityConnectionRepository;
+import com.neuralconsult.sevrage.notification.NotificationItem;
+import com.neuralconsult.sevrage.notification.NotificationService;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.user.User;
@@ -15,17 +19,23 @@ public class DoctorPatientRequestService {
   private final DoctorPatientAssignmentRepository assignmentRepository;
   private final DoctorProfileRepository doctorProfileRepository;
   private final PatientProfileService patientProfileService;
+  private final CommunityConnectionRepository connectionRepository;
+  private final NotificationService notificationService;
 
   public DoctorPatientRequestService(
       DoctorPatientRequestRepository requestRepository,
       DoctorPatientAssignmentRepository assignmentRepository,
       DoctorProfileRepository doctorProfileRepository,
-      PatientProfileService patientProfileService
+      PatientProfileService patientProfileService,
+      CommunityConnectionRepository connectionRepository,
+      NotificationService notificationService
   ) {
     this.requestRepository = requestRepository;
     this.assignmentRepository = assignmentRepository;
     this.doctorProfileRepository = doctorProfileRepository;
     this.patientProfileService = patientProfileService;
+    this.connectionRepository = connectionRepository;
+    this.notificationService = notificationService;
   }
 
   @Transactional
@@ -54,7 +64,26 @@ public class DoctorPatientRequestService {
     request.setMatchingMode(mode);
     request.setMatchingScore(score);
     request.setStatus(DoctorPatientRequest.RequestStatus.PENDING);
-    return requestRepository.save(request);
+    DoctorPatientRequest saved = requestRepository.save(request);
+    notificationService.notify(
+        doctorProfile.getUser(),
+        NotificationItem.Type.GENERAL,
+        "Nouvelle demande patient",
+        patientProfile.getUser().getFullName() + " souhaite rejoindre votre file active. Ouvrez le dossier pour lire le message et decider.",
+        "/dashboard",
+        "Ouvrir la gestion patients",
+        "doctor-request:new:" + saved.getId()
+    );
+    notificationService.notify(
+        patientUser,
+        NotificationItem.Type.GENERAL,
+        "Demande envoyee au medecin",
+        "Votre demande a ete transmise a " + doctorDisplayName(doctorProfile.getUser().getFullName()) + ". Vous serez informe des qu'une decision sera prise.",
+        "/doctors",
+        "Voir le suivi",
+        "doctor-request:patient:" + saved.getId()
+    );
+    return saved;
   }
 
   @Transactional
@@ -89,6 +118,7 @@ public class DoctorPatientRequestService {
       assignment.setActive(true);
       assignment.setAssignedAt(Instant.now());
       assignmentRepository.save(assignment);
+      ensureDoctorPatientConnection(request.getPatientProfile().getUser(), doctorProfile.getUser());
 
       requestRepository.findAllByDoctorProfileAndPatientProfileAndStatus(
               doctorProfile,
@@ -103,6 +133,18 @@ public class DoctorPatientRequestService {
             requestRepository.save(candidate);
           });
     }
+
+    notificationService.notify(
+        request.getPatientProfile().getUser(),
+        NotificationItem.Type.GENERAL,
+        status == DoctorPatientRequest.RequestStatus.ACCEPTED ? "Demande acceptee" : "Demande refusee",
+        status == DoctorPatientRequest.RequestStatus.ACCEPTED
+            ? doctorDisplayName(doctorProfile.getUser().getFullName()) + " a accepte votre demande. Vous pouvez maintenant planifier vos rendez-vous avec ce medecin."
+            : doctorDisplayName(doctorProfile.getUser().getFullName()) + " n'a pas retenu votre demande pour le moment. Vous pouvez solliciter un autre medecin.",
+        status == DoctorPatientRequest.RequestStatus.ACCEPTED ? "/appointments" : "/doctors",
+        status == DoctorPatientRequest.RequestStatus.ACCEPTED ? "Ouvrir les rendez-vous" : "Retourner a l'annuaire",
+        "doctor-request:decision:" + saved.getId() + ":" + status.name()
+    );
     return saved;
   }
 
@@ -110,5 +152,26 @@ public class DoctorPatientRequestService {
   public List<DoctorPatientAssignment> listAssignments(User doctorUser) {
     DoctorProfile doctorProfile = doctorProfileRepository.findByUser(doctorUser).orElseThrow();
     return assignmentRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile);
+  }
+
+  private void ensureDoctorPatientConnection(User patientUser, User doctorUser) {
+    CommunityConnection connection = connectionRepository.findBetween(patientUser, doctorUser).orElseGet(() -> {
+      CommunityConnection created = new CommunityConnection();
+      created.setRequester(patientUser);
+      created.setReceiver(doctorUser);
+      return created;
+    });
+    connection.setRequester(patientUser);
+    connection.setReceiver(doctorUser);
+    connection.setStatus(CommunityConnection.Status.ACCEPTED);
+    connectionRepository.save(connection);
+  }
+
+  private String doctorDisplayName(String fullName) {
+    if (fullName == null || fullName.isBlank()) {
+      return "le medecin";
+    }
+    String trimmed = fullName.trim();
+    return trimmed.toLowerCase().startsWith("dr ") ? trimmed : "Dr " + trimmed;
   }
 }

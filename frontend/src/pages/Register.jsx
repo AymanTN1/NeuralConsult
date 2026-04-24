@@ -47,10 +47,18 @@ const Register = () => {
     setError(null);
 
     try {
-      await register(payload);
-      navigate("/dashboard");
+      const response = await register(payload);
+      localStorage.setItem("nc_pending_verification_email", payload.email);
+      navigate("/verify-email", {
+        state: {
+          email: payload.email,
+          message:
+            response?.message ||
+            "Le compte a ete cree. Saisissez le code envoye par email pour activer l'acces clinique."
+        }
+      });
     } catch (err) {
-      setError("La creation du compte a echoue. Verifiez les champs et reessayez.");
+      setError(err?.response?.data?.message || "La creation du compte a echoue. Verifiez les champs et reessayez.");
     } finally {
       setLoading(false);
     }
@@ -87,7 +95,7 @@ const Register = () => {
           <div className="auth-card">
             <div className="hero-kicker">Compte clinique</div>
             <h2 className="auth-card-title">Creer un compte</h2>
-            <p className="muted-text">Choisissez votre role puis completez uniquement les informations utiles a ce role.</p>
+            <p className="muted-text">Choisissez votre role, completez les informations utiles, puis confirmez l'adresse email pour activer le compte.</p>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}
 

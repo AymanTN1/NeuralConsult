@@ -129,7 +129,7 @@ const Profile = () => {
       { label: "Niveau d'etudes", value: formatEducation(assessment?.educationLevel) },
       {
         label: "Statut d'evaluation",
-        value: profile?.onboardingComplete ? "Profiling complet" : "Evaluation en cours"
+        value: profile?.onboardingComplete ? "Parcours initial complet" : "Evaluation en cours"
       }
     ],
     [assessment?.educationLevel, profile, user]
@@ -139,7 +139,7 @@ const Profile = () => {
       <div className="container py-4 app-shell" data-guide-id="profile-main">
         <div className="profile-page-header" data-guide-id="profile-header">
         <div>
-          <div className="hero-kicker">Personal Profile</div>
+          <div className="hero-kicker">Profil personnel</div>
           <h2 className="fw-bold mb-1">Fiche d'identite patient</h2>
           <p className="muted-text mb-0">
             Cette page ne contient que les informations personnelles et demographiques. Les questions
@@ -168,11 +168,11 @@ const Profile = () => {
         <section className="card form-card profile-summary-panel">
           <div className="profile-summary-header">
             <div>
-              <div className="section-title-sm">Clinical identity summary</div>
+              <div className="section-title-sm">Synthese d'identite clinique</div>
               <p className="muted-text mb-0">Lecture rapide du dossier patient avant revue clinique.</p>
             </div>
             <span className={`profile-status-badge ${profile?.onboardingComplete ? "is-complete" : "is-pending"}`}>
-              {profile?.onboardingComplete ? "Profiling complet" : "Evaluation en cours"}
+              {profile?.onboardingComplete ? "Parcours complet" : "Evaluation en cours"}
             </span>
           </div>
 
@@ -187,7 +187,7 @@ const Profile = () => {
         </section>
 
         <aside className="card form-card profile-aside-panel">
-          <div className="section-title-sm">Boundary reminder</div>
+          <div className="section-title-sm">Rappel de perimetre</div>
           <p className="muted-text">
             Les facteurs de risque, le bilan tabagique, Fagerstrom, l'alcool, le cannabis et EPICES
             sont maintenant centralises dans la timeline d'evaluation.
@@ -196,14 +196,14 @@ const Profile = () => {
             <div className="profile-side-step">
               <span>1</span>
               <div>
-                <strong>Personal Profile</strong>
+                <strong>Profil personnel</strong>
                 <p>Identite, age, ville, profession, niveau d'etudes.</p>
               </div>
             </div>
             <div className="profile-side-step">
               <span>2</span>
               <div>
-                <strong>Mandatory Evaluation</strong>
+                <strong>Evaluation obligatoire</strong>
                 <p>Questions cliniques, tabacologie, Fagerstrom et vulnerabilites.</p>
               </div>
             </div>
@@ -218,7 +218,7 @@ const Profile = () => {
         <form onSubmit={handleSubmit} className="card form-card mt-4">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <div className="section-title-sm">Edit Personal Profile</div>
+              <div className="section-title-sm">Modifier le profil personnel</div>
               <p className="muted-text mb-0">Les biometries et donnees cliniques se modifient dans l'evaluation.</p>
             </div>
             <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => setIsEditing(false)}>

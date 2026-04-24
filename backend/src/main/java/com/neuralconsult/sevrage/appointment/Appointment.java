@@ -11,6 +11,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,6 +51,9 @@ public class Appointment extends AuditableEntity {
 
   @Column(name = "triggered_by_ai_alert", nullable = false)
   private boolean triggeredByAiAlert;
+
+  @Column(name = "conversation_opened_at")
+  private Instant conversationOpenedAt;
 
   public enum Status {
     REQUESTED,

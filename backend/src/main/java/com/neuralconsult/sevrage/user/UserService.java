@@ -28,7 +28,7 @@ public class UserService {
   public User register(RegisterRequest request) {
     userRepository.findByEmailIgnoreCase(request.email())
         .ifPresent(existing -> {
-          throw new IllegalArgumentException("Email already in use");
+          throw new IllegalArgumentException("Cette adresse email est deja utilisee.");
         });
 
     User user = new User();
@@ -43,6 +43,9 @@ public class UserService {
       default -> "ROLE_PATIENT";
     };
     user.setRoles(Set.of(role));
+    if (!"ADMIN".equals(accountType)) {
+      user.setAccountEnabled(false);
+    }
     if ("DOCTOR".equals(accountType)) {
       user.setStatus(User.UserStatus.PENDING_VERIFICATION);
     }
@@ -62,6 +65,13 @@ public class UserService {
     }
 
     return savedUser;
+  }
+
+  public User findByEmail(String email) {
+    if (email == null || email.isBlank()) {
+      return null;
+    }
+    return userRepository.findByEmailIgnoreCase(email).orElse(null);
   }
 
   private String normalizeCountryCode(String countryCode) {

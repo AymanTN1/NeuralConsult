@@ -8,5 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DoctorPatientAssignmentRepository extends JpaRepository<DoctorPatientAssignment, UUID> {
   Optional<DoctorPatientAssignment> findByPatientProfile(PatientProfile patientProfile);
+  Optional<DoctorPatientAssignment> findByPatientProfileAndActiveTrue(PatientProfile patientProfile);
+  Optional<DoctorPatientAssignment> findByDoctorProfileAndPatientProfileAndActiveTrue(DoctorProfile doctorProfile,
+                                                                                      PatientProfile patientProfile);
   List<DoctorPatientAssignment> findAllByDoctorProfileAndActiveTrue(DoctorProfile doctorProfile);
 }

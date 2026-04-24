@@ -5,6 +5,8 @@ import com.neuralconsult.sevrage.doctor.DoctorPatientRequest;
 import com.neuralconsult.sevrage.doctor.DoctorPatientRequestRepository;
 import com.neuralconsult.sevrage.doctor.DoctorProfile;
 import com.neuralconsult.sevrage.doctor.DoctorProfileRepository;
+import com.neuralconsult.sevrage.notification.NotificationItem;
+import com.neuralconsult.sevrage.notification.NotificationService;
 import com.neuralconsult.sevrage.patient.PatientProfile;
 import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.report.DailyReportRepository;
@@ -36,6 +38,7 @@ public class SupportService {
   private final DoctorPatientRequestRepository requestRepository;
   private final DailyReportRepository dailyReportRepository;
   private final AiSupportChatClient aiSupportChatClient;
+  private final NotificationService notificationService;
 
   public SupportService(SupportConversationRepository conversationRepository,
                         SupportMessageRepository messageRepository,
@@ -45,7 +48,8 @@ public class SupportService {
                         DoctorPatientAssignmentRepository assignmentRepository,
                         DoctorPatientRequestRepository requestRepository,
                         DailyReportRepository dailyReportRepository,
-                        AiSupportChatClient aiSupportChatClient) {
+                        AiSupportChatClient aiSupportChatClient,
+                        NotificationService notificationService) {
     this.conversationRepository = conversationRepository;
     this.messageRepository = messageRepository;
     this.doctorAlertRepository = doctorAlertRepository;
@@ -55,6 +59,7 @@ public class SupportService {
     this.requestRepository = requestRepository;
     this.dailyReportRepository = dailyReportRepository;
     this.aiSupportChatClient = aiSupportChatClient;
+    this.notificationService = notificationService;
   }
 
   @Transactional
@@ -103,7 +108,16 @@ public class SupportService {
       alert.setLevel(parseRiskLevel(ai.riskLevel()));
       alert.setTitle("Alerte soutien IA 24/7");
       alert.setSummary(ai.alertReason() != null && !ai.alertReason().isBlank() ? ai.alertReason() : ai.reply());
-      doctorAlertRepository.save(alert);
+      DoctorAlert savedAlert = doctorAlertRepository.save(alert);
+      notificationService.notify(
+          conversation.getDoctorProfile().getUser(),
+          NotificationItem.Type.AI_ALERT,
+          "Nouvelle alerte IA 24/7",
+          "Une alerte de soutien a ete detectee pour " + patientProfile.getUser().getFullName() + ".",
+          "/support?patient=" + patientProfile.getId(),
+          "Ouvrir la conversation",
+          "support-alert:" + savedAlert.getId()
+      );
     }
 
     return toResponse(conversation);
