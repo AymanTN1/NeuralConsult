@@ -10,4 +10,6 @@ public interface DoctorAlertRepository extends JpaRepository<DoctorAlert, UUID> 
   List<DoctorAlert> findAllByDoctorProfileOrderByCreatedAtDesc(DoctorProfile doctorProfile);
 
   List<DoctorAlert> findAllByPatientProfileOrderByCreatedAtDesc(PatientProfile patientProfile);
+
+  List<DoctorAlert> findAllByStatusOrderByCreatedAtAsc(DoctorAlert.Status status);
 }

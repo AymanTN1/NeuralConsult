@@ -26,6 +26,10 @@ public class CommunityDirectMessage extends AuditableEntity {
   @JoinColumn(name = "recipient_user_id", nullable = false)
   private User recipient;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "shared_post_id")
+  private CommunityPost sharedPost;
+
   @Column(name = "content", nullable = false, length = 2400)
   private String content;
 

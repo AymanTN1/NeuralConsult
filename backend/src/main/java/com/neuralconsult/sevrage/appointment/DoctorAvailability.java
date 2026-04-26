@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import lombok.Getter;
@@ -23,7 +24,10 @@ public class DoctorAvailability extends AuditableEntity {
   @JoinColumn(name = "doctor_profile_id", nullable = false)
   private DoctorProfile doctorProfile;
 
-  @Column(name = "day_of_week", nullable = false, length = 16)
+  @Column(name = "available_date")
+  private LocalDate availableDate;
+
+  @Column(name = "day_of_week", length = 16)
   private DayOfWeek dayOfWeek;
 
   @Column(name = "start_time", nullable = false)

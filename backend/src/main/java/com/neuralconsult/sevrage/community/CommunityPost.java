@@ -27,4 +27,7 @@ public class CommunityPost extends AuditableEntity {
 
   @Column(name = "content", nullable = false, length = 5000)
   private String content;
+
+  @Column(name = "image_url", length = 2000000)
+  private String imageUrl;
 }

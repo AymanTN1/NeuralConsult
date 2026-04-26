@@ -11,8 +11,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
@@ -38,8 +40,39 @@ public class User extends AuditableEntity {
   @Column(name = "full_name", length = 120)
   private String fullName;
 
+  @Column(name = "first_name", length = 80)
+  private String firstName;
+
+  @Column(name = "last_name", length = 80)
+  private String lastName;
+
+  @Column(name = "date_of_birth")
+  private LocalDate dateOfBirth;
+
   @Column(name = "phone_number", length = 32)
   private String phoneNumber;
+
+  @Column(name = "identity_document_type", length = 24)
+  private String identityDocumentType;
+
+  @Column(name = "identity_verified", nullable = false)
+  private boolean identityVerified;
+
+  @Column(name = "identity_verified_at")
+  private Instant identityVerifiedAt;
+
+  @Column(name = "identity_verification_summary", length = 600)
+  private String identityVerificationSummary;
+
+  @Column(name = "community_username", unique = true, length = 40)
+  private String communityUsername;
+
+  @Lob
+  @Column(name = "community_avatar_url")
+  private String communityAvatarUrl;
+
+  @Column(name = "community_bio", length = 320)
+  private String communityBio;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 24)

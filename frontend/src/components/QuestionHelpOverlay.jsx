@@ -42,6 +42,20 @@ const findQuestionLabel = (host) => {
   return null;
 };
 
+const buildAnchorStyle = (host, label) => {
+  const hostRect = host.getBoundingClientRect();
+  const labelRect = label.getBoundingClientRect();
+  const buttonSize = 34;
+  const top = Math.max(0, labelRect.top - hostRect.top + (labelRect.height - buttonSize) / 2);
+  const preferredLeft = labelRect.right - hostRect.left + 10;
+  const maxLeft = Math.max(0, hostRect.width - buttonSize - 4);
+
+  return {
+    top: `${top}px`,
+    left: `${Math.min(preferredLeft, maxLeft)}px`
+  };
+};
+
 const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
   const [anchors, setAnchors] = useState([]);
 
@@ -76,10 +90,12 @@ const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
 
       seenFields.add(fieldName);
       host.classList.add("question-help-host");
+      label.classList.add("question-help-label");
       nextAnchors.push({
         fieldName,
         host,
-        label
+        label,
+        buttonStyle: buildAnchorStyle(host, label)
       });
     });
 
@@ -95,12 +111,21 @@ const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
 
     const resizeObserver = new ResizeObserver(() => recalculateAnchors());
     resizeObserver.observe(container);
+    const mutationObserver = new MutationObserver(() => recalculateAnchors());
+    mutationObserver.observe(container, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
+    const rafId = window.requestAnimationFrame(recalculateAnchors);
 
     window.addEventListener("resize", recalculateAnchors);
     window.addEventListener("scroll", recalculateAnchors, true);
 
     return () => {
       resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      window.cancelAnimationFrame(rafId);
       window.removeEventListener("resize", recalculateAnchors);
       window.removeEventListener("scroll", recalculateAnchors, true);
     };
@@ -112,6 +137,7 @@ const QuestionHelpOverlay = ({ containerRef, phaseId, onOpenQuestionHelp }) => {
         key={`${phaseId}-${anchor.fieldName}`}
         type="button"
         className={`question-help-inline-btn ${anchor.label?.classList?.contains("form-check-label") ? "is-checkbox" : ""}`}
+        style={anchor.buttonStyle}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();

@@ -21,10 +21,13 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,6 +39,10 @@ public class AppointmentService {
   private static final int SLOT_MINUTES = 20;
   private static final int MAX_APPOINTMENTS_PER_MONTH = 4;
   private static final int MAX_APPOINTMENTS_PER_WEEK = 1;
+  private static final int AVAILABILITY_WINDOW_DAYS = 180;
+  private static final String MEETING_PROVIDER = "JITSI";
+  private static final String JITSI_BASE_URL = "https://meet.jit.si/";
+  private static final DateTimeFormatter MEETING_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
   private final AppointmentRepository appointmentRepository;
   private final DoctorProfileRepository doctorProfileRepository;
@@ -94,6 +101,7 @@ public class AppointmentService {
     appointment.setReason(request.reason());
     appointment.setPatientNote(request.reason());
     appointment.setTriggeredByAiAlert(Boolean.TRUE.equals(request.triggeredByAiAlert()));
+    ensureMeetingDetails(appointment);
     Appointment saved = appointmentRepository.save(appointment);
     notificationService.notify(
         doctorProfile.getUser(),
@@ -142,12 +150,13 @@ public class AppointmentService {
     appointment.setDoctorNote("Consultation urgente creee par le medecin.");
     appointment.setTriggeredByAiAlert(request.triggeredByAiAlert() == null || request.triggeredByAiAlert());
     appointment.setStatus(Appointment.Status.CONFIRMED);
+    ensureMeetingDetails(appointment);
     Appointment saved = appointmentRepository.save(appointment);
     notificationService.notify(
         patientProfile.getUser(),
         NotificationItem.Type.APPOINTMENT,
         "Consultation urgente programmee",
-        doctorDisplayName(doctorProfile.getUser().getFullName()) + " a cree une consultation urgente pour le " + formatDateTime(saved.getStartsAt()) + ".",
+        doctorDisplayName(doctorProfile.getUser().getFullName()) + " a cree une consultation urgente pour le " + formatDateTime(saved.getStartsAt()) + ". Le lien visio sera envoye automatiquement juste avant la seance.",
         "/appointments",
         "Ouvrir le rendez-vous",
         "appointment-urgent-patient:" + saved.getId()
@@ -263,6 +272,9 @@ public class AppointmentService {
     if (request != null) {
       appointment.setDoctorNote(request.doctorNote());
     }
+    if (status == Appointment.Status.CONFIRMED) {
+      ensureMeetingDetails(appointment);
+    }
     Appointment saved = appointmentRepository.save(appointment);
     notificationService.notify(
         appointment.getPatientProfile().getUser(),
@@ -321,7 +333,12 @@ public class AppointmentService {
   @Transactional
   public List<DoctorAvailability> listAvailabilitiesForDoctor(User doctorUser) {
     DoctorProfile doctorProfile = doctorProfileRepository.findByUser(doctorUser).orElseThrow();
-    return availabilityRepository.findAllByDoctorProfileOrderByDayOfWeekAscStartTimeAsc(doctorProfile);
+    return availabilityRepository.findAllByDoctorProfile(doctorProfile).stream()
+        .sorted(Comparator
+            .comparing(DoctorAvailability::getAvailableDate, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(DoctorAvailability::getDayOfWeek, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(DoctorAvailability::getStartTime))
+        .toList();
   }
 
   @Transactional
@@ -329,8 +346,15 @@ public class AppointmentService {
     DoctorProfile doctorProfile = doctorProfileRepository.findByUser(doctorUser).orElseThrow();
     LocalTime startTime = request.startTime();
     LocalTime endTime = request.endTime();
+    LocalDate availableDate = request.availableDate();
     if (startTime == null || endTime == null) {
       throw new IllegalArgumentException("Les horaires de debut et de fin sont obligatoires.");
+    }
+    if (availableDate == null) {
+      throw new IllegalArgumentException("La date de disponibilite est obligatoire.");
+    }
+    if (availableDate.isBefore(LocalDate.now())) {
+      throw new IllegalArgumentException("La date de disponibilite doit etre aujourd'hui ou dans le futur.");
     }
     if (!endTime.isAfter(startTime)) {
       throw new IllegalArgumentException("L'horaire de fin doit etre apres l'horaire de debut.");
@@ -339,19 +363,13 @@ public class AppointmentService {
       throw new IllegalArgumentException("Chaque plage doit couvrir au moins un creneau de 20 minutes.");
     }
 
-    DayOfWeek dayOfWeek;
-    try {
-      dayOfWeek = DayOfWeek.valueOf(String.valueOf(request.dayOfWeek()).toUpperCase());
-    } catch (Exception exception) {
-      throw new IllegalArgumentException("Le jour de disponibilite est invalide.");
-    }
-
     DoctorAvailability availability = request.id() != null
         ? availabilityRepository.findByIdAndDoctorProfile(request.id(), doctorProfile)
             .orElseThrow(() -> new IllegalArgumentException("Cette disponibilite est introuvable ou n'appartient pas a ce medecin."))
         : new DoctorAvailability();
     availability.setDoctorProfile(doctorProfile);
-    availability.setDayOfWeek(dayOfWeek);
+    availability.setAvailableDate(availableDate);
+    availability.setDayOfWeek(availableDate.getDayOfWeek());
     availability.setStartTime(startTime);
     availability.setEndTime(endTime);
     availability.setActive(request.active() == null || request.active());
@@ -370,7 +388,7 @@ public class AppointmentService {
     PatientProfile patientProfile = patientProfileService.getOrCreate(patientUser);
     DoctorPatientAssignment assignment = assignmentRepository.findByPatientProfileAndActiveTrue(patientProfile)
         .orElseThrow(() -> new IllegalArgumentException("Vous devez d'abord etre accepte par un medecin pour consulter ses disponibilites."));
-    return buildAvailableSlots(assignment.getDoctorProfile(), 21);
+    return buildAvailableSlots(assignment.getDoctorProfile(), AVAILABILITY_WINDOW_DAYS);
   }
 
   private void validateSlot(LocalDateTime startsAt) {
@@ -423,14 +441,14 @@ public class AppointmentService {
   }
 
   private void ensureSlotMatchesAvailability(DoctorProfile doctorProfile, LocalDateTime startsAt) {
-    List<DoctorAvailability> availabilities = availabilityRepository.findAllByDoctorProfileAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(doctorProfile);
+    List<DoctorAvailability> availabilities = availabilityRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile);
     if (availabilities.isEmpty()) {
       throw new IllegalArgumentException("Ce medecin n'a pas encore ouvert de disponibilites.");
     }
     LocalTime slotStart = startsAt.toLocalTime();
     LocalTime slotEnd = slotStart.plusMinutes(SLOT_MINUTES);
     boolean matches = availabilities.stream().anyMatch(availability ->
-        availability.getDayOfWeek() == startsAt.getDayOfWeek()
+        matchesAvailabilityDate(availability, startsAt.toLocalDate())
             && !slotStart.isBefore(availability.getStartTime())
             && !slotEnd.isAfter(availability.getEndTime())
     );
@@ -492,7 +510,7 @@ public class AppointmentService {
   }
 
   private List<AvailableAppointmentSlotResponse> buildAvailableSlots(DoctorProfile doctorProfile, int daysAhead) {
-    List<DoctorAvailability> availabilities = availabilityRepository.findAllByDoctorProfileAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(doctorProfile);
+    List<DoctorAvailability> availabilities = availabilityRepository.findAllByDoctorProfileAndActiveTrue(doctorProfile);
     if (availabilities.isEmpty()) {
       return List.of();
     }
@@ -514,10 +532,12 @@ public class AppointmentService {
     LocalDate startDate = now.toLocalDate();
     LocalDate endDate = startDate.plusDays(daysAhead);
 
-    for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-      DayOfWeek currentDay = date.getDayOfWeek();
-      for (DoctorAvailability availability : availabilities) {
-        if (availability.getDayOfWeek() != currentDay) {
+    for (DoctorAvailability availability : availabilities) {
+      List<LocalDate> targetDates = availability.getAvailableDate() != null
+          ? List.of(availability.getAvailableDate())
+          : enumerateMatchingDates(startDate, endDate, availability.getDayOfWeek());
+      for (LocalDate date : targetDates) {
+        if (date.isBefore(startDate) || date.isAfter(endDate)) {
           continue;
         }
         LocalDateTime slot = LocalDateTime.of(date, availability.getStartTime());
@@ -538,13 +558,60 @@ public class AppointmentService {
 
     return slots.stream()
         .sorted(java.util.Comparator.comparing(AvailableAppointmentSlotResponse::startsAt))
-        .limit(120)
         .toList();
+  }
+
+  private boolean matchesAvailabilityDate(DoctorAvailability availability, LocalDate targetDate) {
+    if (availability.getAvailableDate() != null) {
+      return Objects.equals(availability.getAvailableDate(), targetDate);
+    }
+    return availability.getDayOfWeek() == targetDate.getDayOfWeek();
+  }
+
+  private List<LocalDate> enumerateMatchingDates(LocalDate startDate, LocalDate endDate, DayOfWeek dayOfWeek) {
+    if (dayOfWeek == null) {
+      return List.of();
+    }
+    List<LocalDate> dates = new ArrayList<>();
+    LocalDate cursor = startDate.with(TemporalAdjusters.nextOrSame(dayOfWeek));
+    while (!cursor.isAfter(endDate)) {
+      dates.add(cursor);
+      cursor = cursor.plusWeeks(1);
+    }
+    return dates;
+  }
+
+  void ensureMeetingDetails(Appointment appointment) {
+    if (appointment == null) {
+      return;
+    }
+    appointment.setMeetingProvider(MEETING_PROVIDER);
+    if (appointment.getMeetingRoomName() == null || appointment.getMeetingRoomName().isBlank()) {
+      appointment.setMeetingRoomName(buildMeetingRoomName(appointment));
+    }
+    appointment.setMeetingJoinUrl(JITSI_BASE_URL + appointment.getMeetingRoomName());
+  }
+
+  private String buildMeetingRoomName(Appointment appointment) {
+    String doctorChunk = appointment.getDoctorProfile() != null && appointment.getDoctorProfile().getId() != null
+        ? appointment.getDoctorProfile().getId().toString().substring(0, 8)
+        : "doctor";
+    String patientChunk = appointment.getPatientProfile() != null && appointment.getPatientProfile().getId() != null
+        ? appointment.getPatientProfile().getId().toString().substring(0, 8)
+        : "patient";
+    String appointmentChunk = appointment.getId() != null
+        ? appointment.getId().toString().substring(0, 8)
+        : UUID.randomUUID().toString().substring(0, 8);
+    String dateChunk = appointment.getStartsAt() != null
+        ? appointment.getStartsAt().format(MEETING_DATE_FORMAT)
+        : "slot";
+    return ("NeuralConsult-" + dateChunk + "-" + doctorChunk + "-" + patientChunk + "-" + appointmentChunk)
+        .replaceAll("[^A-Za-z0-9-]", "");
   }
 
   private String buildPatientStatusMessage(Appointment appointment) {
     return switch (appointment.getStatus()) {
-      case CONFIRMED -> "Votre rendez-vous du " + formatDateTime(appointment.getStartsAt()) + " a ete confirme par le medecin.";
+      case CONFIRMED -> "Votre rendez-vous du " + formatDateTime(appointment.getStartsAt()) + " a ete confirme par le medecin. Le lien visio vous sera envoye par email environ 10 minutes avant la seance.";
       case REFUSED -> "Votre demande de rendez-vous du " + formatDateTime(appointment.getStartsAt()) + " a ete refusee.";
       case COMPLETED -> "La consultation du " + formatDateTime(appointment.getStartsAt()) + " est marquee comme terminee.";
       case CANCELLED -> "Le rendez-vous du " + formatDateTime(appointment.getStartsAt()) + " a ete annule.";

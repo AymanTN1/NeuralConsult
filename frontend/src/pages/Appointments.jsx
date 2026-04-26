@@ -24,6 +24,14 @@ const weekdayOptions = [
 
 const weekDayShort = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+const todayDateValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const toJsDate = (value) => {
   if (value instanceof Date) {
     return new Date(value.getTime());
@@ -150,7 +158,7 @@ const Appointments = () => {
   });
   const [availabilityForm, setAvailabilityForm] = useState({
     id: "",
-    dayOfWeek: "MONDAY",
+    availableDate: todayDateValue(),
     startTime: "09:00",
     endTime: "12:00",
     active: true
@@ -199,6 +207,17 @@ const Appointments = () => {
     if (!selectedDateKey) return [];
     return slotsByDate[selectedDateKey] || [];
   }, [selectedDateKey, slotsByDate]);
+
+  const openMeeting = (appointment) => {
+    if (!appointment?.meetingJoinUrl) {
+      setMessage({
+        type: "error",
+        text: "Le lien visio n'est pas encore actif. Il est envoye automatiquement environ 10 minutes avant le rendez-vous."
+      });
+      return;
+    }
+    window.open(appointment.meetingJoinUrl, "_blank", "noopener,noreferrer");
+  };
 
   const doctorAppointmentGroups = useMemo(() => ({
     requested: appointments.filter((appointment) => appointment.status === "REQUESTED"),
@@ -433,12 +452,12 @@ const hasReachedWeeklyLimit = (dateValue) => {
       setMessage({
         type: "success",
         text: availabilityForm.id
-          ? "Disponibilite modifiee. Les patients verront la nouvelle plage."
-          : "Disponibilite ajoutee. Les patients verront maintenant ces creneaux."
+          ? "Disponibilite modifiee. Les patients verront la nouvelle plage sur le calendrier."
+          : "Disponibilite ajoutee. Les patients verront maintenant ce jour et ces creneaux sur leur calendrier."
       });
       setAvailabilityForm({
         id: "",
-        dayOfWeek: "MONDAY",
+        availableDate: todayDateValue(),
         startTime: "09:00",
         endTime: "12:00",
         active: true
@@ -455,7 +474,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
   const editAvailability = (availability) => {
     setAvailabilityForm({
       id: availability.id,
-      dayOfWeek: availability.dayOfWeek,
+      availableDate: availability.availableDate || todayDateValue(),
       startTime: availability.startTime?.slice(0, 5) || "09:00",
       endTime: availability.endTime?.slice(0, 5) || "12:00",
       active: availability.active
@@ -469,7 +488,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
   const resetAvailabilityForm = () => {
     setAvailabilityForm({
       id: "",
-      dayOfWeek: "MONDAY",
+      availableDate: todayDateValue(),
       startTime: "09:00",
       endTime: "12:00",
       active: true
@@ -634,6 +653,13 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <td>{formatDateTime(appointment.startsAt)}</td>
                   <td>
                     <div className="appointment-cell-copy">{appointment.reason || "Aucun motif specifie."}</div>
+                    {appointment.status === "CONFIRMED" && (
+                      <div className="doctor-table-subcopy mt-2">
+                        {appointment.meetingLinkSentAt
+                          ? `Salle visio ${appointment.meetingProvider || "JITSI"} prete.`
+                          : "Lien visio Jitsi Meet programme pour un envoi automatique environ 10 minutes avant la seance."}
+                      </div>
+                    )}
                     {editingAppointment?.id === appointment.id ? (
                       <div className="mt-3 d-grid gap-2">
                         <input
@@ -699,6 +725,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                       )}
                       {appointment.status === "CONFIRMED" && editingAppointment?.id !== appointment.id && (
                         <>
+                          <button type="button" className="btn btn-success btn-sm" onClick={() => openMeeting(appointment)}>Rejoindre la visio</button>
                           <button type="button" className="btn btn-primary btn-sm" onClick={() => doctorDecision(appointment.id, "complete")}>Marquer termine</button>
                           <button type="button" className="btn btn-danger btn-sm" onClick={() => cancelAppointmentAsDoctor(appointment.id)}>Annuler</button>
                         </>
@@ -743,6 +770,13 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <td>{formatDateTime(appointment.startsAt)}</td>
                   <td>
                     <div className="appointment-cell-copy">{appointment.reason || "Aucun motif specifie."}</div>
+                    {appointment.status === "CONFIRMED" && (
+                      <div className="doctor-table-subcopy mt-2">
+                        {appointment.meetingLinkSentAt
+                          ? `Salle visio ${appointment.meetingProvider || "JITSI"} prete.`
+                          : "Le lien visio Jitsi Meet sera envoye automatiquement par email environ 10 minutes avant la seance."}
+                      </div>
+                    )}
                     {editingAppointment?.id === appointment.id ? (
                       <div className="mt-3 d-grid gap-2">
                         <input
@@ -772,6 +806,9 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   </td>
                   <td>
                     <div className="appointment-action-column appointment-action-column-right">
+                      {appointment.status === "CONFIRMED" && editingAppointment?.id !== appointment.id && (
+                        <button type="button" className="btn btn-success btn-sm" onClick={() => openMeeting(appointment)}>Rejoindre la visio</button>
+                      )}
                       {(appointment.status === "REQUESTED" || appointment.status === "CONFIRMED") && editingAppointment?.id !== appointment.id && (
                         <button type="button" className="btn btn-primary btn-sm" onClick={() => beginAppointmentEdit(appointment)}>Modifier</button>
                       )}
@@ -825,19 +862,18 @@ const hasReachedWeeklyLimit = (dateValue) => {
         <>
           <section className="card form-card mt-4">
             <div className="section-title-sm">Disponibilites de teleconsultation</div>
-            <p className="muted-text mt-2">Definis ici les jours et les horaires que tes patients verront dans leur page de reservation. Chaque plage est ensuite decoupee automatiquement en seances de 20 minutes.</p>
+            <p className="muted-text mt-2">Choisis une date precise depuis le calendrier puis une plage horaire. Tu peux ouvrir des disponibilites plusieurs mois a l'avance, et chaque plage est decoupee automatiquement en seances de 20 minutes.</p>
             <form className="row g-3 mt-1" onSubmit={saveAvailability}>
               <div className="col-12 col-md-4">
-                <label className="form-label">Jour</label>
-                <select
-                  className="form-select"
-                  value={availabilityForm.dayOfWeek}
-                  onChange={(event) => setAvailabilityForm((previous) => ({ ...previous, dayOfWeek: event.target.value }))}
-                >
-                  {weekdayOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                <label className="form-label">Date</label>
+                <input
+                  className="form-control"
+                  type="date"
+                  min={todayDateValue()}
+                  value={availabilityForm.availableDate}
+                  onChange={(event) => setAvailabilityForm((previous) => ({ ...previous, availableDate: event.target.value }))}
+                  required
+                />
               </div>
               <div className="col-12 col-md-3">
                 <label className="form-label">Heure de debut</label>
@@ -878,6 +914,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                 <table className="table table-borderless align-middle doctor-table appointment-table">
                   <thead>
                     <tr>
+                      <th>Date</th>
                       <th>Jour</th>
                       <th>Debut</th>
                       <th>Fin</th>
@@ -888,7 +925,8 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <tbody>
                     {availabilities.map((availability) => (
                       <tr key={availability.id}>
-                        <td><strong>{weekdayOptions.find((option) => option.value === availability.dayOfWeek)?.label || availability.dayOfWeek}</strong></td>
+                        <td><strong>{availability.availableDate ? formatDate(availability.availableDate) : "-"}</strong></td>
+                        <td>{weekdayOptions.find((option) => option.value === availability.dayOfWeek)?.label || availability.dayOfWeek || "-"}</td>
                         <td>{formatTime(`2000-01-01T${availability.startTime}`)}</td>
                         <td>{formatTime(`2000-01-01T${availability.endTime}`)}</td>
                         <td>

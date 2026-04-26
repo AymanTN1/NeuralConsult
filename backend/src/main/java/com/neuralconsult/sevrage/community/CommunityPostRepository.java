@@ -5,5 +5,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommunityPostRepository extends JpaRepository<CommunityPost, UUID> {
-  List<CommunityPost> findTop60ByDeletedAtIsNullOrderByCreatedAtDesc();
+  List<CommunityPost> findTop120ByDeletedAtIsNullOrderByCreatedAtDesc();
+  List<CommunityPost> findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(com.neuralconsult.sevrage.user.User author);
 }

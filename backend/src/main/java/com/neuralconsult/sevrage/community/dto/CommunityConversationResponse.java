@@ -6,6 +6,8 @@ import java.util.UUID;
 public record CommunityConversationResponse(
     UUID counterpartId,
     String counterpartName,
+    String counterpartUsername,
+    String counterpartPhotoUrl,
     String counterpartRole,
     String lastMessage,
     Instant lastMessageAt,

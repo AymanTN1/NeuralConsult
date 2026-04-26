@@ -16,6 +16,10 @@ public record AppointmentResponse(
     String reason,
     String doctorNote,
     boolean triggeredByAiAlert,
+    String meetingProvider,
+    String meetingJoinUrl,
+    Instant meetingLinkSentAt,
+    Instant meetingOpenedAt,
     Instant createdAt,
     Instant updatedAt
 ) {

@@ -5,6 +5,8 @@ import com.neuralconsult.sevrage.doctor.DoctorPatientRequest;
 import com.neuralconsult.sevrage.doctor.DoctorPatientRequestRepository;
 import com.neuralconsult.sevrage.doctor.DoctorProfile;
 import com.neuralconsult.sevrage.doctor.DoctorProfileRepository;
+import com.neuralconsult.sevrage.mail.MailDeliveryService;
+import com.neuralconsult.sevrage.mail.MailTemplateService;
 import com.neuralconsult.sevrage.notification.NotificationItem;
 import com.neuralconsult.sevrage.notification.NotificationService;
 import com.neuralconsult.sevrage.patient.PatientProfile;
@@ -24,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,6 +42,8 @@ public class SupportService {
   private final DailyReportRepository dailyReportRepository;
   private final AiSupportChatClient aiSupportChatClient;
   private final NotificationService notificationService;
+  private final MailTemplateService mailTemplateService;
+  private final MailDeliveryService mailDeliveryService;
 
   public SupportService(SupportConversationRepository conversationRepository,
                         SupportMessageRepository messageRepository,
@@ -49,7 +54,9 @@ public class SupportService {
                         DoctorPatientRequestRepository requestRepository,
                         DailyReportRepository dailyReportRepository,
                         AiSupportChatClient aiSupportChatClient,
-                        NotificationService notificationService) {
+                        NotificationService notificationService,
+                        MailTemplateService mailTemplateService,
+                        MailDeliveryService mailDeliveryService) {
     this.conversationRepository = conversationRepository;
     this.messageRepository = messageRepository;
     this.doctorAlertRepository = doctorAlertRepository;
@@ -60,6 +67,8 @@ public class SupportService {
     this.dailyReportRepository = dailyReportRepository;
     this.aiSupportChatClient = aiSupportChatClient;
     this.notificationService = notificationService;
+    this.mailTemplateService = mailTemplateService;
+    this.mailDeliveryService = mailDeliveryService;
   }
 
   @Transactional
@@ -109,11 +118,13 @@ public class SupportService {
       alert.setTitle("Alerte soutien IA 24/7");
       alert.setSummary(ai.alertReason() != null && !ai.alertReason().isBlank() ? ai.alertReason() : ai.reply());
       DoctorAlert savedAlert = doctorAlertRepository.save(alert);
+      savedAlert.setLastNotificationSentAt(Instant.now());
+      savedAlert = doctorAlertRepository.save(savedAlert);
       notificationService.notify(
           conversation.getDoctorProfile().getUser(),
           NotificationItem.Type.AI_ALERT,
           "Nouvelle alerte IA 24/7",
-          "Une alerte de soutien a ete detectee pour " + patientProfile.getUser().getFullName() + ".",
+          "Une alerte prioritaire de soutien a ete detectee pour " + patientProfile.getUser().getFullName() + ". Consulte la conversation des que possible pour confirmer l'urgence clinique.",
           "/support?patient=" + patientProfile.getId(),
           "Ouvrir la conversation",
           "support-alert:" + savedAlert.getId()
@@ -163,6 +174,23 @@ public class SupportService {
     return toAlertResponse(doctorAlertRepository.save(alert));
   }
 
+  @Scheduled(fixedDelay = 3600000)
+  @Transactional
+  public void resendOpenAlertEmails() {
+    Instant threshold = Instant.now().minusSeconds(8 * 3600L);
+    for (DoctorAlert alert : doctorAlertRepository.findAllByStatusOrderByCreatedAtAsc(DoctorAlert.Status.OPEN)) {
+      if (alert.getDoctorProfile() == null || alert.getDoctorProfile().getUser() == null) {
+        continue;
+      }
+      if (alert.getLastNotificationSentAt() != null && alert.getLastNotificationSentAt().isAfter(threshold)) {
+        continue;
+      }
+      sendUrgentAlertEmail(alert);
+      alert.setLastNotificationSentAt(Instant.now());
+      doctorAlertRepository.save(alert);
+    }
+  }
+
   private SupportConversation getOrCreateConversation(PatientProfile patientProfile) {
     return conversationRepository.findByPatientProfile(patientProfile).orElseGet(() -> {
       SupportConversation conversation = new SupportConversation();
@@ -178,6 +206,23 @@ public class SupportService {
       }
       return conversationRepository.save(conversation);
     });
+  }
+
+  private void sendUrgentAlertEmail(DoctorAlert alert) {
+    String actionPath = "/support?patient=" + alert.getPatientProfile().getId();
+    String content = "Le patient " + alert.getPatientProfile().getUser().getFullName()
+        + " presente une alerte IA encore ouverte. Resume : "
+        + alert.getSummary();
+    mailDeliveryService.send(
+        alert.getDoctorProfile().getUser(),
+        mailTemplateService.buildUrgentAiAlertEmail(
+            alert.getDoctorProfile().getUser(),
+            "Alerte urgente IA 24/7 a verifier",
+            content,
+            actionPath,
+            "Ouvrir la conversation"
+        )
+    );
   }
 
   private Map<String, Object> buildFacts(PatientProfile patientProfile, SupportConversation conversation) {

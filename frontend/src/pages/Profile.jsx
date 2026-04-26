@@ -118,8 +118,11 @@ const Profile = () => {
   const profile = user?.profile;
   const profileCards = useMemo(
     () => [
+      { label: "Prenom legal", value: user?.firstName || "Non renseigne" },
+      { label: "Nom legal", value: user?.lastName || "Non renseigne" },
       { label: "Nom complet", value: user?.fullName || "Non renseigne" },
       { label: "Email", value: user?.email || "Non renseigne" },
+      { label: "CIN verifiee", value: user?.identityVerified ? "Oui, OCR valide" : "Non verifiee" },
       { label: "Age", value: calculateAge(profile?.dateOfBirth) },
       { label: "Date de naissance", value: profile?.dateOfBirth || "Non renseigne" },
       { label: "Sexe", value: formatSex(profile?.sex) },
@@ -197,7 +200,7 @@ const Profile = () => {
               <span>1</span>
               <div>
                 <strong>Profil personnel</strong>
-                <p>Identite, age, ville, profession, niveau d'etudes.</p>
+                <p>Identite, date de naissance verifiee, ville, profession, niveau d'etudes.</p>
               </div>
             </div>
             <div className="profile-side-step">
@@ -229,7 +232,19 @@ const Profile = () => {
           <div className="row g-3">
             <div className="col-12 col-md-6">
               <label className="form-label">Date de naissance</label>
-              <input className="form-control" type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} />
+              <input
+                className="form-control"
+                type="date"
+                name="dateOfBirth"
+                value={form.dateOfBirth}
+                onChange={handleChange}
+                disabled={!!user?.legalDateOfBirth}
+              />
+              {user?.legalDateOfBirth && (
+                <small className="muted-text">
+                  La date de naissance a ete verrouillee apres verification OCR de la CIN.
+                </small>
+              )}
             </div>
             <div className="col-12 col-md-6">
               <label className="form-label">Sexe</label>

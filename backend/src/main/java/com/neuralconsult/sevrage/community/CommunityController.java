@@ -7,12 +7,16 @@ import com.neuralconsult.sevrage.community.dto.CommunityDirectMessageRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityDirectMessageResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityMessageCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityMessageResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityProfileRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityProfileResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityPostCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityPostResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityReactionRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityShareRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityServerCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityServerResponse;
 import com.neuralconsult.sevrage.community.dto.CommunitySocialOverviewResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityUserProfileResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityUserSummaryResponse;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
@@ -23,9 +27,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/communities")
@@ -86,6 +92,29 @@ public class CommunityController {
     return communityService.socialOverview(currentUser(principal));
   }
 
+  @GetMapping("/social/profile")
+  public CommunityProfileResponse myProfile(@AuthenticationPrincipal UserDetails principal) {
+    return communityService.myProfile(currentUser(principal));
+  }
+
+  @PutMapping("/social/profile")
+  public CommunityProfileResponse updateProfile(@AuthenticationPrincipal UserDetails principal,
+                                                @RequestBody CommunityProfileRequest request) {
+    return communityService.updateMyProfile(currentUser(principal), request);
+  }
+
+  @GetMapping("/social/search")
+  public List<CommunityUserSummaryResponse> search(@AuthenticationPrincipal UserDetails principal,
+                                                   @RequestParam(name = "query", required = false) String query) {
+    return communityService.searchUsers(currentUser(principal), query);
+  }
+
+  @GetMapping("/social/users/{targetUserId}")
+  public CommunityUserProfileResponse profile(@AuthenticationPrincipal UserDetails principal,
+                                              @PathVariable UUID targetUserId) {
+    return communityService.userProfile(currentUser(principal), targetUserId);
+  }
+
   @PostMapping("/social/posts")
   public CommunityPostResponse createPost(@AuthenticationPrincipal UserDetails principal,
                                           @RequestBody CommunityPostCreateRequest request) {
@@ -104,6 +133,13 @@ public class CommunityController {
                                        @PathVariable UUID postId,
                                        @RequestBody CommunityCommentCreateRequest request) {
     return communityService.commentOnPost(currentUser(principal), postId, request);
+  }
+
+  @PostMapping("/social/posts/{postId}/share")
+  public CommunityDirectMessageResponse share(@AuthenticationPrincipal UserDetails principal,
+                                              @PathVariable UUID postId,
+                                              @RequestBody CommunityShareRequest request) {
+    return communityService.sharePost(currentUser(principal), postId, request);
   }
 
   @PostMapping("/social/users/{targetUserId}/follow")

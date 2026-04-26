@@ -3,13 +3,12 @@ package com.neuralconsult.sevrage.community.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-public record CommunityCommentResponse(
+public record CommunityActivityItemResponse(
     UUID id,
-    UUID authorId,
-    String authorName,
-    String authorUsername,
-    String authorPhotoUrl,
-    String authorRole,
+    String type,
+    CommunityUserSummaryResponse actor,
+    UUID postId,
+    String postPreview,
     String content,
     Instant createdAt
 ) {

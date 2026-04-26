@@ -9,4 +9,5 @@ public interface CommunityFollowRepository extends JpaRepository<CommunityFollow
   Optional<CommunityFollow> findByFollowerAndFollowed(User follower, User followed);
   boolean existsByFollowerAndFollowedAndActiveTrue(User follower, User followed);
   long countByFollowedAndActiveTrue(User followed);
+  long countByFollowerAndActiveTrue(User follower);
 }

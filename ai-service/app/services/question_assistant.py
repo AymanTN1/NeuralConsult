@@ -5,7 +5,8 @@ import re
 import unicodedata
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from app.services.knowledge_base import KnowledgeBaseClient, KnowledgeReference
+from app.services.domain_knowledge import QuestionAssistantKnowledgeBaseClient
+from app.services.knowledge_base import KnowledgeReference
 from app.services.llm_client import DefaultLlmClient
 
 
@@ -320,7 +321,7 @@ class QuestionAssistantService:
     """
 
     def __init__(self) -> None:
-        self.kb = KnowledgeBaseClient()
+        self.kb = QuestionAssistantKnowledgeBaseClient()
         self.llm = DefaultLlmClient()
 
     async def assist(self, payload: Dict[str, Any]) -> Dict[str, Any]:

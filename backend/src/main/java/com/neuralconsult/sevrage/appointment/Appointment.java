@@ -55,6 +55,21 @@ public class Appointment extends AuditableEntity {
   @Column(name = "conversation_opened_at")
   private Instant conversationOpenedAt;
 
+  @Column(name = "meeting_provider", length = 32)
+  private String meetingProvider = "JITSI";
+
+  @Column(name = "meeting_room_name", length = 255)
+  private String meetingRoomName;
+
+  @Column(name = "meeting_join_url", length = 1000)
+  private String meetingJoinUrl;
+
+  @Column(name = "meeting_link_sent_at")
+  private Instant meetingLinkSentAt;
+
+  @Column(name = "meeting_opened_at")
+  private Instant meetingOpenedAt;
+
   public enum Status {
     REQUESTED,
     CONFIRMED,

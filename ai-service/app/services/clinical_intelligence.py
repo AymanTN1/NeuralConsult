@@ -4,7 +4,8 @@ import json
 from typing import Any, Dict, List
 
 from app.services.clinical_notes import ClinicalNotesService
-from app.services.knowledge_base import KnowledgeBaseClient, KnowledgeReference
+from app.services.domain_knowledge import ClinicalIntelligenceKnowledgeBaseClient
+from app.services.knowledge_base import KnowledgeReference
 from app.services.llm_client import DefaultLlmClient
 
 
@@ -20,7 +21,7 @@ class ClinicalIntelligenceService:
 
     def __init__(self) -> None:
         self.notes_service = ClinicalNotesService()
-        self.kb = KnowledgeBaseClient()
+        self.kb = ClinicalIntelligenceKnowledgeBaseClient()
         self.llm = DefaultLlmClient()
 
     async def generate(self, facts: Dict[str, Any]) -> Dict[str, Any]:

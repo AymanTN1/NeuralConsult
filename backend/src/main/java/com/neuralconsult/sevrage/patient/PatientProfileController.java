@@ -41,6 +41,10 @@ public class PatientProfileController {
         user.getId(),
         user.getEmail(),
         user.getFullName(),
+        user.getFirstName(),
+        user.getLastName(),
+        user.getDateOfBirth(),
+        user.isIdentityVerified(),
         toProfileResponse(profile),
         new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
         user.getRoles()
@@ -59,6 +63,10 @@ public class PatientProfileController {
         user.getId(),
         user.getEmail(),
         user.getFullName(),
+        user.getFirstName(),
+        user.getLastName(),
+        user.getDateOfBirth(),
+        user.isIdentityVerified(),
         toProfileResponse(profile),
         new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
         user.getRoles()
@@ -74,6 +82,10 @@ public class PatientProfileController {
         user.getId(),
         user.getEmail(),
         user.getFullName(),
+        user.getFirstName(),
+        user.getLastName(),
+        user.getDateOfBirth(),
+        user.isIdentityVerified(),
         toProfileResponse(profile),
         new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
         user.getRoles()

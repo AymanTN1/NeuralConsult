@@ -1,5 +1,6 @@
 package com.neuralconsult.sevrage.community;
 
+import com.neuralconsult.sevrage.community.dto.CommunityActivityItemResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityChannelResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityCommentCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityCommentResponse;
@@ -12,25 +13,36 @@ import com.neuralconsult.sevrage.community.dto.CommunityMessageCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityMessageResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityPostCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityPostResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityProfileRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityProfileResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityReactionRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityServerCreateRequest;
 import com.neuralconsult.sevrage.community.dto.CommunityServerResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityShareRequest;
 import com.neuralconsult.sevrage.community.dto.CommunitySocialOverviewResponse;
+import com.neuralconsult.sevrage.community.dto.CommunityUserProfileResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityUserSummaryResponse;
 import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CommunityService {
+
+  private static final int MAX_POST_TEXT_LENGTH = 5000;
+  private static final int MAX_MESSAGE_LENGTH = 2400;
+  private static final int MAX_BIO_LENGTH = 320;
+  private static final int MAX_USERNAME_LENGTH = 40;
+  private static final int MAX_IMAGE_LENGTH = 1_800_000;
 
   private final CommunityServerRepository serverRepository;
   private final CommunityChannelRepository channelRepository;
@@ -70,15 +82,16 @@ public class CommunityService {
 
   @Transactional
   public CommunityServerResponse createServer(User user, CommunityServerCreateRequest request) {
+    User actor = requireManagedUser(user);
     CommunityServer server = new CommunityServer();
     server.setName(requireText(request.name(), "Le nom de la communaute est obligatoire."));
     server.setDescription(trimToLength(request.description(), 1000));
-    server.setCreatedByUser(user);
+    server.setCreatedByUser(actor);
     CommunityServer saved = serverRepository.save(server);
 
     CommunityMember owner = new CommunityMember();
     owner.setServer(saved);
-    owner.setUser(user);
+    owner.setUser(actor);
     owner.setRole(CommunityMember.Role.OWNER);
     memberRepository.save(owner);
 
@@ -87,31 +100,34 @@ public class CommunityService {
     channel.setName("General");
     channel.setDescription("Salon principal de soutien et d'entraide.");
     channelRepository.save(channel);
-    return toServerResponse(saved, user);
+    return toServerResponse(saved, actor);
   }
 
   @Transactional
   public List<CommunityServerResponse> listServers(User user) {
-    return serverRepository.findAllByOrderByCreatedAtDesc().stream().map(server -> toServerResponse(server, user)).toList();
+    User actor = requireManagedUser(user);
+    return serverRepository.findAllByOrderByCreatedAtDesc().stream().map(server -> toServerResponse(server, actor)).toList();
   }
 
   @Transactional
   public CommunityServerResponse join(User user, UUID serverId) {
+    User actor = requireManagedUser(user);
     CommunityServer server = serverRepository.findById(serverId).orElseThrow();
-    memberRepository.findByServerAndUser(server, user).orElseGet(() -> {
+    memberRepository.findByServerAndUser(server, actor).orElseGet(() -> {
       CommunityMember member = new CommunityMember();
       member.setServer(server);
-      member.setUser(user);
+      member.setUser(actor);
       member.setRole(CommunityMember.Role.MEMBER);
       return memberRepository.save(member);
     });
-    return toServerResponse(server, user);
+    return toServerResponse(server, actor);
   }
 
   @Transactional
   public CommunityDetailResponse detail(User user, UUID serverId) {
+    User actor = requireManagedUser(user);
     CommunityServer server = serverRepository.findById(serverId).orElseThrow();
-    ensureMembership(server, user);
+    ensureMembership(server, actor);
     List<CommunityChannelResponse> channels = channelRepository.findAllByServerOrderByCreatedAtAsc(server).stream()
         .map(channel -> new CommunityChannelResponse(channel.getId(), channel.getName(), channel.getDescription(), channel.getChannelType().name()))
         .toList();
@@ -119,200 +135,338 @@ public class CommunityService {
         .findFirst()
         .map(channel -> messageRepository.findAllByChannelOrderByCreatedAtAsc(channel).stream().map(this::toMessageResponse).toList())
         .orElse(List.of());
-    return new CommunityDetailResponse(toServerResponse(server, user), channels, latestMessages);
+    return new CommunityDetailResponse(toServerResponse(server, actor), channels, latestMessages);
   }
 
   @Transactional
   public List<CommunityMessageResponse> listMessages(User user, UUID channelId) {
+    User actor = requireManagedUser(user);
     CommunityChannel channel = channelRepository.findById(channelId).orElseThrow();
-    ensureMembership(channel.getServer(), user);
+    ensureMembership(channel.getServer(), actor);
     return messageRepository.findAllByChannelOrderByCreatedAtAsc(channel).stream().map(this::toMessageResponse).toList();
   }
 
   @Transactional
   public CommunityMessageResponse postMessage(User user, UUID channelId, CommunityMessageCreateRequest request) {
+    User actor = requireManagedUser(user);
     CommunityChannel channel = channelRepository.findById(channelId).orElseThrow();
-    ensureMembership(channel.getServer(), user);
+    ensureMembership(channel.getServer(), actor);
     CommunityMessage message = new CommunityMessage();
     message.setChannel(channel);
-    message.setAuthor(user);
+    message.setAuthor(actor);
     message.setContent(requireText(request.content(), "Le message est obligatoire."));
     return toMessageResponse(messageRepository.save(message));
   }
 
   @Transactional
   public CommunitySocialOverviewResponse socialOverview(User user) {
-    List<CommunityPostResponse> posts = postRepository.findTop60ByDeletedAtIsNullOrderByCreatedAtDesc().stream()
-        .map(post -> toPostResponse(post, user))
+    User actor = requireManagedUser(user);
+    List<CommunityPostResponse> posts = postRepository.findTop120ByDeletedAtIsNullOrderByCreatedAtDesc().stream()
+        .map(post -> toPostResponse(post, actor))
+        .sorted(feedComparator())
+        .limit(80)
         .toList();
-    List<CommunityUserSummaryResponse> people = userRepository.findAll().stream()
-        .filter(candidate -> !candidate.getId().equals(user.getId()))
-        .filter(User::isAccountEnabled)
-        .filter(candidate -> !candidate.isAccountLocked())
-        .filter(this::isCommunityVisibleUser)
-        .sorted(Comparator.comparing(this::safeName))
-        .limit(16)
-        .map(candidate -> toUserSummary(candidate, user))
-        .toList();
+
+    List<CommunityUserSummaryResponse> people = searchUsers(actor, null);
     List<CommunityConnectionResponse> pending = connectionRepository
-        .findAllByReceiverAndStatusOrderByCreatedAtDesc(user, CommunityConnection.Status.PENDING)
+        .findAllByReceiverAndStatusOrderByCreatedAtDesc(actor, CommunityConnection.Status.PENDING)
         .stream()
-        .map(connection -> toConnectionResponse(connection, user))
+        .map(connection -> toConnectionResponse(connection, actor))
         .toList();
     List<CommunityUserSummaryResponse> friends = connectionRepository
-        .findAllForUserByStatus(user, CommunityConnection.Status.ACCEPTED)
+        .findAllForUserByStatus(actor, CommunityConnection.Status.ACCEPTED)
         .stream()
-        .map(connection -> counterpart(connection, user))
-        .map(friend -> toUserSummary(friend, user))
+        .map(connection -> counterpart(connection, actor))
+        .map(friend -> toUserSummary(friend, actor))
         .toList();
+
     return new CommunitySocialOverviewResponse(
+        toProfileResponse(actor),
         posts,
-        listServers(user),
+        listServers(actor),
         people,
         pending,
         friends,
-        listConversations(user)
+        listConversations(actor),
+        listActivity(actor)
+    );
+  }
+
+  @Transactional
+  public CommunityProfileResponse myProfile(User user) {
+    return toProfileResponse(requireManagedUser(user));
+  }
+
+  @Transactional
+  public CommunityProfileResponse updateMyProfile(User user, CommunityProfileRequest request) {
+    User actor = requireManagedUser(user);
+    String username = normalizeUsername(request.username());
+    if (username == null) {
+      throw new IllegalArgumentException("Choisissez un nom d'utilisateur pour rejoindre la communaute.");
+    }
+    userRepository.findByCommunityUsernameIgnoreCase(username)
+        .filter(existing -> !existing.getId().equals(actor.getId()))
+        .ifPresent(existing -> {
+          throw new IllegalArgumentException("Ce nom d'utilisateur est deja utilise.");
+        });
+
+    actor.setCommunityUsername(username);
+    actor.setCommunityAvatarUrl(normalizeImage(request.profilePhotoUrl()));
+    actor.setCommunityBio(trimToLength(request.bio(), MAX_BIO_LENGTH));
+    return toProfileResponse(userRepository.save(actor));
+  }
+
+  @Transactional
+  public List<CommunityUserSummaryResponse> searchUsers(User user, String query) {
+    User actor = requireManagedUser(user);
+    String normalizedQuery = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+    return userRepository.findAll().stream()
+        .filter(candidate -> !candidate.getId().equals(actor.getId()))
+        .filter(User::isAccountEnabled)
+        .filter(candidate -> !candidate.isAccountLocked())
+        .filter(this::isCommunityVisibleUser)
+        .filter(candidate -> normalizedQuery.isBlank() || matchesSearch(candidate, normalizedQuery))
+        .sorted(searchComparator(normalizedQuery))
+        .limit(normalizedQuery.isBlank() ? 18 : 32)
+        .map(candidate -> toUserSummary(candidate, actor))
+        .toList();
+  }
+
+  @Transactional
+  public CommunityUserProfileResponse userProfile(User viewer, UUID targetUserId) {
+    User actor = requireManagedUser(viewer);
+    User target = userRepository.findById(targetUserId)
+        .filter(this::isCommunityVisibleUser)
+        .orElseThrow(() -> new IllegalArgumentException("Profil introuvable."));
+    return new CommunityUserProfileResponse(
+        toUserSummary(target, actor),
+        trimToLength(target.getCommunityBio(), MAX_BIO_LENGTH),
+        followRepository.countByFollowerAndActiveTrue(target),
+        connectionRepository.findAllForUserByStatus(target, CommunityConnection.Status.ACCEPTED).size(),
+        postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).stream()
+            .map(post -> toPostResponse(post, actor))
+            .toList()
     );
   }
 
   @Transactional
   public CommunityPostResponse createPost(User user, CommunityPostCreateRequest request) {
+    User actor = requireManagedUser(user);
+    String content = trimToLength(request.content(), MAX_POST_TEXT_LENGTH);
+    String imageUrl = normalizeImage(request.imageUrl());
+    if ((content == null || content.isBlank()) && imageUrl == null) {
+      throw new IllegalArgumentException("Ajoutez un texte ou une photo avant de publier.");
+    }
+
     CommunityPost post = new CommunityPost();
-    post.setAuthor(user);
-    post.setContent(requireText(request.content(), "Le contenu du post est obligatoire."));
+    post.setAuthor(actor);
+    post.setContent(content != null ? content : "");
+    post.setImageUrl(imageUrl);
     if (request.serverId() != null) {
       CommunityServer server = serverRepository.findById(request.serverId()).orElseThrow();
-      ensureMembership(server, user);
+      ensureMembership(server, actor);
       post.setServer(server);
     }
-    return toPostResponse(postRepository.save(post), user);
+    return toPostResponse(postRepository.save(post), actor);
   }
 
   @Transactional
   public CommunityPostResponse reactToPost(User user, UUID postId, CommunityReactionRequest request) {
+    User actor = requireManagedUser(user);
     CommunityPost post = postRepository.findById(postId).orElseThrow();
     CommunityPostReaction.ReactionType type = parseReaction(request.type());
-    CommunityPostReaction reaction = reactionRepository.findByPostAndUser(post, user).orElseGet(() -> {
+    CommunityPostReaction reaction = reactionRepository.findByPostAndUser(post, actor).orElseGet(() -> {
       CommunityPostReaction created = new CommunityPostReaction();
       created.setPost(post);
-      created.setUser(user);
+      created.setUser(actor);
       return created;
     });
-    reaction.setType(type);
-    reactionRepository.save(reaction);
-    return toPostResponse(post, user);
+
+    if (reaction.getType() == type) {
+      reactionRepository.delete(reaction);
+    } else {
+      reaction.setType(type);
+      reactionRepository.save(reaction);
+    }
+    return toPostResponse(post, actor);
   }
 
   @Transactional
   public CommunityPostResponse commentOnPost(User user, UUID postId, CommunityCommentCreateRequest request) {
+    User actor = requireManagedUser(user);
     CommunityPost post = postRepository.findById(postId).orElseThrow();
     CommunityPostComment comment = new CommunityPostComment();
     comment.setPost(post);
-    comment.setAuthor(user);
+    comment.setAuthor(actor);
     comment.setContent(requireText(request.content(), "Le commentaire est obligatoire."));
     commentRepository.save(comment);
-    return toPostResponse(post, user);
+    return toPostResponse(post, actor);
+  }
+
+  @Transactional
+  public CommunityDirectMessageResponse sharePost(User user, UUID postId, CommunityShareRequest request) {
+    User actor = requireManagedUser(user);
+    if (request.counterpartId() == null) {
+      throw new IllegalArgumentException("Choisissez un ami pour partager ce post.");
+    }
+    CommunityPost post = postRepository.findById(postId).orElseThrow();
+    User counterpart = userRepository.findById(request.counterpartId()).orElseThrow();
+    ensureFriends(actor, counterpart);
+
+    CommunityDirectMessage message = new CommunityDirectMessage();
+    message.setSender(actor);
+    message.setRecipient(counterpart);
+    message.setSharedPost(post);
+    message.setContent(trimToLength(request.message(), MAX_MESSAGE_LENGTH));
+    return toDirectMessageResponse(directMessageRepository.save(message), actor);
   }
 
   @Transactional
   public CommunityUserSummaryResponse toggleFollow(User user, UUID targetUserId) {
+    User actor = requireManagedUser(user);
     User target = userRepository.findById(targetUserId).orElseThrow();
-    if (target.getId().equals(user.getId())) {
+    if (target.getId().equals(actor.getId())) {
       throw new IllegalArgumentException("Vous ne pouvez pas vous suivre vous-meme.");
     }
-    CommunityFollow follow = followRepository.findByFollowerAndFollowed(user, target).orElseGet(() -> {
+    CommunityFollow follow = followRepository.findByFollowerAndFollowed(actor, target).orElseGet(() -> {
       CommunityFollow created = new CommunityFollow();
-      created.setFollower(user);
+      created.setFollower(actor);
       created.setFollowed(target);
       return created;
     });
     follow.setActive(!follow.isActive());
     followRepository.save(follow);
-    return toUserSummary(target, user);
+    return toUserSummary(target, actor);
   }
 
   @Transactional
   public CommunityConnectionResponse sendConnectionRequest(User user, UUID targetUserId) {
+    User actor = requireManagedUser(user);
     User target = userRepository.findById(targetUserId).orElseThrow();
-    if (target.getId().equals(user.getId())) {
+    if (target.getId().equals(actor.getId())) {
       throw new IllegalArgumentException("Vous ne pouvez pas vous inviter vous-meme.");
     }
-    CommunityConnection connection = connectionRepository.findBetween(user, target).orElseGet(() -> {
+    CommunityConnection connection = connectionRepository.findBetween(actor, target).orElseGet(() -> {
       CommunityConnection created = new CommunityConnection();
-      created.setRequester(user);
+      created.setRequester(actor);
       created.setReceiver(target);
       return created;
     });
     if (connection.getStatus() == CommunityConnection.Status.DECLINED) {
-      connection.setRequester(user);
+      connection.setRequester(actor);
       connection.setReceiver(target);
       connection.setStatus(CommunityConnection.Status.PENDING);
     }
-    return toConnectionResponse(connectionRepository.save(connection), user);
+    return toConnectionResponse(connectionRepository.save(connection), actor);
   }
 
   @Transactional
   public CommunityConnectionResponse acceptConnection(User user, UUID connectionId) {
+    User actor = requireManagedUser(user);
     CommunityConnection connection = connectionRepository.findById(connectionId).orElseThrow();
-    if (!connection.getReceiver().getId().equals(user.getId())) {
+    if (!connection.getReceiver().getId().equals(actor.getId())) {
       throw new IllegalArgumentException("Seul le destinataire peut accepter cette invitation.");
     }
     connection.setStatus(CommunityConnection.Status.ACCEPTED);
-    return toConnectionResponse(connectionRepository.save(connection), user);
+    return toConnectionResponse(connectionRepository.save(connection), actor);
   }
 
   @Transactional
   public CommunityConnectionResponse declineConnection(User user, UUID connectionId) {
+    User actor = requireManagedUser(user);
     CommunityConnection connection = connectionRepository.findById(connectionId).orElseThrow();
-    if (!connection.getReceiver().getId().equals(user.getId())) {
+    if (!connection.getReceiver().getId().equals(actor.getId())) {
       throw new IllegalArgumentException("Seul le destinataire peut refuser cette invitation.");
     }
     connection.setStatus(CommunityConnection.Status.DECLINED);
-    return toConnectionResponse(connectionRepository.save(connection), user);
+    return toConnectionResponse(connectionRepository.save(connection), actor);
   }
 
   @Transactional
   public List<CommunityDirectMessageResponse> directThread(User user, UUID counterpartId) {
+    User actor = requireManagedUser(user);
     User counterpart = userRepository.findById(counterpartId).orElseThrow();
-    ensureFriends(user, counterpart);
-    List<CommunityDirectMessage> messages = directMessageRepository.findThread(user, counterpart);
+    ensureFriends(actor, counterpart);
+    List<CommunityDirectMessage> messages = directMessageRepository.findThread(actor, counterpart);
     List<CommunityDirectMessage> newlyRead = messages.stream()
-        .filter(message -> message.getRecipient().getId().equals(user.getId()))
+        .filter(message -> message.getRecipient().getId().equals(actor.getId()))
         .filter(message -> message.getReadAt() == null)
         .peek(message -> message.setReadAt(Instant.now()))
         .toList();
     if (!newlyRead.isEmpty()) {
       directMessageRepository.saveAll(newlyRead);
     }
-    return messages.stream().map(message -> toDirectMessageResponse(message, user)).toList();
+    return messages.stream().map(message -> toDirectMessageResponse(message, actor)).toList();
   }
 
   @Transactional
   public CommunityDirectMessageResponse sendDirectMessage(User user, UUID counterpartId, CommunityDirectMessageRequest request) {
+    User actor = requireManagedUser(user);
     User counterpart = userRepository.findById(counterpartId).orElseThrow();
-    ensureFriends(user, counterpart);
+    ensureFriends(actor, counterpart);
     CommunityDirectMessage message = new CommunityDirectMessage();
-    message.setSender(user);
+    message.setSender(actor);
     message.setRecipient(counterpart);
-    message.setContent(requireText(request.content(), "Le message est obligatoire."));
-    return toDirectMessageResponse(directMessageRepository.save(message), user);
+    message.setContent(requireBoundedText(request.content(), "Le message est obligatoire.", MAX_MESSAGE_LENGTH));
+    return toDirectMessageResponse(directMessageRepository.save(message), actor);
   }
 
   @Transactional
   public List<CommunityConversationResponse> listConversations(User user) {
-    List<User> friends = connectionRepository.findAllForUserByStatus(user, CommunityConnection.Status.ACCEPTED).stream()
-        .map(connection -> counterpart(connection, user))
+    User actor = requireManagedUser(user);
+    List<User> friends = connectionRepository.findAllForUserByStatus(actor, CommunityConnection.Status.ACCEPTED).stream()
+        .map(connection -> counterpart(connection, actor))
         .toList();
-    List<CommunityDirectMessage> recentMessages = directMessageRepository.findRecentForUser(user);
+    List<CommunityDirectMessage> recentMessages = directMessageRepository.findRecentForUser(actor);
     return friends.stream()
-        .map(friend -> toConversationResponse(user, friend, recentMessages))
+        .map(friend -> toConversationResponse(actor, friend, recentMessages))
         .sorted(Comparator.comparing(CommunityConversationResponse::lastMessageAt, Comparator.nullsLast(Comparator.reverseOrder())))
+        .toList();
+  }
+
+  private List<CommunityActivityItemResponse> listActivity(User user) {
+    List<CommunityActivityItemResponse> items = new ArrayList<>();
+    for (CommunityPostComment comment : commentRepository.findAllByPostAuthorOrderByCreatedAtDesc(user)) {
+      if (comment.getAuthor().getId().equals(user.getId())) {
+        continue;
+      }
+      items.add(new CommunityActivityItemResponse(
+          comment.getId(),
+          "COMMENT",
+          toUserSummary(comment.getAuthor(), user),
+          comment.getPost().getId(),
+          previewOf(comment.getPost().getContent()),
+          comment.getContent(),
+          comment.getCreatedAt()
+      ));
+    }
+    for (CommunityPostReaction reaction : reactionRepository.findAllByPostAuthorOrderByCreatedAtDesc(user)) {
+      if (reaction.getUser().getId().equals(user.getId())) {
+        continue;
+      }
+      items.add(new CommunityActivityItemResponse(
+          reaction.getId(),
+          "LOVE",
+          toUserSummary(reaction.getUser(), user),
+          reaction.getPost().getId(),
+          previewOf(reaction.getPost().getContent()),
+          reaction.getType().name(),
+          reaction.getCreatedAt()
+      ));
+    }
+    return items.stream()
+        .sorted(Comparator.comparing(CommunityActivityItemResponse::createdAt, Comparator.reverseOrder()))
+        .limit(80)
         .toList();
   }
 
   private void ensureMembership(CommunityServer server, User user) {
     memberRepository.findByServerAndUser(server, user).orElseThrow(() ->
         new IllegalArgumentException("Vous devez rejoindre cette communaute avant d'y acceder."));
+  }
+
+  private User requireManagedUser(User user) {
+    return userRepository.findById(user.getId()).orElseThrow();
   }
 
   private void ensureFriends(User user, User counterpart) {
@@ -360,14 +514,15 @@ public class CommunityService {
         .findFirst()
         .orElse(null);
     List<CommunityCommentResponse> comments = commentRepository.findAllByPostOrderByCreatedAtAsc(post).stream()
-        .map(comment -> toCommentResponse(comment, viewer))
+        .map(this::toCommentResponse)
         .toList();
     return new CommunityPostResponse(
         post.getId(),
         toUserSummary(post.getAuthor(), viewer),
         post.getServer() != null ? post.getServer().getId() : null,
-        post.getServer() != null ? post.getServer().getName() : "Fil general",
+        post.getServer() != null ? post.getServer().getName() : "Pour vous",
         post.getContent(),
+        post.getImageUrl(),
         post.getCreatedAt(),
         reactionCounts,
         myReaction,
@@ -375,11 +530,13 @@ public class CommunityService {
     );
   }
 
-  private CommunityCommentResponse toCommentResponse(CommunityPostComment comment, User viewer) {
+  private CommunityCommentResponse toCommentResponse(CommunityPostComment comment) {
     return new CommunityCommentResponse(
         comment.getId(),
         comment.getAuthor().getId(),
         safeName(comment.getAuthor()),
+        comment.getAuthor().getCommunityUsername(),
+        comment.getAuthor().getCommunityAvatarUrl(),
         roleLabel(comment.getAuthor()),
         comment.getContent(),
         comment.getCreatedAt()
@@ -390,11 +547,27 @@ public class CommunityService {
     return new CommunityUserSummaryResponse(
         target.getId(),
         safeName(target),
+        target.getCommunityUsername(),
         target.getEmail(),
         roleLabel(target),
+        target.getCommunityAvatarUrl(),
+        trimToLength(target.getCommunityBio(), 120),
         followRepository.existsByFollowerAndFollowedAndActiveTrue(viewer, target),
         connectionStatus(viewer, target),
-        followRepository.countByFollowedAndActiveTrue(target)
+        followRepository.countByFollowedAndActiveTrue(target),
+        postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).size()
+    );
+  }
+
+  private CommunityProfileResponse toProfileResponse(User user) {
+    return new CommunityProfileResponse(
+        user.getId(),
+        safeName(user),
+        user.getCommunityUsername(),
+        roleLabel(user),
+        user.getCommunityAvatarUrl(),
+        trimToLength(user.getCommunityBio(), MAX_BIO_LENGTH),
+        user.getCommunityUsername() != null && !user.getCommunityUsername().isBlank()
     );
   }
 
@@ -421,8 +594,10 @@ public class CommunityService {
     return new CommunityConversationResponse(
         friend.getId(),
         safeName(friend),
+        friend.getCommunityUsername(),
+        friend.getCommunityAvatarUrl(),
         roleLabel(friend),
-        last != null ? last.getContent() : "Aucun message pour le moment.",
+        last != null ? conversationPreview(last) : "Aucun message pour le moment.",
         last != null ? last.getCreatedAt() : null,
         last != null && last.getSender().getId().equals(viewer.getId()),
         last != null ? messageStatus(last, viewer) : "NOUVEAU",
@@ -431,11 +606,18 @@ public class CommunityService {
   }
 
   private CommunityDirectMessageResponse toDirectMessageResponse(CommunityDirectMessage message, User viewer) {
+    CommunityPost sharedPost = message.getSharedPost();
     return new CommunityDirectMessageResponse(
         message.getId(),
         message.getSender().getId(),
         safeName(message.getSender()),
+        message.getSender().getCommunityUsername(),
+        message.getSender().getCommunityAvatarUrl(),
         message.getContent(),
+        sharedPost != null ? sharedPost.getId() : null,
+        sharedPost != null ? previewOf(sharedPost.getContent()) : null,
+        sharedPost != null ? sharedPost.getImageUrl() : null,
+        sharedPost != null ? safeName(sharedPost.getAuthor()) : null,
         message.getCreatedAt(),
         message.getSender().getId().equals(viewer.getId()),
         messageStatus(message, viewer)
@@ -472,9 +654,9 @@ public class CommunityService {
 
   private CommunityPostReaction.ReactionType parseReaction(String rawType) {
     if (rawType == null || rawType.isBlank()) {
-      return CommunityPostReaction.ReactionType.LIKE;
+      return CommunityPostReaction.ReactionType.LOVE;
     }
-    return CommunityPostReaction.ReactionType.valueOf(rawType.trim().toUpperCase());
+    return CommunityPostReaction.ReactionType.valueOf(rawType.trim().toUpperCase(Locale.ROOT));
   }
 
   private boolean isCommunityVisibleUser(User user) {
@@ -492,6 +674,9 @@ public class CommunityService {
   }
 
   private String safeName(User user) {
+    if (user.getCommunityUsername() != null && !user.getCommunityUsername().isBlank()) {
+      return "@" + user.getCommunityUsername();
+    }
     if (user.getFullName() != null && !user.getFullName().isBlank()) {
       return user.getFullName();
     }
@@ -501,11 +686,92 @@ public class CommunityService {
     return "Membre NeuralConsult";
   }
 
+  private boolean matchesSearch(User candidate, String query) {
+    return normalize(candidate.getCommunityUsername()).contains(query)
+        || normalize(candidate.getFullName()).contains(query)
+        || normalize(candidate.getEmail()).contains(query);
+  }
+
+  private Comparator<User> searchComparator(String query) {
+    return Comparator
+        .comparing((User candidate) -> normalize(candidate.getCommunityUsername()).equals(query)).reversed()
+        .thenComparing(candidate -> normalize(candidate.getCommunityUsername()).startsWith(query), Comparator.reverseOrder())
+        .thenComparingLong(candidate -> followRepository.countByFollowedAndActiveTrue(candidate)).reversed()
+        .thenComparing(this::safeName);
+  }
+
+  private Comparator<CommunityPostResponse> feedComparator() {
+    return Comparator
+        .comparing((CommunityPostResponse post) -> post.author().following()).reversed()
+        .thenComparingLong(this::engagementScore).reversed()
+        .thenComparing(CommunityPostResponse::createdAt, Comparator.reverseOrder());
+  }
+
+  private long engagementScore(CommunityPostResponse post) {
+    long love = post.reactions().getOrDefault(CommunityPostReaction.ReactionType.LOVE.name(), 0L);
+    long comments = post.comments().size();
+    long total = post.reactions().values().stream().mapToLong(Long::longValue).sum();
+    return (love * 3L) + (comments * 2L) + total;
+  }
+
+  private String normalize(String value) {
+    return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+  }
+
+  private String normalizeUsername(String raw) {
+    if (raw == null) {
+      return null;
+    }
+    String normalized = raw.trim().toLowerCase(Locale.ROOT)
+        .replaceAll("[^a-z0-9._]", "_")
+        .replaceAll("_+", "_");
+    if (normalized.length() < 3) {
+      throw new IllegalArgumentException("Le nom d'utilisateur doit contenir au moins 3 caracteres.");
+    }
+    if (normalized.length() > MAX_USERNAME_LENGTH) {
+      normalized = normalized.substring(0, MAX_USERNAME_LENGTH);
+    }
+    return normalized;
+  }
+
+  private String normalizeImage(String value) {
+    String normalized = trimToLength(value, MAX_IMAGE_LENGTH);
+    if (normalized == null || normalized.isBlank()) {
+      return null;
+    }
+    if (normalized.startsWith("data:image/") || normalized.startsWith("http://") || normalized.startsWith("https://")) {
+      return normalized;
+    }
+    throw new IllegalArgumentException("Le format d'image n'est pas reconnu.");
+  }
+
+  private String previewOf(String content) {
+    if (content == null || content.isBlank()) {
+      return "Photo partagee";
+    }
+    return content.length() > 120 ? content.substring(0, 117) + "..." : content;
+  }
+
+  private String conversationPreview(CommunityDirectMessage message) {
+    if (message.getSharedPost() != null && (message.getContent() == null || message.getContent().isBlank())) {
+      return "Post partage";
+    }
+    if (message.getSharedPost() != null) {
+      return message.getContent() + " · Post partage";
+    }
+    return message.getContent();
+  }
+
   private String requireText(String value, String message) {
-    if (value == null || value.isBlank()) {
+    return requireBoundedText(value, message, MAX_POST_TEXT_LENGTH);
+  }
+
+  private String requireBoundedText(String value, String message, int maxLength) {
+    String trimmed = trimToLength(value, maxLength);
+    if (trimmed == null || trimmed.isBlank()) {
       throw new IllegalArgumentException(message);
     }
-    return trimToLength(value, 5000);
+    return trimmed;
   }
 
   private String trimToLength(String value, int maxLength) {

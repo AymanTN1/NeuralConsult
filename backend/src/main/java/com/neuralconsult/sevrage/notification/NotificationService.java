@@ -111,6 +111,20 @@ public class NotificationService {
       return;
     }
 
+    if (notification.getType() == NotificationItem.Type.AI_ALERT) {
+      mailDeliveryService.send(
+          notification.getUser(),
+          mailTemplateService.buildUrgentAiAlertEmail(
+              notification.getUser(),
+              notification.getTitle(),
+              notification.getContent(),
+              notification.getActionPath(),
+              notification.getActionLabel()
+          )
+      );
+      return;
+    }
+
     mailDeliveryService.send(
         notification.getUser(),
         mailTemplateService.buildNotificationEmail(

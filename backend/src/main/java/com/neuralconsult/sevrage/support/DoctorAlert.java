@@ -54,6 +54,9 @@ public class DoctorAlert extends AuditableEntity {
   @Column(name = "acknowledged_at")
   private Instant acknowledgedAt;
 
+  @Column(name = "last_notification_sent_at")
+  private Instant lastNotificationSentAt;
+
   public enum Status {
     OPEN,
     ACKNOWLEDGED,

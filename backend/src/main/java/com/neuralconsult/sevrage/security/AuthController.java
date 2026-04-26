@@ -5,6 +5,8 @@ import com.neuralconsult.sevrage.security.dto.EmailOnlyRequest;
 import com.neuralconsult.sevrage.security.dto.EmailVerificationRequest;
 import com.neuralconsult.sevrage.security.dto.EmailVerificationResponse;
 import com.neuralconsult.sevrage.security.dto.LoginRequest;
+import com.neuralconsult.sevrage.security.dto.PasswordResetRequest;
+import com.neuralconsult.sevrage.security.dto.PasswordResetResponse;
 import com.neuralconsult.sevrage.security.dto.RegisterRequest;
 import com.neuralconsult.sevrage.security.dto.TokenResponse;
 import com.neuralconsult.sevrage.user.User;
@@ -36,6 +38,7 @@ public class AuthController {
   private final PatientProfileService patientProfileService;
   private final UserDetailsServiceImpl userDetailsService;
   private final EmailVerificationService emailVerificationService;
+  private final PasswordResetService passwordResetService;
 
   public AuthController(AuthenticationManager authenticationManager,
                         JwtService jwtService,
@@ -43,7 +46,8 @@ public class AuthController {
                         UserService userService,
                         PatientProfileService patientProfileService,
                         UserDetailsServiceImpl userDetailsService,
-                        EmailVerificationService emailVerificationService) {
+                        EmailVerificationService emailVerificationService,
+                        PasswordResetService passwordResetService) {
     this.authenticationManager = authenticationManager;
     this.jwtService = jwtService;
     this.jwtProperties = jwtProperties;
@@ -51,12 +55,13 @@ public class AuthController {
     this.patientProfileService = patientProfileService;
     this.userDetailsService = userDetailsService;
     this.emailVerificationService = emailVerificationService;
+    this.passwordResetService = passwordResetService;
   }
 
   @PostMapping("/register")
   public ResponseEntity<EmailVerificationResponse> register(@Valid @RequestBody RegisterRequest request) {
     User user = userService.register(request);
-    patientProfileService.getOrCreate(user);
+    patientProfileService.seedIdentityProfile(user, request.dateOfBirth());
     emailVerificationService.issueVerificationCode(user);
     return ResponseEntity.status(201).body(new EmailVerificationResponse(
         user.getEmail(),
@@ -122,6 +127,26 @@ public class AuthController {
         request.email(),
         true,
         "Un nouveau code de verification a ete envoye."
+    ));
+  }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<PasswordResetResponse> forgotPassword(@Valid @RequestBody EmailOnlyRequest request) {
+    passwordResetService.issueResetCode(request.email());
+    return ResponseEntity.ok(new PasswordResetResponse(
+        request.email(),
+        true,
+        "Si un compte existe pour cet email, un code de reinitialisation a ete envoye."
+    ));
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<PasswordResetResponse> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+    passwordResetService.resetPassword(request.email(), request.code(), request.newPassword());
+    return ResponseEntity.ok(new PasswordResetResponse(
+        request.email(),
+        true,
+        "Votre mot de passe a ete reinitialise. Vous pouvez maintenant vous connecter."
     ));
   }
 

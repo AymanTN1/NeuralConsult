@@ -670,6 +670,10 @@ public class DoctorController {
         appointment.getReason(),
         appointment.getDoctorNote(),
         appointment.isTriggeredByAiAlert(),
+        appointment.getMeetingProvider(),
+        appointment.getMeetingJoinUrl(),
+        appointment.getMeetingLinkSentAt(),
+        appointment.getMeetingOpenedAt(),
         appointment.getCreatedAt(),
         appointment.getUpdatedAt()
     );

@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
+from app.services.domain_knowledge import SupportChatKnowledgeBaseClient
+from app.services.knowledge_base import KnowledgeReference
 from app.services.llm_client import DefaultLlmClient
 
 
 class SupportChatService:
     def __init__(self) -> None:
+        self.kb = SupportChatKnowledgeBaseClient()
         self.llm = DefaultLlmClient()
 
     async def respond(
@@ -17,12 +20,17 @@ class SupportChatService:
         patient_facts: Dict[str, Any],
         conversation_history: List[Dict[str, str]],
     ) -> Dict[str, Any]:
+        references = self.kb.retrieve(
+            query=latest_patient_message,
+            facts={"patient_facts": patient_facts, "conversation_history": conversation_history},
+        )
         if self.llm.is_configured():
             try:
                 result = await self._respond_with_llm(
                     latest_patient_message=latest_patient_message,
                     patient_facts=patient_facts,
                     conversation_history=conversation_history,
+                    references=references,
                 )
                 return self._validate(result)
             except Exception:
@@ -35,6 +43,7 @@ class SupportChatService:
         latest_patient_message: str,
         patient_facts: Dict[str, Any],
         conversation_history: List[Dict[str, str]],
+        references: List[KnowledgeReference],
     ) -> Dict[str, Any]:
         system_prompt = (
             "You are a compassionate 24/7 tobacco-cessation support assistant. "
@@ -50,6 +59,7 @@ class SupportChatService:
             "Contrainte: une reponse simple, humaine, utile, avec au maximum une question de suivi.\n\n"
             f"Patient facts:\n{json.dumps(patient_facts, ensure_ascii=False, indent=2)}\n\n"
             f"Conversation history:\n{json.dumps(conversation_history, ensure_ascii=False, indent=2)}\n\n"
+            f"References RAG du soutien 24/7:\n{json.dumps([ref.__dict__ for ref in references], ensure_ascii=False, indent=2)}\n\n"
             f"Dernier message patient:\n{latest_patient_message}\n\n"
             "Return JSON with this exact structure:\n"
             "{\n"

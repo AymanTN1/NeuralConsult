@@ -2,8 +2,11 @@ package com.neuralconsult.sevrage.user;
 
 import com.neuralconsult.sevrage.doctor.DoctorProfile;
 import com.neuralconsult.sevrage.doctor.DoctorProfileRepository;
+import com.neuralconsult.sevrage.security.dto.IdentityVerificationRequest;
 import com.neuralconsult.sevrage.security.dto.RegisterRequest;
 import jakarta.transaction.Transactional;
+import java.text.Normalizer;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Set;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,11 +34,20 @@ public class UserService {
           throw new IllegalArgumentException("Cette adresse email est deja utilisee.");
         });
 
+    validateIdentityVerification(request);
+
     User user = new User();
     user.setEmail(request.email().toLowerCase());
-    user.setFullName(request.fullName());
+    user.setFirstName(cleanName(request.firstName()));
+    user.setLastName(cleanName(request.lastName()));
+    user.setFullName(buildFullName(request));
+    user.setDateOfBirth(request.dateOfBirth());
     user.setPhoneNumber(request.phoneNumber());
     user.setPasswordHash(passwordEncoder.encode(request.password()));
+    user.setIdentityDocumentType(request.identityVerification().documentType().trim().toUpperCase(Locale.ROOT));
+    user.setIdentityVerified(true);
+    user.setIdentityVerifiedAt(Instant.now());
+    user.setIdentityVerificationSummary(buildVerificationSummary(request.identityVerification()));
     String accountType = request.accountType() != null ? request.accountType().trim().toUpperCase() : "PATIENT";
     String role = switch (accountType) {
       case "DOCTOR" -> "ROLE_DOCTOR";
@@ -74,10 +86,69 @@ public class UserService {
     return userRepository.findByEmailIgnoreCase(email).orElse(null);
   }
 
+  @Transactional
+  public void updatePassword(User user, String newPassword) {
+    if (user == null) {
+      throw new IllegalArgumentException("Utilisateur introuvable.");
+    }
+    user.setPasswordHash(passwordEncoder.encode(newPassword));
+    userRepository.save(user);
+  }
+
   private String normalizeCountryCode(String countryCode) {
     if (countryCode == null || countryCode.isBlank()) {
       return "MA";
     }
     return countryCode.trim().toUpperCase(Locale.ROOT);
+  }
+
+  private void validateIdentityVerification(RegisterRequest request) {
+    IdentityVerificationRequest verification = request.identityVerification();
+    if (verification == null) {
+      throw new IllegalArgumentException("La verification OCR de la CIN est obligatoire.");
+    }
+
+    boolean firstNameMatches = normalizeIdentityToken(request.firstName()).equals(normalizeIdentityToken(verification.extractedFirstName()));
+    boolean lastNameMatches = normalizeIdentityToken(request.lastName()).equals(normalizeIdentityToken(verification.extractedLastName()));
+    boolean dateMatches = request.dateOfBirth() != null && request.dateOfBirth().equals(verification.extractedDateOfBirth());
+
+    if (!firstNameMatches || !lastNameMatches || !dateMatches) {
+      throw new IllegalArgumentException("Les donnees saisies ne correspondent pas aux informations lues sur la CIN.");
+    }
+  }
+
+  private String buildFullName(RegisterRequest request) {
+    if (request.fullName() != null && !request.fullName().isBlank()) {
+      return request.fullName().trim();
+    }
+    return (cleanName(request.firstName()) + " " + cleanName(request.lastName())).trim();
+  }
+
+  private String cleanName(String value) {
+    return value == null ? null : value.trim().replaceAll("\\s+", " ");
+  }
+
+  private String buildVerificationSummary(IdentityVerificationRequest verification) {
+    String rawText = verification.rawText() == null ? "" : verification.rawText().replaceAll("\\s+", " ").trim();
+    String compact = rawText.length() > 220 ? rawText.substring(0, 220) + "..." : rawText;
+    return "OCR CIN | nom=" + cleanName(verification.extractedLastName())
+        + " | prenom=" + cleanName(verification.extractedFirstName())
+        + " | naissance=" + verification.extractedDateOfBirth()
+        + " | confiance=" + (verification.confidence() == null ? "n/a" : verification.confidence())
+        + " | extrait=" + compact;
+  }
+
+  private String normalizeIdentityToken(String value) {
+    if (value == null) {
+      return "";
+    }
+    String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        .replaceAll("\\p{M}+", "")
+        .replace('’', '\'')
+        .replaceAll("[^A-Za-z0-9' -]", " ")
+        .toUpperCase(Locale.ROOT)
+        .replaceAll("\\s+", " ")
+        .trim();
+    return normalized;
   }
 }

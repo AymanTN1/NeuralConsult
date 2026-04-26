@@ -40,7 +40,7 @@ public class MailDeliveryService {
 
     try {
       MimeMessage message = mailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
       helper.setTo(user.getEmail());
       helper.setSubject(envelope.subject());
       helper.setText(envelope.textBody(), envelope.htmlBody());
@@ -52,6 +52,7 @@ public class MailDeliveryService {
         }
       }
       mailSender.send(message);
+      LOGGER.info("Structured email '{}' sent to {}", envelope.subject(), user.getEmail());
     } catch (Exception exception) {
       LOGGER.warn("Unable to send email '{}' to {}: {}", envelope.subject(), user.getEmail(), exception.getMessage());
     }

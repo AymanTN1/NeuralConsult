@@ -48,13 +48,35 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const forgotPassword = async (email) => {
+    const { data } = await api.post("/api/auth/forgot-password", { email });
+    return data;
+  };
+
+  const resetPassword = async (email, code, newPassword) => {
+    const { data } = await api.post("/api/auth/reset-password", { email, code, newPassword });
+    return data;
+  };
+
   const logout = async () => {
     await api.post("/api/auth/logout");
     setUser(null);
   };
 
   const value = useMemo(
-    () => ({ user, loading, error, login, register, verifyEmail, resendVerification, logout, refetch: fetchMe }),
+    () => ({
+      user,
+      loading,
+      error,
+      login,
+      register,
+      verifyEmail,
+      resendVerification,
+      forgotPassword,
+      resetPassword,
+      logout,
+      refetch: fetchMe
+    }),
     [user, loading, error]
   );
 

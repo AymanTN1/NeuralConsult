@@ -37,6 +37,10 @@ public class UserController {
         user.getId(),
         user.getEmail(),
         user.getFullName(),
+        user.getFirstName(),
+        user.getLastName(),
+        user.getDateOfBirth(),
+        user.isIdentityVerified(),
         profile != null ? toProfileResponse(profile) : null,
         profile != null
             ? new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())

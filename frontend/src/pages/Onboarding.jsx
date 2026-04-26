@@ -138,6 +138,8 @@ const Onboarding = () => {
   const [assistantField, setAssistantField] = useState(null);
   const [isPhasePanelOpen, setIsPhasePanelOpen] = useState(false);
   const formRef = useRef(null);
+  const timelineStageRef = useRef(null);
+  const [timelineScrollProgress, setTimelineScrollProgress] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -165,6 +167,46 @@ const Onboarding = () => {
   useEffect(() => {
     setVisitedSteps((previous) => (previous.includes(step) ? previous : [...previous, step]));
   }, [step]);
+
+  useEffect(() => {
+    const stage = timelineStageRef.current;
+    if (!stage) {
+      return undefined;
+    }
+
+    let frameId = null;
+
+    const computeProgress = () => {
+      frameId = null;
+      const rect = stage.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || 1;
+      const startLine = viewportHeight * 0.84;
+      const endLine = viewportHeight * 0.18;
+      const totalDistance = Math.max(rect.height + startLine - endLine, 1);
+      const traveled = startLine - rect.top;
+      const ratio = Math.min(1, Math.max(0, traveled / totalDistance));
+      setTimelineScrollProgress(Math.round(ratio * 100));
+    };
+
+    const scheduleProgress = () => {
+      if (frameId !== null) {
+        return;
+      }
+      frameId = window.requestAnimationFrame(computeProgress);
+    };
+
+    computeProgress();
+    window.addEventListener("scroll", scheduleProgress, { passive: true });
+    window.addEventListener("resize", scheduleProgress);
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("scroll", scheduleProgress);
+      window.removeEventListener("resize", scheduleProgress);
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -279,6 +321,7 @@ const Onboarding = () => {
   const progressPercent = user?.profile?.onboardingComplete
     ? 100
     : Math.round((visitedSteps.length / CLINICAL_PHASES.length) * 100);
+  const timelineVisualProgress = timelineScrollProgress;
 
   return (
     <div className="container py-4 app-shell">
@@ -317,34 +360,57 @@ const Onboarding = () => {
         </div>
       )}
 
-      <div className="evaluation-timeline-stage" data-guide-id="evaluation-timeline">
+      <div
+        ref={timelineStageRef}
+        className="evaluation-timeline-stage"
+        data-guide-id="evaluation-timeline"
+        style={{ "--timeline-progress": `${timelineVisualProgress}%` }}
+      >
         <div className="evaluation-journey-head">
-          <div>
+          <div className="evaluation-journey-copy">
             <div className="hero-kicker">Parcours initial</div>
             <h3 className="mb-2">Cliquez sur une phase pour ouvrir le panel central de questions.</h3>
             <p className="muted-text mb-0">
-              Le patient ne voit plus une colonne technique et un formulaire brut: il avance par etapes visibles,
-              puis ouvre chaque bloc au centre de l'ecran.
+              La timeline se remplit pendant le scroll comme une colonne clinique vivante. Le patient avance par
+              reperes visuels, puis ouvre chaque bloc au centre de l'ecran.
             </p>
+          </div>
+
+          <div className="evaluation-timeline-progress-vertical" aria-hidden="true">
+            <div className="evaluation-timeline-progress-column">
+              <span className="evaluation-timeline-progress-column-fill" />
+            </div>
+            <div className="evaluation-timeline-progress-meta is-vertical">
+              <span>Flux clinique</span>
+              <strong>{timelineVisualProgress}%</strong>
+            </div>
           </div>
         </div>
 
         <div className="evaluation-timeline-centered">
-          {CLINICAL_PHASES.map((phase) => {
+          {CLINICAL_PHASES.map((phase, index) => {
             const isActive = phase.id === step;
             const isVisited = visitedSteps.includes(phase.id);
+            const phaseFill = Math.max(
+              0,
+              Math.min(1, (timelineVisualProgress / 100) * CLINICAL_PHASES.length - index)
+            );
             return (
               <button
                 key={phase.id}
                 type="button"
                 className={`evaluation-timeline-row ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}`}
                 onClick={() => openPhasePanel(phase.id)}
+                style={{ "--phase-progress": phaseFill.toFixed(2) }}
               >
                 <div className="evaluation-timeline-row-label">{phase.label}</div>
                 <div className="evaluation-timeline-row-center">
-                  <span className="evaluation-timeline-row-node">{phase.id}</span>
+                  <span className="evaluation-timeline-row-node">
+                    <span className="evaluation-timeline-row-node-index">{phase.id}</span>
+                  </span>
                 </div>
                 <div className="evaluation-timeline-row-copy">
+                  <span className="evaluation-timeline-row-wave">Progression visuelle</span>
                   <strong>{phase.title}</strong>
                   <p>{phase.summary}</p>
                 </div>
@@ -380,6 +446,20 @@ const Onboarding = () => {
                 <span>{goal}</span>
               </div>
             ))}
+          </div>
+
+          <div className="evaluation-assistant-strip">
+            <div>
+              <strong>Assistant IA question par question</strong>
+              <p className="mb-0">
+                Les pastilles bleues restent attachees aux questions elles-memes. Cliquez sur une pastille pour
+                demander une explication sans toucher aux reponses.
+              </p>
+            </div>
+            <span className="evaluation-assistant-strip-badge">
+              <i className="bi bi-patch-question-fill" />
+              Aide visible sur chaque question
+            </span>
           </div>
 
           <QuestionHelpOverlay

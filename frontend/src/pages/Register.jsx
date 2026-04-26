@@ -1,11 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import IdentityOcrVerifier from "../components/IdentityOcrVerifier";
 import { useAuth } from "../context/AuthContext";
 
 const initialForm = {
   email: "",
   password: "",
-  fullName: "",
+  firstName: "",
+  lastName: "",
+  dateOfBirth: "",
   phoneNumber: "",
   accountType: "PATIENT",
   city: "",
@@ -22,6 +25,15 @@ const Register = () => {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [identityVerification, setIdentityVerification] = useState({
+    verified: false,
+    extractedFirstName: "",
+    extractedLastName: "",
+    extractedDateOfBirth: "",
+    rawText: "",
+    confidence: null,
+    documentType: "CIN"
+  });
 
   const doctorMode = form.accountType === "DOCTOR";
 
@@ -36,9 +48,18 @@ const Register = () => {
   const payload = useMemo(
     () => ({
       ...form,
-      yearsExperience: form.yearsExperience === "" ? null : Number(form.yearsExperience)
+      fullName: `${form.firstName} ${form.lastName}`.replace(/\s+/g, " ").trim(),
+      yearsExperience: form.yearsExperience === "" ? null : Number(form.yearsExperience),
+      identityVerification: {
+        documentType: identityVerification.documentType || "CIN",
+        extractedFirstName: identityVerification.extractedFirstName,
+        extractedLastName: identityVerification.extractedLastName,
+        extractedDateOfBirth: identityVerification.extractedDateOfBirth || null,
+        rawText: identityVerification.rawText,
+        confidence: identityVerification.confidence
+      }
     }),
-    [form]
+    [form, identityVerification]
   );
 
   const handleSubmit = async (event) => {
@@ -106,8 +127,19 @@ const Register = () => {
                 <option value="DOCTOR">Medecin</option>
               </select>
 
-              <label className="form-label">Nom complet</label>
-              <input className="form-control" type="text" name="fullName" value={form.fullName} onChange={handleChange} required />
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label">Prenom</label>
+                  <input className="form-control" type="text" name="firstName" value={form.firstName} onChange={handleChange} required />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Nom</label>
+                  <input className="form-control" type="text" name="lastName" value={form.lastName} onChange={handleChange} required />
+                </div>
+              </div>
+
+              <label className="form-label">Date de naissance</label>
+              <input className="form-control" type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} required />
 
               <label className="form-label">Telephone</label>
               <input className="form-control" type="text" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} />
@@ -117,6 +149,13 @@ const Register = () => {
 
               <label className="form-label">Mot de passe</label>
               <input className="form-control" type="password" name="password" value={form.password} onChange={handleChange} required />
+
+              <IdentityOcrVerifier
+                firstName={form.firstName}
+                lastName={form.lastName}
+                dateOfBirth={form.dateOfBirth}
+                onVerificationChange={setIdentityVerification}
+              />
 
               {doctorMode && (
                 <div className="auth-doctor-grid">
@@ -147,9 +186,14 @@ const Register = () => {
                 </div>
               )}
 
-              <button className="btn btn-dark w-100" disabled={loading}>
+              <button className="btn btn-dark w-100" disabled={loading || !identityVerification.verified}>
                 {loading ? "Creation..." : doctorMode ? "Creer et soumettre le compte medecin" : "Activer mon espace patient"}
               </button>
+              {!identityVerification.verified && (
+                <p className="muted-text mb-0">
+                  La creation du compte reste bloquee tant que la CIN ne confirme pas le nom, le prenom et la date de naissance.
+                </p>
+              )}
             </form>
 
             <p className="auth-alt-link">

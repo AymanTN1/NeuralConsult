@@ -11,6 +11,7 @@ public record CommunityPostResponse(
     UUID serverId,
     String serverName,
     String content,
+    String imageUrl,
     Instant createdAt,
     Map<String, Long> reactions,
     String myReaction,

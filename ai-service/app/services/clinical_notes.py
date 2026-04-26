@@ -4,7 +4,8 @@ import datetime as dt
 import json
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.services.knowledge_base import KnowledgeBaseClient, KnowledgeReference
+from app.services.domain_knowledge import ClinicalNotesKnowledgeBaseClient
+from app.services.knowledge_base import KnowledgeReference
 from app.services.llm_client import DefaultLlmClient
 
 
@@ -66,7 +67,7 @@ class ClinicalNotesService:
     MODEL_NAME = "deterministic-v1"
 
     def __init__(self) -> None:
-        self.kb = KnowledgeBaseClient()
+        self.kb = ClinicalNotesKnowledgeBaseClient()
         self.llm = DefaultLlmClient()
 
     async def generate(self, facts: Dict[str, Any]) -> Dict[str, Any]:

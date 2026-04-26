@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const location = useLocation();
+  const [form, setForm] = useState({ email: location.state?.email || "", password: "" });
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || null);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
@@ -17,6 +19,7 @@ const Login = () => {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       await login(form.email, form.password);
@@ -82,6 +85,7 @@ const Login = () => {
             <p className="muted-text">Accedez a votre espace clinique et reprenez le suivi la ou il s'etait arrete.</p>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}
+            {successMessage && <div className="alert alert-success mt-3">{successMessage}</div>}
 
             <form onSubmit={handleSubmit} className="auth-form">
               <label className="form-label">Email</label>
@@ -103,6 +107,12 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
+
+              <div className="d-flex justify-content-end mt-1">
+                <Link to="/forgot-password" className="auth-inline-link">
+                  Mot de passe oublie ?
+                </Link>
+              </div>
 
               <button className="btn btn-dark w-100" disabled={loading}>
                 {loading ? "Connexion..." : "Entrer dans l'espace clinique"}

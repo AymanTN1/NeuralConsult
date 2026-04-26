@@ -1,54 +1,640 @@
-# NeuralConsult Sevrage
+﻿# NeuralConsult Sevrage
 
-Plateforme clinique de sevrage tabagique construite comme un poste de travail médical moderne.
+README de reference pour un nouveau membre de l'equipe, pour un encadrant, ou pour une IA chargee de preparer une presentation du projet.
 
-Le projet transforme les données saisies par le patient en :
-
-- un dossier patient structuré
-- une évaluation clinique obligatoire
-- des scores tabacologie / psychologie
-- un plan de sevrage généré automatiquement
-- une note clinique exploitable par le médecin
-- un tableau de bord de suivi quotidien
-
-L’application est organisée en 3 briques :
-
-- `frontend` : interface React/Vite au style “clinical workstation”
-- `backend` : API Spring Boot sécurisée par JWT cookie HTTP-only
-- `ai-service` : microservice FastAPI pour la génération et la validation des notes cliniques
+Ce document decrit **ce qui est reellement implemente dans le repository aujourd'hui** : fonctionnalites produit, roles, parcours utilisateurs, architecture technique, modules IA, automatisations, endpoints principaux et scenario de demo.
 
 ---
 
-## 1. Vision du projet
+## 1. Resume executif
 
-`NeuralConsult Sevrage` n’est pas juste un formulaire tabacologie.
+**NeuralConsult Sevrage** est une plateforme de sevrage tabagique qui combine :
 
-L’objectif est de construire une chaîne complète :
+- un parcours patient structure et obligatoire,
+- un espace medecin pour l'analyse clinique,
+- une validation admin des comptes praticiens,
+- plusieurs assistants IA specialises,
+- un suivi quotidien,
+- des rendez-vous de teleconsultation,
+- un espace communaute,
+- un systeme de notifications + emails.
 
-1. authentifier un patient
-2. forcer la complétion de son évaluation initiale
-3. centraliser son dossier personnel et clinique
-4. calculer les scores utiles au sevrage
-5. produire une synthèse lisible par le médecin
-6. proposer un plan de prise en charge cohérent
-7. suivre l’évolution dans le temps
+L'objectif n'est pas seulement de stocker un questionnaire, mais de construire une **chaine de prise en charge complete** :
 
-Le fil directeur du produit est le suivant :
-
-- le `Profile` contient l’identité et la démographie
-- l’`Evaluation` contient la matière clinique et tabacologique
-- les `Tests` calculent les scores officiels
-- le `Plan` propose l’orientation thérapeutique
-- la `Note clinique` synthétise les faits sans hallucination
-- le `Dashboard` rend visible l’évolution
+1. creer et securiser le compte,
+2. verifier l'email,
+3. forcer l'evaluation initiale,
+4. imposer le passage des tests cliniques,
+5. imposer la premiere entree de journal,
+6. orienter le patient vers un medecin,
+7. produire des resumes cliniques IA,
+8. assurer un suivi quotidien,
+9. offrir un soutien psychologique IA 24/7,
+10. permettre une teleconsultation visio avec le medecin,
+11. maintenir l'engagement via la communaute.
 
 ---
 
-## 2. Stack technique réelle
+## 2. Proposition de valeur du projet
 
-Le code actuel utilise :
+Le projet repond a 4 problemes concrets :
 
-### Frontend
+- le patient tabagique abandonne souvent faute de suivi continu,
+- le medecin manque de temps pour relire tout le dossier brut,
+- les scores et observations sont disperses,
+- l'accompagnement psychologique n'est pas disponible 24/7.
+
+La plateforme apporte donc :
+
+- une **evaluation initiale guidee**,
+- des **tests normalises**,
+- un **journal quotidien**,
+- une **synthese IA medicale** pour le medecin,
+- un **assistant psychologique IA** entre les rendez-vous,
+- une **mise en relation structuree** patient-medecin,
+- une **teleconsultation visio** gratuite via Jitsi Meet,
+- une **communaute sociale** pour casser l'isolement.
+
+---
+
+## 3. Roles dans la plateforme
+
+### 3.1 Patient
+
+Le patient peut :
+
+- creer un compte,
+- verifier son email,
+- reinitialiser son mot de passe avec un code a 6 chiffres,
+- remplir l'evaluation initiale obligatoire,
+- demander de l'aide IA question par question,
+- passer les tests Fagerstrom et HAD,
+- remplir son journal quotidien,
+- consulter son dashboard,
+- voir son plan de sevrage,
+- discuter avec l'IA 24/7,
+- envoyer une demande a un medecin,
+- reserver une teleconsultation,
+- rejoindre l'espace communaute,
+- gerer son profil personnel.
+
+### 3.2 Medecin
+
+Le medecin peut :
+
+- creer son profil praticien,
+- attendre la validation admin,
+- recevoir des demandes de patients,
+- accepter ou refuser un rattachement patient,
+- consulter le dossier medical complet d'un patient,
+- voir les tests, le journal, la conversation IA et les alertes,
+- lire les resumes IA de phase et le resume global,
+- ajouter ses propres notes libres par phase,
+- valider un plan candidat genere par l'IA,
+- definir ses disponibilites de teleconsultation,
+- confirmer/refuser/completer les rendez-vous,
+- creer une consultation urgente hors planning normal,
+- consulter et accuser les alertes critiques generees par l'IA 24/7.
+
+### 3.3 Administrateur
+
+L'administrateur peut :
+
+- voir les comptes medecins en attente,
+- valider ou refuser leur activation,
+- controler la mise en relation medecin-patient via la gouvernance du systeme.
+
+---
+
+## 4. Fonctionnalites produit detaillees
+
+## 4.1 Landing page et experience d'accueil
+
+Le frontend propose une landing page immersive avec :
+
+- une scene hero cinematographique,
+- un scroll narratif,
+- une animation visuelle autour de la consommation tabagique,
+- un rendu des poumons degrade selon la progression du scroll,
+- des sections de presentation de la plateforme,
+- un theme bleu/blanc a identite clinique.
+
+Objectif : donner une image moderne, medicale et memorisable au produit.
+
+## 4.2 Authentification et securite utilisateur
+
+Fonctionnalites implementees :
+
+- inscription via `POST /api/auth/register`,
+- connexion via `POST /api/auth/login`,
+- deconnexion via `POST /api/auth/logout`,
+- verification email via code a 6 chiffres,
+- renvoi du code de verification,
+- mot de passe oublie via code a 6 chiffres,
+- reinitialisation du mot de passe,
+- compte admin bootstrappe automatiquement,
+- JWT stocke dans un cookie HTTP-only.
+
+Points importants :
+
+- l'email doit etre confirme avant usage normal du compte,
+- le mot de passe n'est jamais recuperable en clair,
+- les flux de verification et de reset utilisent de vrais emails si SMTP est configure,
+- le login et les routes protegees utilisent le profil du compte et les roles.
+
+## 4.3 Verification email reelle
+
+Le projet supporte l'envoi reel d'emails avec SMTP Gmail ou autre fournisseur SMTP.
+
+Emails deja implementes :
+
+- code de verification d'email,
+- code de reinitialisation du mot de passe,
+- emails miroirs des notifications importantes,
+- emails de rappel,
+- emails d'alerte IA urgente,
+- emails de lien visio de consultation.
+
+## 4.4 Parcours patient obligatoire
+
+Le produit force l'ordre suivant :
+
+1. `Evaluation`
+2. `Tests`
+3. `Journal`
+4. reste de la plateforme
+
+Ce verrouillage existe a 2 niveaux :
+
+- **frontend** : `ProtectedRoute.jsx`
+- **backend** : `OnboardingRequiredFilter.java`
+
+Codes d'erreur metier deja geres :
+
+- `ONBOARDING_REQUIRED`
+- `TESTS_REQUIRED`
+- `JOURNAL_REQUIRED`
+
+Cela garantit qu'un patient ne peut pas sauter le parcours clinique initial.
+
+## 4.5 Evaluation initiale clinique
+
+La page `Evaluation` est un des coeurs du projet.
+
+Fonctionnalites :
+
+- timeline centrale par phases,
+- ouverture des phases dans un panel central,
+- scroll visuel avec progression verticale,
+- saisie d'un grand questionnaire clinique et tabacologique,
+- separation claire entre donnees personnelles et donnees cliniques,
+- sauvegarde backend de l'onboarding,
+- generation de scores derives,
+- aide utilisateur guidee par bulles lors de la premiere prise en main.
+
+Le questionnaire couvre notamment :
+
+- contexte social et personnel,
+- antecedents medicaux,
+- facteurs de risque,
+- habitudes tabagiques,
+- e-cigarette et autres produits,
+- tentatives d'arret,
+- motivations et craintes,
+- alcool, cannabis, vulnerabilite sociale,
+- informations utiles a l'evaluation de la dependance.
+
+## 4.6 Assistant IA d'explication des questions
+
+Pendant l'evaluation, le patient peut cliquer sur une icone d'aide IA sur chaque question.
+
+Fonctionnalites :
+
+- reformulation de la question en langage simple,
+- clarification du sens medical,
+- proposition prudente d'une interpretation,
+- maintien de la reponse finale chez le patient,
+- ancrage visuel de l'icone sur la question elle-meme.
+
+Cette IA utilise son **propre RAG specialise** et ne partage pas directement le meme corpus que l'IA psychologique ou l'IA de notes cliniques.
+
+## 4.7 Tests cliniques
+
+La page `Tests` gere :
+
+- **Fagerstrom** : dependance nicotinique,
+- **HAD** : anxiete et depression.
+
+Fonctionnalites :
+
+- enregistrement des tests,
+- modification des tests,
+- suppression des tests,
+- historique des tests,
+- recalcul des indicateurs patient,
+- redirection automatique vers `Journal` quand les tests requis sont termines.
+
+## 4.8 Journal quotidien
+
+La page `Journal` permet au patient de renseigner des entrees quotidiennes.
+
+Informations suivies :
+
+- cigarettes fumees,
+- cravings,
+- stress,
+- humeur,
+- symptomes de sevrage,
+- declencheurs.
+
+Fonctionnalites :
+
+- ajout d'une entree journaliere,
+- consultation de l'historique,
+- suppression d'une entree,
+- visualisation via graphiques cote dashboard et cote medecin,
+- rappels automatiques si le journal n'est pas rempli pendant 2 jours consecutifs.
+
+## 4.9 Dashboard patient
+
+Le dashboard patient centralise :
+
+- scores Fagerstrom et HAD,
+- vues graphiques,
+- synthese de progression,
+- indicateurs derives,
+- tendances issues du journal,
+- elements utiles au sevrage.
+
+## 4.10 Plan de sevrage
+
+Le module `Plan` permet de :
+
+- generer un plan de sevrage,
+- consulter le plan courant,
+- afficher les resumes IA et les points d'attention,
+- exposer des pistes therapeutiques compréhensibles.
+
+Cote medecin, les **plans candidats IA** peuvent etre lus puis valides avec une note medecin.
+
+## 4.11 Notes cliniques et intelligence clinique
+
+Le projet distingue plusieurs couches de synthese clinique :
+
+### Note clinique IA
+
+Elle contient une synthese medicale structurée a partir :
+
+- de l'evaluation,
+- des tests,
+- du journal,
+- des informations du profil.
+
+### Resumes IA par phase
+
+Pour chaque phase d'evaluation, l'IA genere :
+
+- un petit resume utile au patient et au medecin,
+- des points d'attention,
+- une aide a l'analyse de la dependance.
+
+### Notes libres du medecin par phase
+
+Le medecin peut ajouter sa propre lecture clinique sur chaque phase.
+Cette note est visible cote medecin uniquement.
+
+### Resume global IA
+
+Le resume global croise :
+
+- evaluation initiale,
+- tests Fagerstrom,
+- tests HAD,
+- journal quotidien,
+- contexte medical et social,
+- intensite de dependance,
+- vulnerabilites.
+
+### Validation de plan
+
+Le medecin peut valider un plan candidat produit par l'IA et y attacher sa note clinique.
+
+## 4.12 Repertoire medecins et association patient-medecin
+
+Le patient dispose d'un annuaire medecin avec :
+
+- liste des medecins visibles uniquement apres validation admin,
+- matching par ville, pays ou teleconsultation,
+- bio et informations du medecin,
+- message optionnel au medecin,
+- historique des demandes envoyees.
+
+Regles metier :
+
+- un patient deja rattache a un medecin ne voit plus l'annuaire complet,
+- les rendez-vous ne sont reservables qu'avec le medecin associe,
+- si l'association disparait, l'annuaire redevient visible.
+
+## 4.13 Profil medecin et validation admin
+
+Le medecin complete un profil incluant :
+
+- ville,
+- pays,
+- specialite,
+- annees d'experience,
+- bio,
+- disponibilite a la teleconsultation.
+
+Ensuite :
+
+- le compte reste en attente,
+- l'administrateur voit la demande,
+- l'administrateur approuve ou rejette,
+- apres approbation, le medecin devient visible dans l'annuaire patient.
+
+## 4.14 Workspace medecin
+
+Le workspace medecin a ete pense comme un vrai poste de travail clinique.
+
+Fonctionnalites :
+
+- tableau des demandes patients en attente,
+- tableau des patients associes,
+- actions contextuelles par patient,
+- chargement du dossier patient dans un panneau de travail,
+- navigation interne entre plusieurs vues :
+  - vue clinique,
+  - profil patient,
+  - dossier medical,
+  - dashboard,
+  - journal,
+  - conversation IA,
+  - synthese IA,
+  - rendez-vous.
+
+Le medecin peut y voir :
+
+- les informations personnelles du patient,
+- toutes les reponses de l'evaluation initiale,
+- l'historique HAD et Fagerstrom,
+- les entrees du journal,
+- la note clinique IA,
+- le resume global IA,
+- les resumes IA de phase,
+- les notes libres du medecin,
+- les plans candidats,
+- les rendez-vous lies a ce patient,
+- l'historique de conversation IA 24/7.
+
+## 4.15 IA psychologue 24/7
+
+La page `IA 24/7` offre un espace de dialogue continu entre le patient et un assistant IA de soutien.
+
+Fonctionnalites :
+
+- conversation patient <-> IA,
+- generation d'une reponse empathique courte et actionnable,
+- evaluation du risque par l'IA,
+- resume conversationnel,
+- historisation des messages,
+- rattachement du fil au medecin associe.
+
+En cas de signal critique, l'IA peut :
+
+- creer une **alerte medecin**,
+- stocker la raison clinique de l'alerte,
+- rendre l'alerte visible dans l'espace medecin,
+- envoyer une notification et un email urgents,
+- reproposer l'alerte toutes les 8 heures tant qu'elle reste ouverte,
+- permettre au medecin d'accuser reception de l'alerte,
+- proposer une consultation urgente depuis l'ecran d'alerte.
+
+## 4.16 Rendez-vous et teleconsultation visio
+
+Le module `Rendez-vous` est riche et couvre le patient comme le medecin.
+
+### Cote medecin
+
+Le medecin peut :
+
+- definir des **disponibilites basees sur une date de calendrier**,
+- choisir une plage horaire pour un jour lointain (mois prochain ou plus),
+- modifier ou supprimer ses disponibilites,
+- voir les demandes de consultation en attente,
+- confirmer ou refuser un rendez-vous,
+- marquer une consultation comme terminee,
+- annuler une consultation,
+- creer une **consultation urgente** hors disponibilites normales.
+
+### Cote patient
+
+Le patient peut :
+
+- voir uniquement les disponibilites de son medecin associe,
+- choisir un jour dans le calendrier,
+- voir les seances de 20 minutes disponibles ce jour-la,
+- demander un rendez-vous,
+- suivre le statut de la demande,
+- ouvrir la visio quand elle devient disponible.
+
+### Regles metier
+
+- 1 seance maximum par semaine,
+- 4 seances maximum par mois,
+- consultation urgente possible hors planning normal si le medecin la cree,
+- les demandes patient arrivent d'abord en **attente**,
+- le medecin doit confirmer pour finaliser la seance.
+
+### Statuts geres
+
+Le planning medecin distingue :
+
+- `PENDING`
+- `CONFIRMED`
+- `COMPLETED`
+- `REFUSED`
+- `CANCELLED`
+
+### Visio
+
+Le projet integre une logique de teleconsultation gratuite via **Jitsi Meet** :
+
+- generation automatique d'une salle,
+- envoi du lien environ 10 minutes avant la consultation,
+- bouton `Rejoindre la visio` dans l'interface,
+- notifications et emails patient + medecin,
+- rappel a 24h puis a 10 minutes.
+
+## 4.17 Notifications in-app + emails miroir
+
+Le systeme de notifications couvre :
+
+- demandes patient -> medecin,
+- reponses medecin -> patient,
+- rappels de rendez-vous,
+- lien visio disponible,
+- consultation qui commence,
+- rappels tests,
+- rappels journal quotidien,
+- alertes IA critiques.
+
+Chaque notification importante peut etre :
+
+- visible dans l'interface,
+- marquee comme lue,
+- comptee dans un badge de resume,
+- miroir en email structure.
+
+## 4.18 Communaute sociale
+
+L'espace `Communautes` a evolue vers une experience de type reseau social.
+
+Fonctionnalites principales :
+
+- premiere entree dans la communaute = choix obligatoire d'un `username`,
+- photo de profil optionnelle,
+- fil `Pour vous`,
+- espace `Explorer`,
+- espace `Activite`,
+- espace `Messages`,
+- espace `Mon profil`,
+- publication texte + photo,
+- likes type `coeur`,
+- commentaires affiches uniquement sur clic,
+- compteur de commentaires visible sans ouvrir le detail,
+- partage d'un post a un ami,
+- recherche de profils,
+- consultation d'un profil public,
+- follow / unfollow,
+- invitations d'amitie / connexion,
+- acceptation ou refus des connexions,
+- messagerie directe privee,
+- affichage des interactions recues.
+
+Important :
+
+- les anciens comptes ne sont pas bloques globalement sur la plateforme,
+- l'exigence du username sert surtout d'entree a l'espace communaute,
+- la photo reste optionnelle.
+
+### Capacite additionnelle cote backend
+
+Le backend conserve aussi des endpoints de type :
+
+- serveurs,
+- salons,
+- messages de salon,
+- adhésion a un serveur.
+
+La version UI principale actuellement expose surtout le **mode social/feed**, mais le backend garde une base pour une logique plus proche de serveurs/channels si l'equipe veut la reactiver plus tard.
+
+## 4.19 Guide patient integre
+
+La plateforme inclut un guide contextuel pour les nouveaux patients :
+
+- bulles explicatives au premier passage,
+- indication de la prochaine etape,
+- explication du menu,
+- accompagnement sur `Evaluation`, `Tests`, `Journal`, `Dashboard`, `Plan`, `Medecins`, `Rendez-vous`, `IA 24/7`, `Communautes` et `Profil`.
+
+---
+
+## 5. Architecture IA
+
+Le projet utilise plusieurs couches IA distinctes.
+
+## 5.1 Principe general
+
+Le backend Spring Boot orchestre les donnees applicatives et appelle un microservice FastAPI dedie a l'IA.
+
+Le microservice IA supporte deux fournisseurs si configures :
+
+- **Groq** (priorite si configure)
+- **Gemini** (fallback si Groq absent)
+
+## 5.2 Services IA implémentés
+
+### 1. Assistant d'explication des questions
+
+Fichier principal :
+
+- `ai-service/app/services/question_assistant.py`
+
+Role :
+
+- expliquer une question du formulaire,
+- reformuler sans changer le sens clinique,
+- proposer une suggestion prudente si possible.
+
+### 2. IA psychologue / soutien 24/7
+
+Fichier principal :
+
+- `ai-service/app/services/support_chat.py`
+
+Role :
+
+- repondre au patient,
+- detecter le niveau de risque,
+- decider s'il faut alerter le medecin,
+- produire une raison d'alerte.
+
+### 3. IA de notes cliniques
+
+Fichier principal :
+
+- `ai-service/app/services/clinical_notes.py`
+
+Role :
+
+- produire une note clinique structurée,
+- signaler les donnees manquantes,
+- rester sobre et sans hallucination.
+
+### 4. IA d'intelligence clinique globale
+
+Fichier principal :
+
+- `ai-service/app/services/clinical_intelligence.py`
+
+Role :
+
+- produire les resumes de phase,
+- produire le resume global,
+- proposer des plans candidats,
+- extraire des priorites cliniques utiles au medecin.
+
+## 5.3 Separation des RAGs
+
+Un point important du projet est la separation des bases de connaissance par usage.
+
+Fichier central :
+
+- `ai-service/app/services/domain_knowledge.py`
+
+RAGs separes :
+
+- `Question-RAG` pour l'explication du questionnaire,
+- `Psy-RAG` pour le soutien 24/7,
+- `Notes-RAG` pour les notes medicales,
+- `Clinical-Intel-RAG` pour les resumes et plans globaux.
+
+Cela evite de melanger les consignes et ameliore la specialisation de chaque assistant.
+
+---
+
+## 6. Architecture technique
+
+## 6.1 Briques principales
+
+- `frontend` : React + Vite
+- `backend` : Spring Boot + Spring Security + JPA
+- `ai-service` : FastAPI
+- `db` : PostgreSQL
+- `adminer` : outil d'inspection base de donnees
+
+## 6.2 Stack frontend
 
 - React 18
 - Vite 5
@@ -59,1259 +645,441 @@ Le code actuel utilise :
 - GSAP ScrollTrigger
 - Three.js / `@react-three/fiber`
 
-### Backend
+## 6.3 Stack backend
 
 - Java 21
-- Spring Boot 3.2.5
+- Spring Boot 3.2.x
 - Spring Web
 - Spring Security
 - Spring Data JPA
 - Spring Validation
 - Spring Actuator
 - PostgreSQL
-- JWT via `jjwt`
+- JWT
+- Scheduling Spring
+- JavaMail / SMTP
 
-### AI service
+## 6.4 Stack IA
 
 - Python
 - FastAPI
 - Pydantic v2
-- Uvicorn
 - httpx
 - pytest
 
-### Déploiement
+## 6.5 Deploiement local
 
-- Docker Compose
-- 4 services : `frontend`, `backend`, `ai-service`, `db`
+Le projet tourne via Docker Compose avec :
 
----
-
-## 3. Architecture globale
-
-```text
-Frontend (React/Vite)
-    |
-    |  HTTP + cookie JWT
-    v
-Backend (Spring Boot)
-    |
-    |  JPA / PostgreSQL
-    v
-Database
-
-Backend
-    |
-    |  POST /api/clinical-notes/generate
-    v
-AI Service (FastAPI)
-```
-
-### Responsabilités
-
-`frontend`
-
-- affiche la landing page immersive
-- gère l’authentification côté UX
-- force la redirection vers l’évaluation si le profil est incomplet
-- affiche les formulaires métier
-- affiche les scores, graphiques et plans
-
-`backend`
-
-- gère les comptes utilisateurs
-- sécurise les routes
-- stocke les données du patient
-- calcule et persiste les scores officiels
-- orchestre les plans de sevrage
-- prépare les faits pour le moteur de note clinique
-
-`ai-service`
-
-- génère une note médicale structurée à partir des faits
-- valide automatiquement la cohérence minimale de cette note
-- bloque la sauvegarde si la sortie n’est pas jugée valide
+- `db` sur `5432`
+- `backend` sur `8080`
+- `frontend` sur `5173`
+- `ai-service` sur `8000`
+- `adminer` sur `8081`
 
 ---
 
-## 4. Structure du repository
+## 7. Structure du repository
 
 ```text
 neuralconsult/
-├── ai-service/      # FastAPI, génération de notes cliniques, préparation RAG
-├── backend/         # Spring Boot API, sécurité, scoring, plans, journal, notes
-├── database/        # schéma SQL de base
-├── docker/          # Dockerfiles
-├── docs/            # notes d’architecture / release notes
-├── frontend/        # React + Vite
+├── ai-service/
+│   ├── app/
+│   │   ├── clinical_intelligence.py
+│   │   ├── clinical_notes.py
+│   │   ├── question_assistant.py
+│   │   ├── support_chat.py
+│   │   └── services/
+│   └── tests/
+├── backend/
+│   └── src/main/java/com/neuralconsult/sevrage/
+│       ├── appointment/
+│       ├── clinical/
+│       ├── community/
+│       ├── doctor/
+│       ├── mail/
+│       ├── medical/
+│       ├── notification/
+│       ├── onboarding/
+│       ├── patient/
+│       ├── plan/
+│       ├── report/
+│       ├── security/
+│       ├── support/
+│       └── user/
+├── database/
+├── docker/
+├── docs/
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── context/
+│       ├── data/
+│       ├── pages/
+│       └── services/
 ├── docker-compose.yml
+├── manuelle d'utilisation.md
 └── README.md
 ```
 
 ---
 
-## 5. Parcours utilisateur métier
+## 8. Endpoints backend principaux par domaine
 
-### 5.1 Authentification
-
-Le patient peut :
-
-- créer un compte via `POST /api/auth/register`
-- se connecter via `POST /api/auth/login`
-- se déconnecter via `POST /api/auth/logout`
-
-Le backend écrit un cookie JWT `NC_ACCESS` :
-
-- `HttpOnly`
-- `SameSite=Strict`
-- utilisé automatiquement par Axios avec `withCredentials: true`
-
-### 5.2 Forçage de l’onboarding
-
-Le produit force la complétion de l’évaluation initiale à deux niveaux.
-
-#### Côté frontend
-
-Dans `frontend/src/components/ProtectedRoute.jsx` :
-
-- si l’utilisateur n’est pas connecté : redirection vers `/login`
-- si `user.profile.onboardingComplete === false` : redirection vers `/evaluation`
-
-#### Côté backend
-
-Dans `backend/src/main/java/com/neuralconsult/sevrage/security/OnboardingRequiredFilter.java` :
-
-- toute route authentifiée est bloquée si le profil n’est pas complet
-- le backend renvoie `428` avec :
-
-```json
-{"error":"ONBOARDING_REQUIRED"}
-```
-
-Exceptions autorisées :
-
-- `/api/auth/**`
-- `/api/onboarding`
-- `/api/me`
-- `/actuator/**`
-
-Cela garantit qu’un patient ne peut pas “sauter” l’évaluation initiale.
-
----
-
-## 6. Logique métier : séparation `Profile` vs `Evaluation`
-
-Un point fort important du projet est la séparation entre :
-
-### `Profile`
-
-Page personnelle, limitée aux données d’identité.
-
-Contenu principal :
-
-- date de naissance
-- sexe
-- ville
-- pays
-- profession
-- niveau d’études affiché en lecture issue de l’évaluation
-
-La page `Profile` n’est plus censée porter la matière clinique lourde.
-
-### `Evaluation` / `Profiling`
-
-La timeline d’évaluation regroupe le dossier tabacologique structuré.
-
-Phases actuelles :
-
-1. `Social & Personal Context` : Q1 à Q11
-2. `Medical Risks & History` : Q12 à Q17
-3. `Smoking Habits & E-Cig` : Q18 à Q27
-4. `Dependency Scoring` : préparation dépendance / motivation
-5. `Social Vulnerability & Co-Addictions` : EPICES / AUDIT / CAGE / HONC / cannabis
-
-Important :
-
-- les données démographiques servent de `single source of truth`
-- les données comme date de naissance, sexe, taille, poids, cigarettes/jour, âge de début tabac sont synchronisées dans `PatientProfile`
-- les scores dérivés sont recalculés au backend
-
----
-
-## 7. Entités de données principales
-
-### `User`
-
-Représente le compte applicatif.
-
-Contient notamment :
-
-- email
-- mot de passe hashé
-- nom complet
-
-### `PatientProfile`
-
-Noyau du dossier personnel agrégé.
-
-Contient :
-
-- date de naissance
-- sexe
-- taille / poids
-- ville / pays
-- profession
-- cigarettes par jour
-- âge de début tabac
-- score Fagerström agrégé
-- score HAD anxiété agrégé
-- score HAD dépression agrégé
-- niveau de dépendance agrégé
-- notes médicales
-- `is_onboarding_complete`
-
-### `OnboardingAssessment`
-
-Contient l’évaluation initiale détaillée :
-
-- contexte social
-- antécédents médicaux
-- habitudes tabagiques
-- e-cigarette
-- budget tabac
-- alcool
-- CAGE
-- cannabis
-- EPICES
-- HONC
-- motivation / peurs / raisons d’arrêt
-
-### `FagerstromTest`
-
-Historise les évaluations officielles de dépendance tabagique.
-
-### `HadTest`
-
-Historise les évaluations officielles anxiété / dépression.
-
-### `SevragePlan`
-
-Stocke le plan thérapeutique généré :
-
-- intensité
-- résumé
-- recommandation NRT
-- recommandations comportementales
-- plan de suivi
-- protocole anti-rechute
-- date de démarrage
-- date cible
-- étapes
-
-### `ClinicalNote`
-
-Stocke :
-
-- synthèse clinique
-- note complémentaire
-- statut de validation
-- nom du modèle
-- snapshot JSON des faits utilisés
-
-### `DailyReport`
-
-Journal patient quotidien :
-
-- cigarettes fumées
-- intensité des cravings
-- humeur
-- stress
-- usage NRT
-- rechute
-- notes
-
----
-
-## 8. Logique complète du profiling / évaluation initiale
-
-Le `profiling` n’est pas un simple formulaire monobloc.
-
-Il sert à :
-
-- constituer le dossier initial
-- renseigner le contexte médico-social
-- préparer la décision clinique
-- alimenter les plans et les notes
-
-### 8.1 Sauvegarde
-
-Le backend reçoit un `OnboardingRequest` puis :
-
-1. récupère ou crée le `PatientProfile`
-2. copie les données personnelles dans `PatientProfile`
-3. marque `onboardingComplete = true` au premier enregistrement réussi
-4. récupère ou crée `OnboardingAssessment`
-5. copie les réponses détaillées dans `OnboardingAssessment`
-6. calcule les scores dérivés
-7. persiste l’ensemble
-
-Fichier clé :
-
-- `backend/src/main/java/com/neuralconsult/sevrage/onboarding/OnboardingService.java`
-
-### 8.2 Scores dérivés calculés pendant le profiling
-
-Le backend calcule automatiquement :
-
-- `cageScore`
-- `cagePositive`
-- `honcScore`
-- `honcHighDependence`
-- `alcoholScore`
-- `epicesScore`
-
-Ces scores sont calculés même si le frontend n’affiche qu’une partie des valeurs finales.
-
----
-
-## 9. Logique de scoring : tests et calculs
-
-Cette section est essentielle pour présenter le projet.
-
-## 9.1 Fagerström
-
-Le score Fagerström est calculé dans :
-
-- `backend/src/main/java/com/neuralconsult/sevrage/medical/scoring/MedicalScoringService.java`
-- DTO : `backend/src/main/java/com/neuralconsult/sevrage/medical/scoring/dto/FagerstromRequest.java`
-
-### Questions prises en compte
-
-Le test officiel codé actuellement utilise 6 items :
-
-1. temps avant la première cigarette
-2. difficulté à s’abstenir dans les lieux interdits
-3. cigarette la plus difficile à abandonner
-4. nombre de cigarettes par jour
-5. consommation plus forte le matin
-6. tabac même en cas de maladie
-
-### Pondérations codées
-
-`timeToFirstCigarette`
-
-- `WITHIN_5_MIN` = 3
-- `MIN_6_TO_30` = 2
-- `MIN_31_TO_60` = 1
-- `AFTER_60` = 0
-
-`mostDifficultCigarette`
-
-- `FIRST_IN_MORNING` = 1
-- `ANY_OTHER` = 0
-
-`cigarettesPerDay`
-
-- `TEN_OR_LESS` = 0
-- `ELEVEN_TO_TWENTY` = 1
-- `TWENTY_ONE_TO_THIRTY` = 2
-- `THIRTY_ONE_OR_MORE` = 3
-
-Booléens
-
-- `difficultToRefrain` = +1 si vrai
-- `smokeMoreInMorning` = +1 si vrai
-- `smokeWhenIll` = +1 si vrai
-
-### Formule
-
-```text
-total =
-  points(timeToFirstCigarette)
-  + difficultToRefrain
-  + points(mostDifficultCigarette)
-  + points(cigarettesPerDay)
-  + smokeMoreInMorning
-  + smokeWhenIll
-```
-
-### Interprétation du résultat de test
-
-Dans `FagerstromResult` :
-
-- `0 à 2` => `NONE`
-- `3 à 4` => `LOW`
-- `5 à 6` => `MEDIUM`
-- `7+` => `HIGH`
-
-### Agrégation dans le profil patient
-
-Le `PatientProfileService` recalcule un niveau agrégé légèrement plus fin :
-
-- `0 à 2` => `NONE`
-- `3 à 4` => `LOW`
-- `5 à 6` => `MODERATE`
-- `7 à 8` => `HIGH`
-- `9+` => `VERY_HIGH`
-
-Important :
-
-- le `niveau` du test et le `niveau agrégé profil` n’utilisent pas exactement la même granularité
-- c’est normal dans le code actuel
-- pour une soutenance, il faut le dire clairement
-
-## 9.2 HAD
-
-Le score HAD est calculé dans :
-
-- `backend/src/main/java/com/neuralconsult/sevrage/medical/scoring/MedicalScoringService.java`
-- DTO : `backend/src/main/java/com/neuralconsult/sevrage/medical/scoring/dto/HadRequest.java`
-
-### Principe
-
-14 questions, chaque réponse vaut de `0` à `3`.
-
-### Sous-scores
-
-Anxiété :
-
-```text
-A = q1 + q3 + q5 + q7 + q9 + q11 + q13
-```
-
-Dépression :
-
-```text
-D = q2 + q4 + q6 + q8 + q10 + q12 + q14
-```
-
-### Interprétation
-
-Fonction `interpretHad(score)` :
-
-- `0 à 7` => `NORMAL`
-- `8 à 10` => `BORDERLINE`
-- `11+` => `CERTAIN_SYMPTOMATOLOGY`
-
-### Conséquence
-
-Après enregistrement d’un test HAD :
-
-- les scores anxiété / dépression sont stockés dans `HadTest`
-- les valeurs agrégées sont synchronisées dans `PatientProfile`
-
-## 9.3 CAGE
-
-Calculé pendant l’onboarding.
-
-Questions booléennes :
-
-- `cageCutDown`
-- `cageAnnoyed`
-- `cageGuilty`
-- `cageEyeOpener`
-
-### Formule
-
-```text
-cageScore = nombre de réponses vraies
-```
-
-### Interprétation
-
-```text
-cagePositive = cageScore >= 2
-```
-
-## 9.4 HONC
-
-Calculé pendant l’onboarding.
-
-Questions booléennes :
-
-- `honcQ1` à `honcQ10`
-
-### Formule
-
-```text
-honcScore = nombre de réponses vraies
-```
-
-### Interprétation
-
-```text
-honcHighDependence = honcScore >= 7
-```
-
-## 9.5 AUDIT-C simplifié
-
-Calculé pendant l’onboarding.
-
-Variables :
-
-- `alcoholFrequency`
-- `alcoholQuantity`
-- `alcoholBinge`
-
-### Formule
-
-Si les 3 champs sont absents :
-
-```text
-alcoholScore = null
-```
-
-Sinon :
-
-```text
-alcoholScore =
-  (alcoholFrequency ou 0)
-  + (alcoholQuantity ou 0)
-  + (alcoholBinge ou 0)
-```
-
-## 9.6 EPICES
-
-Le code actuel ne calcule pas le score EPICES pondéré officiel.
-
-Il calcule un `compteur de réponses positives` sur Q49 à Q59 :
-
-```text
-epicesScore = nombre de réponses vraies parmi 11 questions
-```
-
-C’est très important à expliquer :
-
-- `epicesScore` dans l’application actuelle = compteur simple
-- ce n’est pas encore la formule pondérée officielle EPICES
-
-Le service de notes cliniques le rappelle explicitement dans sa logique.
-
----
-
-## 10. Logique des tests cliniques
-
-Les tests officiels sont gérés séparément dans l’espace `Tests`.
-
-Fichiers clés :
-
-- `frontend/src/pages/Tests.jsx`
-- `backend/src/main/java/com/neuralconsult/sevrage/medical/tests/ClinicalTestService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/medical/tests/ClinicalTestController.java`
-
-### Fonctionnement
-
-Pour Fagerström et HAD, l’utilisateur peut :
-
-- créer un test
-- mettre à jour un test existant
-- supprimer un test
-- consulter l’historique
-
-### Effet métier
-
-À chaque enregistrement :
-
-- le test est historisé
-- le score est recalculé
-- le profil patient agrégé est mis à jour
-- le dashboard et les autres modules consomment ensuite les scores agrégés
-
-### Synchronisation dossier patient
-
-L’écran `Tests` réaffiche les données synchronisées du dossier patient :
-
-- date de naissance
-- sexe
-- taille
-- poids
-
-Cela évite de redemander certaines informations déjà connues.
-
----
-
-## 11. Génération des plans de sevrage
-
-La logique de plan est un point central du projet.
-
-Fichiers clés :
-
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/SevragePlanService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/strategy/PlanContext.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/strategy/HighDependenceStrategy.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/strategy/ModerateDependenceStrategy.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/strategy/LowDependenceStrategy.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/strategy/StandardRelapseProtocolStrategy.java`
-
-## 11.1 Principe général
-
-Le backend ne “bricole” pas un texte unique.
-
-Il suit un `strategy pattern` :
-
-1. construire un `PlanContext`
-2. sélectionner la première stratégie compatible
-3. construire un `PlanDraft`
-4. persister ou mettre à jour `SevragePlan`
-
-## 11.2 Données d’entrée du `PlanContext`
-
-Le contexte lit :
-
-- `fagerstromScore`
-- `hadAnxietyScore`
-- `hadDepressionScore`
-- `dependenceLevel`
-- `cagePositive`
-- `honcHighDependence`
-- fréquence de consommation cannabis
-
-### Helpers importants
-
-`hasSevereMoodSymptoms()`
-
-- vrai si `HAD A >= 11` ou `HAD D >= 11`
-
-`hasBorderlineMoodSymptoms()`
-
-- vrai si `HAD A >= 8` ou `HAD D >= 8`
-
-`cannabisFrequentUse()`
-
-- vrai si fréquence = `TEN_TO_19`, `TWENTY_TO_29` ou `DAILY`
-
-## 11.3 Sélection de stratégie
-
-Ordre de priorité :
-
-1. `HighDependenceStrategy`
-2. `ModerateDependenceStrategy`
-3. `LowDependenceStrategy`
-
-### Stratégie haute dépendance
-
-Condition :
-
-- `fagerstromScore >= 7`
-- ou `dependenceLevel == HIGH`
-- ou `dependenceLevel == VERY_HIGH`
-
-Sortie :
-
-- intensité `INTENSIVE`
-- date cible = `aujourd’hui + 14 jours`
-- NRT combinée
-- suivi hebdomadaire initial
-- renforcement psychologique si symptômes sévères
-- étapes supplémentaires si `cagePositive`
-- étapes supplémentaires si usage cannabis fréquent
-
-### Stratégie dépendance modérée
-
-Condition :
-
-- `4 <= fagerstromScore <= 6`
-
-Sortie :
-
-- intensité `MODERATE`
-- date cible = `aujourd’hui + 10 jours`
-- NRT adaptée
-- coaching structuré
-- suivi toutes les 2 semaines
-- surveillance de l’humeur si HAD borderline
-
-### Stratégie faible dépendance
-
-Condition :
-
-- stratégie de fallback
-
-Sortie :
-
-- intensité `BASIC`
-- date cible = `aujourd’hui + 7 jours`
-- accent sur motivation, routines saines, activité physique
-- suivi mensuel
-
-## 11.4 Protocole anti-rechute
-
-Le protocole standard ajoute toujours :
-
-- respiration lente
-- hydratation
-- marche rapide
-- contact d’un proche ou soignant
-- retour au plan sans culpabilité
-- notation du déclencheur
-
-Ajouts conditionnels :
-
-- contact psychologique < 24h si symptômes sévères
-- accompagnement spécialisé si alcool / cannabis problématique
-
-## 11.5 Important : état réel du projet
-
-Le code actuel :
-
-- génère automatiquement **un plan unique**
-- ne propose pas encore un vrai choix patient entre 3 plans mutuellement exclusifs
-
-Autrement dit :
-
-- la logique stratégique existe
-- la sélection explicite par le patient n’est pas encore implémentée côté métier
-
----
-
-## 12. Génération des notes cliniques
-
-Le module “intelligence clinique” existe déjà, mais il faut le présenter honnêtement.
-
-Fichiers clés :
-
-- `backend/src/main/java/com/neuralconsult/sevrage/clinical/notes/ClinicalNotesService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/clinical/notes/AiClinicalNotesClient.java`
-- `ai-service/app/clinical_notes.py`
-- `ai-service/app/services/clinical_notes.py`
-- `ai-service/app/services/knowledge_base.py`
-
-## 12.1 Ce que fait réellement le système
-
-Le backend :
-
-1. assemble les faits du patient
-2. les envoie au microservice AI
-3. récupère une synthèse
-4. vérifie que la validation est positive
-5. sauvegarde la note seulement si la validation passe
-
-## 12.2 Faits transmis au générateur
-
-Le backend assemble 3 blocs :
-
-`patient_profile`
-
-- démographie
-- consommation de base
-- scores agrégés
-- niveau de dépendance
-- notes médicales
-
-`onboarding_assessment`
-
-- tabagisme actuel
-- réduction récente
-- budget tabac
-- score EPICES
-- antécédent de dépression
-- autres problèmes de santé
-- e-cigarette
-- statut pro
-- éducation
-- tabac au domicile
-- score alcool
-- score CAGE
-- score HONC
-
-`tests`
-
-- dernier Fagerström
-- dernier HAD
-
-## 12.3 Type de génération actuel
-
-Le service AI n’est pas encore un LLM branché à une base vectorielle.
-
-Aujourd’hui, le moteur est :
-
-- déterministe
-- basé sur les faits
-- sans hallucination volontaire
-- identifié comme `deterministic-v1`
-
-Concrètement :
-
-- il formate une `note médicale structurée`
-- il formate une `note complémentaire`
-- il ne doit pas inventer ce qui manque
-- il explicite les champs absents
-
-## 12.4 Validation automatique
-
-La sortie est bloquée si :
-
-- `medical_summary` est trop courte
-- `complementary_note` est trop courte
-- des scores présents dans les faits n’apparaissent pas dans la synthèse
-- la section `Donnees manquantes` est absente
-
-Si la validation échoue :
-
-- le microservice renvoie `422`
-- le backend ne persiste rien
-
-## 12.5 Sauvegarde conditionnelle
-
-Le backend respecte l’invariant suivant :
-
-- **aucune note générée n’est sauvegardée si la validation échoue**
-
-En cas de succès, il stocke aussi :
-
-- `factsSnapshot` JSON
-
-Ce snapshot est important pour :
-
-- la traçabilité
-- la revue médicale
-- la lutte contre l’hallucination
-
-## 12.6 Préparation RAG
-
-Le projet est `RAG-ready`, mais pas encore branché à une base vectorielle.
-
-La classe `KnowledgeBaseClient` est un stub volontaire :
-
-- aujourd’hui : renvoie une liste vide
-- demain : pourra interroger une base de connaissances INPES / recommandations officielles
-
-C’est une préparation d’architecture, pas encore une intégration complète.
-
----
-
-## 13. Dashboard et suivi quotidien
-
-Le dashboard est construit pour transformer les données en trajectoire clinique lisible.
-
-Fichiers clés :
-
-- `frontend/src/pages/Dashboard.jsx`
-- `backend/src/main/java/com/neuralconsult/sevrage/report/DailyReportService.java`
-
-### Données chargées
-
-Le dashboard récupère :
-
-- plan courant
-- rapports journaliers
-- historique HAD
-- onboarding
-- note clinique
-
-### Calculs visibles
-
-`baselineDailyConsumption`
-
-- `user.profile.cigarettesPerDay`
-- sinon `onboarding.manufacturedCigarettesPerDay`
-
-`averageDailyConsumption`
-
-- moyenne des `cigarettesSmoked` sur les rapports quotidiens chargés
-
-`avoidedPerDay`
-
-```text
-avoidedPerDay = max(0, baselineDailyConsumption - averageDailyConsumption)
-```
-
-`lifeMinutesGained`
-
-```text
-lifeMinutesGained = avoidedPerDay * 11 * max(nombreDeRapports, 1)
-```
-
-`estimatedCostPerCigarette`
-
-```text
-weeklySpend / (baselineDailyConsumption * 7)
-```
-
-si les données existent
-
-`moneySaved`
-
-```text
-moneySaved = avoidedPerDay * estimatedCostPerCigarette * max(nombreDeRapports, 1)
-```
-
-### Intérêt clinique
-
-Le dashboard met volontairement en avant :
-
-- le temps de vie gagné
-- les scores de risque
-- l’évolution HAD anxiété / dépression
-- les jalons de récupération
-
----
-
-## 14. Landing page : logique produit et calculateur
-
-La landing page n’est pas purement décorative.
-
-Elle joue 3 rôles :
-
-- attirer
-- sensibiliser
-- préparer à l’entrée dans le parcours
-
-Fichier clé :
-
-- `frontend/src/pages/Landing.jsx`
-
-### Calculateur d’impact
-
-Entrées :
-
-- `cigarettesPerDay`
-- `cigarettesPerPack`
-- `packPrice`
-
-Constante :
-
-- `CO2_PER_CIGARETTE_KG = 0.014`
-
-### Formules
-
-```text
-packsPerDay = cigarettesPerDay / cigarettesPerPack
-dailySpend = packsPerDay * packPrice
-monthlySavings = dailySpend * 30
-yearlySavings = dailySpend * 365
-yearlyCo2Kg = cigarettesPerDay * 365 * 0.014
-```
-
-Milestones :
-
-- ils sont débloqués selon `yearlySavings`
-
-Exemples actuels :
-
-- week-end respiration
-- ordinateur
-- voyage
-- scooter
-
-### Timeline landing
-
-La landing affiche aussi une roadmap centrale des phases cliniques.
-
-Cette roadmap :
-
-- illustre le parcours
-- ne remplace pas la vraie logique métier d’évaluation
-- sert d’orientation et d’impact visuel
-
----
-
-## 15. Résumé fonctionnel des pages frontend
-
-### `/`
-
-- landing page immersive
-- calculateur économies / CO2
-- storytelling visuel
-- roadmap du parcours
-
-### `/login` et `/register`
-
-- entrée sécurisée dans la plateforme
-
-### `/evaluation`
-
-- timeline obligatoire du dossier initial
-- centralise les données cliniques et sociales
-
-### `/profile`
-
-- identité patient uniquement
-- résumé démographique lisible
-- édition contrôlée
-
-### `/tests`
-
-- Fagerström officiel
-- HAD officiel
-- historique des tests
-
-### `/plan`
-
-- plan thérapeutique généré
-- intensité
-- NRT
-- comportement
-- suivi
-- anti-rechute
-
-### `/dashboard`
-
-- scores
-- graphiques
-- temps de vie gagné
-- preview note clinique
-- checklist santé
-
-### `/journal`
-
-- journal quotidien du patient
-
----
-
-## 16. Endpoints API principaux
-
-### Authentification
+## 8.1 Authentification
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/verify-email`
+- `POST /api/auth/resend-verification`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 - `POST /api/auth/logout`
-
-### Utilisateur / profil
-
 - `GET /api/me`
+
+## 8.2 Onboarding / profil patient
+
+- `GET /api/onboarding`
+- `POST /api/onboarding`
 - `PUT /api/patient-profile`
 - `POST /api/patient-profile/scores`
 - `DELETE /api/patient-profile`
 
-### Onboarding
+## 8.3 Tests cliniques
 
-- `GET /api/onboarding`
-- `POST /api/onboarding`
-
-### Scoring direct
-
-- `POST /api/medical/scoring/fagerstrom`
-- `POST /api/medical/scoring/had`
-
-### Tests historisés
-
-- `GET /api/tests/fagerstrom`
 - `POST /api/tests/fagerstrom`
 - `PUT /api/tests/fagerstrom/{id}`
 - `DELETE /api/tests/fagerstrom/{id}`
-- `GET /api/tests/had`
+- `GET /api/tests/fagerstrom`
 - `POST /api/tests/had`
 - `PUT /api/tests/had/{id}`
 - `DELETE /api/tests/had/{id}`
+- `GET /api/tests/had`
 
-### Plans
+## 8.4 Journal
 
-- `GET /api/sevrage-plan/current`
-- `POST /api/sevrage-plan/generate`
+- `POST /api/daily-reports`
+- `GET /api/daily-reports`
+- `DELETE /api/daily-reports/{id}`
 
-### Notes cliniques
+## 8.5 IA et synthese clinique
 
+- `POST /api/ai-assistant/assist`
 - `GET /api/clinical-notes`
 - `POST /api/clinical-notes/generate`
+- `GET /api/clinical-intelligence`
+- `POST /api/clinical-intelligence/generate`
+- `POST /api/clinical-intelligence/plans/{candidateId}/validate`
+- `POST /api/sevrage-plan/generate`
+- `GET /api/sevrage-plan/current`
 
-### Journal
+## 8.6 Medecins et association
 
-- `GET /api/daily-reports`
-- `POST /api/daily-reports`
-- `DELETE /api/daily-reports/{id}`
+- `POST /api/doctors/profile`
+- `GET /api/doctors/profile/me`
+- `GET /api/doctors`
+- `GET /api/doctors/admin/pending`
+- `POST /api/doctors/admin/{doctorProfileId}/approve`
+- `POST /api/doctors/admin/{doctorProfileId}/reject`
+- `POST /api/doctors/requests`
+- `GET /api/doctors/requests/patient`
+- `GET /api/doctors/association/patient`
+- `GET /api/doctors/requests/doctor`
+- `POST /api/doctors/requests/{id}/accept`
+- `POST /api/doctors/requests/{id}/refuse`
+- `GET /api/doctors/patients`
+- `GET /api/doctors/patients/{patientProfileId}/dossier`
+- `POST /api/doctors/patients/{patientProfileId}/phase-summaries/{phaseSummaryId}/doctor-note`
+
+## 8.7 Rendez-vous
+
+- `GET /api/appointments/patient`
+- `GET /api/appointments/availability/patient`
+- `POST /api/appointments`
+- `POST /api/appointments/{id}/cancel`
+- `POST /api/appointments/{id}/patient-update`
+- `GET /api/appointments/doctor`
+- `GET /api/appointments/availability/doctor`
+- `POST /api/appointments/availability/doctor`
+- `POST /api/appointments/availability/doctor/{id}/delete`
+- `POST /api/appointments/doctor/urgent`
+- `POST /api/appointments/{id}/doctor-update`
+- `POST /api/appointments/{id}/confirm`
+- `POST /api/appointments/{id}/refuse`
+- `POST /api/appointments/{id}/complete`
+- `POST /api/appointments/{id}/cancel-doctor`
+
+## 8.8 Support 24/7
+
+- `GET /api/support/current`
+- `POST /api/support/current/messages`
+- `GET /api/support/doctor/alerts`
+- `POST /api/support/doctor/alerts/{id}/acknowledge`
+- `GET /api/support/doctor/patients/{patientProfileId}`
+
+## 8.9 Notifications
+
+- `GET /api/notifications`
+- `GET /api/notifications/summary`
+- `POST /api/notifications/{id}/read`
+
+## 8.10 Communaute
+
+Mode social :
+
+- `GET /api/communities/social`
+- `GET /api/communities/social/profile`
+- `PUT /api/communities/social/profile`
+- `GET /api/communities/social/search`
+- `GET /api/communities/social/users/{targetUserId}`
+- `POST /api/communities/social/posts`
+- `POST /api/communities/social/posts/{postId}/reactions`
+- `POST /api/communities/social/posts/{postId}/comments`
+- `POST /api/communities/social/posts/{postId}/share`
+- `POST /api/communities/social/users/{targetUserId}/follow`
+- `POST /api/communities/social/users/{targetUserId}/connections`
+- `POST /api/communities/social/connections/{connectionId}/accept`
+- `POST /api/communities/social/connections/{connectionId}/decline`
+- `GET /api/communities/social/direct/{counterpartId}`
+- `POST /api/communities/social/direct/{counterpartId}`
+
+Mode serveurs/channels expose egalement :
+
+- `GET /api/communities/servers`
+- `POST /api/communities/servers`
+- `POST /api/communities/servers/{serverId}/join`
+- `GET /api/communities/servers/{serverId}`
+- `GET /api/communities/channels/{channelId}/messages`
+- `POST /api/communities/channels/{channelId}/messages`
 
 ---
 
-## 17. Comment lancer le projet
+## 9. Automatisations metier importantes
 
-## 17.1 Avec Docker Compose
+## 9.1 Automatisations rendez-vous
 
-Depuis la racine `neuralconsult/` :
+Taches planifiees :
+
+- envoi du lien Jitsi environ 10 minutes avant la consultation,
+- notification quand la visio commence,
+- rappels de consultation a 24h,
+- rappels de consultation a 10 minutes,
+- creation technique de la salle si necessaire.
+
+## 9.2 Automatisations patient
+
+- rappel des tests si incomplets,
+- rappel du journal si non rempli depuis 2 jours,
+- synchronisation des flags `testsComplete` / `journalComplete`.
+
+## 9.3 Automatisations IA critiques
+
+- creation d'une alerte medecin si l'IA 24/7 detecte un risque,
+- envoi d'un email urgent,
+- renvoi de l'email toutes les 8 heures tant que l'alerte reste ouverte,
+- arret des relances apres `acknowledge` du medecin.
+
+---
+
+## 10. Frontend : pages et usage
+
+### Pages publiques
+
+- `/` : landing page
+- `/login` : connexion
+- `/register` : inscription
+- `/verify-email` : verification email
+- `/forgot-password` : reinitialisation mot de passe
+
+### Pages protegees patient
+
+- `/evaluation`
+- `/tests`
+- `/journal`
+- `/dashboard`
+- `/plan`
+- `/doctors`
+- `/appointments`
+- `/support`
+- `/communities`
+- `/profile`
+- `/notifications`
+
+### Pages protegees medecin
+
+- `/dashboard` : workspace patient/gestion patients
+- `/appointments` : planning et disponibilites
+- `/support` : conversations IA et alertes
+- `/communities`
+- `/profile` : profil medecin
+- `/notifications`
+
+### Pages protegees admin
+
+- `/dashboard` : validation des comptes medecins
+
+---
+
+## 11. Lancement local
+
+## 11.1 Docker Compose (recommande)
+
+Depuis la racine du projet :
 
 ```bash
 docker compose up --build
 ```
 
-Services :
+Acces :
 
 - frontend : `http://localhost:5173`
 - backend : `http://localhost:8080`
 - ai-service : `http://localhost:8000`
-- PostgreSQL : `localhost:5432`
+- adminer : `http://localhost:8081`
 
-## 17.2 En local sans Docker
+## 11.2 Variables d'environnement importantes
 
-### Base de données
+Exemples dans `.env.example` :
 
-Créer une base PostgreSQL :
+- `APP_MAIL_ENABLED`
+- `APP_MAIL_FROM_ADDRESS`
+- `APP_MAIL_FROM_NAME`
+- `SPRING_MAIL_HOST`
+- `SPRING_MAIL_PORT`
+- `SPRING_MAIL_USERNAME`
+- `SPRING_MAIL_PASSWORD`
+- `GROQ_API_KEY`
+- `GROQ_MODEL`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
 
-- base : `neuralconsult`
-- user : `neural`
-- password : `neuralpass`
+## 11.3 Sante des services
 
-### Backend
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### AI service
-
-```bash
-cd ai-service
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-## 17.3 Configuration utile
-
-Backend :
-
-- `backend/src/main/resources/application.yml`
-
-Frontend :
-
-- `VITE_API_URL` optionnel, sinon `http://localhost:8080`
-
-AI service :
-
-- `.env.example` contient les placeholders futurs pour Gemini, DB et RAG
+- backend : `GET http://localhost:8080/actuator/health`
+- ai-service : `GET http://localhost:8000/api/health`
 
 ---
 
-## 18. Note base de données importante
+## 12. Comptes et bootstrap utiles
 
-Si vous utilisez une ancienne base déjà existante et que la colonne d’onboarding n’existe pas encore, ajoutez-la :
+Compte admin bootstrappe automatiquement :
 
-```sql
-ALTER TABLE patient_profile
-ADD COLUMN is_onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE;
-```
+- email : `admin@neuralconsult.ma`
+- mot de passe : `Admin123!`
 
-Avec Docker Compose actuel, `spring.jpa.hibernate.ddl-auto=update` aide souvent à créer les colonnes manquantes, mais une migration explicite reste plus propre en environnement maîtrisé.
+**Important** : a changer immediatement en environnement reel.
 
 ---
 
-## 19. Forces du projet à mettre en valeur
+## 13. Scenario de demo conseille pour une presentation
 
-Pour une soutenance ou une présentation, les points forts sont :
+Voici un scenario de soutenance simple et fort.
 
-### 1. Architecture claire
+### Etape 1 : Landing + vision
 
-- séparation frontend / backend / ai-service / db
-- découpage propre des responsabilités
+Montrer :
 
-### 2. Sécurité métier réelle
+- landing page,
+- identite medicale,
+- narration du probleme tabagique.
 
-- JWT en cookie HTTP-only
-- protection Spring Security
-- filtre backend pour imposer l’évaluation initiale
+### Etape 2 : Creation de compte
 
-### 3. Dossier patient structuré
+Montrer :
 
-- vraie séparation entre identité et clinique
-- réduction des doublons
-- synchronisation des scores dans le profil
+- inscription,
+- verification email par code,
+- login.
 
-### 4. Scoring explicite et traçable
+### Etape 3 : Parcours obligatoire patient
 
-- Fagerström codé avec pondérations
-- HAD codé avec sous-scores anxiété / dépression
-- CAGE, HONC, AUDIT-C, EPICES calculés côté backend
+Montrer :
 
-### 5. Historisation
+- redirection forcee vers `Evaluation`,
+- timeline par phases,
+- aide IA sur une question,
+- enregistrement des reponses,
+- passage vers `Tests`,
+- passage vers `Journal`.
 
-- historique Fagerström
-- historique HAD
-- journal quotidien
+### Etape 4 : Lecture clinique patient
 
-### 6. Génération de plans
+Montrer :
 
-- moteur à stratégies
-- intensité adaptée au risque
-- protocole anti-rechute intégré
+- dashboard,
+- plan,
+- note clinique IA,
+- resume global IA.
 
-### 7. Intelligence clinique sécurisée
+### Etape 5 : Medecin
 
-- génération de note médicale
-- validation automatique
-- sauvegarde conditionnelle
-- snapshot des faits pour traçabilité
+Montrer :
 
-### 8. Préparation RAG
+- creation / validation du profil medecin,
+- demande de rattachement,
+- acceptation cote medecin,
+- ouverture du dossier patient,
+- vues `Profil`, `Dossier medical`, `Dashboard`, `Journal`, `Conversation IA`, `Synthese IA`.
 
-- architecture prête pour brancher des recommandations officielles
-- séparation explicite entre faits, génération, validation et références
+### Etape 6 : Support psychologique IA
 
-### 9. UX produit forte
+Montrer :
 
-- landing immersive
-- dashboard clinique
-- timeline d’évaluation
-- distinction visuelle entre état “candidate” et état “patient”
+- conversation patient avec IA 24/7,
+- detection d'une alerte,
+- lecture de l'alerte cote medecin,
+- bouton `Consultation urgente`.
 
----
+### Etape 7 : Rendez-vous visio
 
-## 20. Limites actuelles et honnêteté technique
+Montrer :
 
-Pour une bonne présentation, il faut aussi être honnête sur l’état actuel.
+- disponibilites du medecin,
+- reservation patient,
+- confirmation medecin,
+- rappel,
+- lien Jitsi Meet.
 
-### Déjà implémenté
+### Etape 8 : Communaute
 
-- authentification
-- onboarding forcé
-- profil personnel séparé
-- évaluation initiale structurée
-- scoring Fagerström
-- scoring HAD
-- scores dérivés onboarding
-- génération de plan
-- note clinique déterministe validée
-- dashboard
-- journal quotidien
+Montrer :
 
-### Partiellement implémenté / à renforcer
-
-- EPICES officiel pondéré : pas encore, compteur simple pour l’instant
-- RAG réel : pas encore branché à une base vectorielle
-- vraie génération LLM/Gemini : pas encore active dans le moteur clinique actuel
-- choix patient parmi plusieurs plans exclusifs : pas encore implémenté côté métier
-- intégration complète de tous les tests dans une seule timeline unifiée : encore en évolution
+- creation du username,
+- post photo / texte,
+- commentaires sur clic,
+- coeur,
+- partage a un ami,
+- messagerie privee.
 
 ---
 
-## 21. Fichiers les plus importants à connaître
+## 14. Points forts a mettre en avant dans une soutenance
 
-### Frontend
-
-- `frontend/src/App.jsx`
-- `frontend/src/components/ProtectedRoute.jsx`
-- `frontend/src/pages/Landing.jsx`
-- `frontend/src/pages/Onboarding.jsx`
-- `frontend/src/pages/Profile.jsx`
-- `frontend/src/pages/Tests.jsx`
-- `frontend/src/pages/Plan.jsx`
-- `frontend/src/pages/Dashboard.jsx`
-
-### Backend
-
-- `backend/src/main/java/com/neuralconsult/sevrage/security/AuthController.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/security/OnboardingRequiredFilter.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/patient/PatientProfileService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/onboarding/OnboardingService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/medical/scoring/MedicalScoringService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/medical/tests/ClinicalTestService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/plan/SevragePlanService.java`
-- `backend/src/main/java/com/neuralconsult/sevrage/clinical/notes/ClinicalNotesService.java`
-
-### AI service
-
-- `ai-service/app/clinical_notes.py`
-- `ai-service/app/services/clinical_notes.py`
-- `ai-service/app/services/knowledge_base.py`
+- parcours clinique **force** et non cosmetique,
+- separation claire patient / medecin / admin,
+- multiple IA **specialisees** au lieu d'un seul assistant generique,
+- separation des RAGs par usage,
+- synthese IA exploitable par le medecin,
+- soutien psychologique IA 24/7 avec escalade clinique,
+- teleconsultation visio gratuite integree dans le workflow,
+- communaute sociale de soutien,
+- notifications + emails + automatisations,
+- architecture dockerisee propre et modulaire.
 
 ---
 
-## 22. En une phrase
+## 15. Limites connues / perimetre actuel
 
-`NeuralConsult Sevrage` est une plateforme clinique orientée sevrage tabagique qui combine dossier patient, évaluation médico-sociale, scoring tabacologie/psychologie, plan thérapeutique et synthèse clinique validée dans une architecture prête pour le RAG.
+Pour eviter toute confusion pendant une presentation, voici ce qui est important :
+
+- le projet couvre deja beaucoup de fonctionnalites produit reelles,
+- la communaute expose deux modeles cote backend : social feed et serveurs/channels, mais le frontend met surtout en avant le mode social,
+- l'integration visio s'appuie sur Jitsi Meet via lien genere automatiquement,
+- il n'y a pas actuellement de module finalise de lecture automatique de radiographies pulmonaires dans ce repository,
+- il faut un SMTP configure pour l'envoi reel des emails.
+
+---
+
+## 16. En une phrase
+
+**NeuralConsult Sevrage est une plateforme clinique de sevrage tabagique qui structure l'onboarding medical, automatise les syntheses IA, relie patient et medecin, organise les teleconsultations et maintient l'accompagnement entre les rendez-vous grace a l'IA 24/7 et a la communaute.**

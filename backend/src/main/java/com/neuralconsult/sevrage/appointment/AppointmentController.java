@@ -169,6 +169,10 @@ public class AppointmentController {
         appointment.getReason(),
         appointment.getDoctorNote(),
         appointment.isTriggeredByAiAlert(),
+        appointment.getMeetingProvider(),
+        appointment.getMeetingJoinUrl(),
+        appointment.getMeetingLinkSentAt(),
+        appointment.getMeetingOpenedAt(),
         appointment.getCreatedAt(),
         appointment.getUpdatedAt()
     );
@@ -177,7 +181,8 @@ public class AppointmentController {
   private DoctorAvailabilityResponse toAvailabilityResponse(DoctorAvailability availability) {
     return new DoctorAvailabilityResponse(
         availability.getId(),
-        availability.getDayOfWeek().name(),
+        availability.getAvailableDate(),
+        availability.getDayOfWeek() != null ? availability.getDayOfWeek().name() : null,
         availability.getStartTime(),
         availability.getEndTime(),
         availability.isActive()

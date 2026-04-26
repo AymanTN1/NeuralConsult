@@ -58,6 +58,9 @@ public class PatientProfileService {
   @Transactional
   public PatientProfile updateProfile(User user, UpdateProfileRequest request) {
     PatientProfile profile = getOrCreate(user);
+    if (user.getDateOfBirth() != null && request.dateOfBirth() != null && !user.getDateOfBirth().equals(request.dateOfBirth())) {
+      throw new IllegalArgumentException("La date de naissance doit correspondre a celle verifiee par la CIN.");
+    }
     profile.setDateOfBirth(request.dateOfBirth());
     profile.setSex(request.sex());
     profile.setHeightCm(request.heightCm());
@@ -69,6 +72,16 @@ public class PatientProfileService {
     profile.setSmokingStartAge(request.smokingStartAge());
     profile.setMedicalHistoryNotes(request.medicalHistoryNotes());
     return repository.save(profile);
+  }
+
+  @Transactional
+  public PatientProfile seedIdentityProfile(User user, java.time.LocalDate dateOfBirth) {
+    PatientProfile profile = getOrCreate(user);
+    if (profile.getDateOfBirth() == null && dateOfBirth != null) {
+      profile.setDateOfBirth(dateOfBirth);
+      return repository.save(profile);
+    }
+    return profile;
   }
 
   @Transactional

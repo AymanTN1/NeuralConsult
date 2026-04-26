@@ -49,4 +49,18 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
       LocalDateTime startsAt,
       LocalDateTime endsAt
   );
+
+  @EntityGraph(attributePaths = {"patientProfile", "patientProfile.user", "doctorProfile", "doctorProfile.user"})
+  List<Appointment> findAllByStatusAndMeetingLinkSentAtIsNullAndStartsAtBetweenOrderByStartsAtAsc(
+      Appointment.Status status,
+      LocalDateTime startsAt,
+      LocalDateTime endsAt
+  );
+
+  @EntityGraph(attributePaths = {"patientProfile", "patientProfile.user", "doctorProfile", "doctorProfile.user"})
+  List<Appointment> findAllByStatusAndMeetingOpenedAtIsNullAndStartsAtBetweenOrderByStartsAtAsc(
+      Appointment.Status status,
+      LocalDateTime startsAt,
+      LocalDateTime endsAt
+  );
 }

@@ -1,9 +1,7 @@
 package com.neuralconsult.sevrage.appointment;
 
-import com.neuralconsult.sevrage.community.CommunityConnection;
-import com.neuralconsult.sevrage.community.CommunityConnectionRepository;
-import com.neuralconsult.sevrage.community.CommunityDirectMessage;
-import com.neuralconsult.sevrage.community.CommunityDirectMessageRepository;
+import com.neuralconsult.sevrage.mail.MailDeliveryService;
+import com.neuralconsult.sevrage.mail.MailTemplateService;
 import com.neuralconsult.sevrage.medical.tests.FagerstromTestRepository;
 import com.neuralconsult.sevrage.medical.tests.HadTestRepository;
 import com.neuralconsult.sevrage.notification.NotificationItem;
@@ -26,26 +24,29 @@ import org.springframework.stereotype.Service;
 public class AppointmentAutomationService {
 
   private final AppointmentRepository appointmentRepository;
-  private final CommunityConnectionRepository connectionRepository;
-  private final CommunityDirectMessageRepository directMessageRepository;
+  private final AppointmentService appointmentService;
   private final NotificationService notificationService;
+  private final MailTemplateService mailTemplateService;
+  private final MailDeliveryService mailDeliveryService;
   private final PatientProfileRepository patientProfileRepository;
   private final DailyReportRepository dailyReportRepository;
   private final FagerstromTestRepository fagerstromTestRepository;
   private final HadTestRepository hadTestRepository;
 
   public AppointmentAutomationService(AppointmentRepository appointmentRepository,
-                                      CommunityConnectionRepository connectionRepository,
-                                      CommunityDirectMessageRepository directMessageRepository,
+                                      AppointmentService appointmentService,
                                       NotificationService notificationService,
+                                      MailTemplateService mailTemplateService,
+                                      MailDeliveryService mailDeliveryService,
                                       PatientProfileRepository patientProfileRepository,
                                       DailyReportRepository dailyReportRepository,
                                       FagerstromTestRepository fagerstromTestRepository,
                                       HadTestRepository hadTestRepository) {
     this.appointmentRepository = appointmentRepository;
-    this.connectionRepository = connectionRepository;
-    this.directMessageRepository = directMessageRepository;
+    this.appointmentService = appointmentService;
     this.notificationService = notificationService;
+    this.mailTemplateService = mailTemplateService;
+    this.mailDeliveryService = mailDeliveryService;
     this.patientProfileRepository = patientProfileRepository;
     this.dailyReportRepository = dailyReportRepository;
     this.fagerstromTestRepository = fagerstromTestRepository;
@@ -56,7 +57,8 @@ public class AppointmentAutomationService {
   @Transactional
   public void runAppointmentAutomation() {
     LocalDateTime now = LocalDateTime.now();
-    openConsultationChats(now);
+    sendVideoRoomLinks(now);
+    announceVideoRoomOpen(now);
     sendAppointmentReminders(now);
   }
 
@@ -73,38 +75,95 @@ public class AppointmentAutomationService {
     }
   }
 
-  private void openConsultationChats(LocalDateTime now) {
-    List<Appointment> appointments = appointmentRepository.findAllByStatusAndConversationOpenedAtIsNullAndStartsAtBetweenOrderByStartsAtAsc(
+  private void sendVideoRoomLinks(LocalDateTime now) {
+    List<Appointment> appointments = appointmentRepository.findAllByStatusAndMeetingLinkSentAtIsNullAndStartsAtBetweenOrderByStartsAtAsc(
         Appointment.Status.CONFIRMED,
-        now.minusMinutes(5),
+        now.minusMinutes(1),
+        now.plusMinutes(10)
+    );
+
+    for (Appointment appointment : appointments) {
+      User patientUser = appointment.getPatientProfile().getUser();
+      User doctorUser = appointment.getDoctorProfile().getUser();
+      appointmentService.ensureMeetingDetails(appointment);
+      appointment.setMeetingLinkSentAt(Instant.now());
+      appointmentRepository.save(appointment);
+
+      notificationService.notify(
+          patientUser,
+          NotificationItem.Type.APPOINTMENT,
+          "Lien visio disponible",
+          "Votre lien Jitsi Meet est pret pour la consultation du " + formatDateTime(appointment.getStartsAt()) + " avec " + doctorDisplayName(doctorUser.getFullName()) + ".",
+          "/appointments",
+          "Ouvrir les rendez-vous",
+          "appointment-video-link-patient:" + appointment.getId()
+      );
+      notificationService.notify(
+          doctorUser,
+          NotificationItem.Type.APPOINTMENT,
+          "Lien visio disponible",
+          "Le lien Jitsi Meet de la consultation avec " + patientUser.getFullName() + " est pret pour " + formatDateTime(appointment.getStartsAt()) + ".",
+          "/appointments",
+          "Ouvrir le planning",
+          "appointment-video-link-doctor:" + appointment.getId()
+      );
+
+      mailDeliveryService.send(
+          patientUser,
+          mailTemplateService.buildVideoConsultationEmail(
+              patientUser,
+              "Lien visio de votre consultation",
+              "Votre teleconsultation est confirmee. Vous pouvez rejoindre la salle visio des maintenant ou quelques minutes avant le debut.",
+              appointment.getStartsAt(),
+              doctorDisplayName(doctorUser.getFullName()),
+              appointment.getMeetingJoinUrl()
+          )
+      );
+      mailDeliveryService.send(
+          doctorUser,
+          mailTemplateService.buildVideoConsultationEmail(
+              doctorUser,
+              "Lien visio de votre consultation",
+              "La salle visio du rendez-vous clinique est prete. Vous pouvez l'ouvrir a partir de maintenant.",
+              appointment.getStartsAt(),
+              patientUser.getFullName(),
+              appointment.getMeetingJoinUrl()
+          )
+      );
+    }
+  }
+
+  private void announceVideoRoomOpen(LocalDateTime now) {
+    List<Appointment> appointments = appointmentRepository.findAllByStatusAndMeetingOpenedAtIsNullAndStartsAtBetweenOrderByStartsAtAsc(
+        Appointment.Status.CONFIRMED,
+        now.minusMinutes(1),
         now.plusMinutes(1)
     );
 
     for (Appointment appointment : appointments) {
       User patientUser = appointment.getPatientProfile().getUser();
       User doctorUser = appointment.getDoctorProfile().getUser();
-      ensureDoctorPatientConnection(patientUser, doctorUser);
-      seedConsultationMessages(appointment, doctorUser, patientUser);
-      appointment.setConversationOpenedAt(Instant.now());
+      appointmentService.ensureMeetingDetails(appointment);
+      appointment.setMeetingOpenedAt(Instant.now());
       appointmentRepository.save(appointment);
 
       notificationService.notify(
           patientUser,
           NotificationItem.Type.APPOINTMENT,
-          "La consultation commence maintenant",
-          "La conversation avec " + doctorDisplayName(doctorUser.getFullName()) + " est ouverte pour votre rendez-vous en cours.",
-          "/communities?chat=" + doctorUser.getId(),
-          "Ouvrir la discussion",
-          "appointment-chat-patient:" + appointment.getId()
+          "La visio commence maintenant",
+          "La salle Jitsi Meet est ouverte pour votre consultation avec " + doctorDisplayName(doctorUser.getFullName()) + ".",
+          "/appointments",
+          "Voir le rendez-vous",
+          "appointment-video-open-patient:" + appointment.getId()
       );
       notificationService.notify(
           doctorUser,
           NotificationItem.Type.APPOINTMENT,
-          "La consultation avec " + patientUser.getFullName() + " est ouverte",
-          "La discussion de teleconsultation est demarree automatiquement.",
-          "/communities?chat=" + patientUser.getId(),
-          "Ouvrir la discussion",
-          "appointment-chat-doctor:" + appointment.getId()
+          "La visio avec " + patientUser.getFullName() + " commence maintenant",
+          "La salle Jitsi Meet est ouverte pour la consultation prevue a " + formatDateTime(appointment.getStartsAt()) + ".",
+          "/appointments",
+          "Voir le planning",
+          "appointment-video-open-doctor:" + appointment.getId()
       );
     }
   }
@@ -205,34 +264,6 @@ public class AppointmentAutomationService {
         "Ouvrir le journal",
         "journal-reminder:" + profile.getId() + ":" + today
     );
-  }
-
-  private void ensureDoctorPatientConnection(User patientUser, User doctorUser) {
-    CommunityConnection connection = connectionRepository.findBetween(patientUser, doctorUser).orElseGet(() -> {
-      CommunityConnection created = new CommunityConnection();
-      created.setRequester(patientUser);
-      created.setReceiver(doctorUser);
-      return created;
-    });
-    connection.setRequester(patientUser);
-    connection.setReceiver(doctorUser);
-    connection.setStatus(CommunityConnection.Status.ACCEPTED);
-    connectionRepository.save(connection);
-  }
-
-  private void seedConsultationMessages(Appointment appointment, User doctorUser, User patientUser) {
-    CommunityDirectMessage greeting = new CommunityDirectMessage();
-    greeting.setSender(doctorUser);
-    greeting.setRecipient(patientUser);
-    greeting.setContent("Bonjour " + patientUser.getFullName() + ", notre seance de teleconsultation commence maintenant. Je suis " + doctorDisplayName(doctorUser.getFullName()) + ".");
-
-    CommunityDirectMessage contextualQuestion = new CommunityDirectMessage();
-    contextualQuestion.setSender(doctorUser);
-    contextualQuestion.setRecipient(patientUser);
-    contextualQuestion.setContent("Avant de commencer, comment vous sentez-vous aujourd'hui ? Y a-t-il une nouveaute sur votre sante, votre stress, vos envies de fumer ou une difficulte recente que vous souhaitez me signaler ?");
-
-    directMessageRepository.save(greeting);
-    directMessageRepository.save(contextualQuestion);
   }
 
   private String formatDateTime(LocalDateTime dateTime) {
