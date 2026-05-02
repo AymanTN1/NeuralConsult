@@ -16,7 +16,8 @@ const initialForm = {
   specialty: "",
   yearsExperience: "",
   bio: "",
-  acceptsTeleconsultation: true
+  acceptsTeleconsultation: true,
+  acceptsTerms: false
 };
 
 const Register = () => {
@@ -147,8 +148,13 @@ const Register = () => {
               <label className="form-label">Email</label>
               <input className="form-control" type="email" name="email" value={form.email} onChange={handleChange} required />
 
-              <label className="form-label">Mot de passe</label>
+<label className="form-label">Mot de passe</label>
               <input className="form-control" type="password" name="password" value={form.password} onChange={handleChange} required />
+
+              <label className="auth-inline-toggle">
+                <input type="checkbox" name="acceptsTerms" checked={form.acceptsTerms} onChange={handleChange} />
+                <span>J'accepte les <a href="#" onClick={(e) => { e.preventDefault(); alert('Conditions: NeuralConsult est un accompagnement medical. Consultez un professionnel de sante.'); }}>conditions d'utilisation</a></span>
+              </label>
 
               <IdentityOcrVerifier
                 firstName={form.firstName}
@@ -186,9 +192,12 @@ const Register = () => {
                 </div>
               )}
 
-              <button className="btn btn-dark w-100" disabled={loading || !identityVerification.verified}>
+<button className="btn btn-dark w-100" disabled={loading || !identityVerification.verified || !form.acceptsTerms}>
                 {loading ? "Creation..." : doctorMode ? "Creer et soumettre le compte medecin" : "Activer mon espace patient"}
               </button>
+              {!form.acceptsTerms && (
+                <p className="muted-text mb-0">Cochez la case ci-dessus pour accepter les conditions d'utilisation.</p>
+              )}
               {!identityVerification.verified && (
                 <p className="muted-text mb-0">
                   La creation du compte reste bloquee tant que la CIN ne confirme pas le nom, le prenom et la date de naissance.

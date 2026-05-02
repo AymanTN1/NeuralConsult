@@ -6,7 +6,9 @@ import com.neuralconsult.sevrage.security.dto.IdentityVerificationRequest;
 import com.neuralconsult.sevrage.security.dto.RegisterRequest;
 import jakarta.transaction.Transactional;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -108,9 +110,9 @@ public class UserService {
       throw new IllegalArgumentException("La verification OCR de la CIN est obligatoire.");
     }
 
-    boolean firstNameMatches = normalizeIdentityToken(request.firstName()).equals(normalizeIdentityToken(verification.extractedFirstName()));
-    boolean lastNameMatches = normalizeIdentityToken(request.lastName()).equals(normalizeIdentityToken(verification.extractedLastName()));
-    boolean dateMatches = request.dateOfBirth() != null && request.dateOfBirth().equals(verification.extractedDateOfBirth());
+    boolean firstNameMatches = matchesIdentityField(request.firstName(), verification.extractedFirstName(), verification.rawText());
+    boolean lastNameMatches = matchesIdentityField(request.lastName(), verification.extractedLastName(), verification.rawText());
+    boolean dateMatches = matchesBirthDate(request.dateOfBirth(), verification.extractedDateOfBirth(), verification.rawText());
 
     if (!firstNameMatches || !lastNameMatches || !dateMatches) {
       throw new IllegalArgumentException("Les donnees saisies ne correspondent pas aux informations lues sur la CIN.");
@@ -150,5 +152,102 @@ public class UserService {
         .replaceAll("\\s+", " ")
         .trim();
     return normalized;
+  }
+
+  private boolean matchesIdentityField(String expected, String extracted, String rawText) {
+    String normalizedExpected = normalizeIdentityToken(expected);
+    if (normalizedExpected.isBlank()) {
+      return false;
+    }
+
+    if (normalizedExpected.equals(normalizeIdentityToken(extracted))) {
+      return true;
+    }
+
+    return Arrays.stream(normalizeIdentityToken(rawText).split(" "))
+        .filter(token -> !token.isBlank())
+        .anyMatch(token -> token.equals(normalizedExpected) || isNearTokenMatch(token, normalizedExpected));
+  }
+
+  private boolean matchesBirthDate(LocalDate expectedDate, LocalDate extractedDate, String rawText) {
+    if (expectedDate == null) {
+      return false;
+    }
+    if (expectedDate.equals(extractedDate)) {
+      return true;
+    }
+
+    String dd = String.format("%02d", expectedDate.getDayOfMonth());
+    String mm = String.format("%02d", expectedDate.getMonthValue());
+    String yyyy = String.valueOf(expectedDate.getYear());
+    String flattenedRawText = rawText == null ? "" : rawText.replaceAll("\\s+", " ").trim();
+
+    String[] patterns = new String[] {
+        dd + "/" + mm + "/" + yyyy,
+        dd + "." + mm + "." + yyyy,
+        dd + "-" + mm + "-" + yyyy,
+        dd + " " + mm + " " + yyyy,
+        yyyy + "-" + mm + "-" + dd
+    };
+
+    for (String pattern : patterns) {
+      if (flattenedRawText.contains(pattern)) {
+        return true;
+      }
+    }
+
+    LocalDate mrzDate = extractMrzBirthDate(flattenedRawText);
+    return expectedDate.equals(mrzDate);
+  }
+
+  private LocalDate extractMrzBirthDate(String rawText) {
+    if (rawText == null || rawText.isBlank()) {
+      return null;
+    }
+    java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(\\d{6})\\d?[MFX<]").matcher(rawText.toUpperCase(Locale.ROOT));
+    if (!matcher.find()) {
+      return null;
+    }
+
+    String birth = matcher.group(1);
+    int yy = Integer.parseInt(birth.substring(0, 2));
+    int mm = Integer.parseInt(birth.substring(2, 4));
+    int dd = Integer.parseInt(birth.substring(4, 6));
+    int currentYearTwoDigits = java.time.Year.now().getValue() % 100;
+    int fullYear = yy <= currentYearTwoDigits ? 2000 + yy : 1900 + yy;
+
+    try {
+      return LocalDate.of(fullYear, mm, dd);
+    } catch (Exception ignored) {
+      return null;
+    }
+  }
+
+  private boolean isNearTokenMatch(String token, String expected) {
+    if (token.length() < 4 || expected.length() < 4) {
+      return false;
+    }
+    return levenshteinDistance(token, expected) <= 1;
+  }
+
+  private int levenshteinDistance(String left, String right) {
+    int[][] matrix = new int[right.length() + 1][left.length() + 1];
+    for (int row = 0; row <= right.length(); row++) {
+      matrix[row][0] = row;
+    }
+    for (int col = 0; col <= left.length(); col++) {
+      matrix[0][col] = col;
+    }
+
+    for (int row = 1; row <= right.length(); row++) {
+      for (int col = 1; col <= left.length(); col++) {
+        int cost = left.charAt(col - 1) == right.charAt(row - 1) ? 0 : 1;
+        matrix[row][col] = Math.min(
+            Math.min(matrix[row - 1][col] + 1, matrix[row][col - 1] + 1),
+            matrix[row - 1][col - 1] + cost
+        );
+      }
+    }
+    return matrix[right.length()][left.length()];
   }
 }
