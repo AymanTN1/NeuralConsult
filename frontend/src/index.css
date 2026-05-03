@@ -7006,3 +7006,24 @@ body {
 @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
 @keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(20px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+.link-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: #3b82f6 !important;
+  text-decoration: underline !important;
+  cursor: pointer;
+  font: inherit;
+  font-weight: normal !important;
+  display: inline;
+}
+.link-btn:hover {
+  color: #1d4ed8 !important;
+  text-decoration: underline !important;
+}
+
+.light-input-icon {
+  padding-left: 2.8rem !important;
+}

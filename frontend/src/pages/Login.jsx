@@ -79,7 +79,7 @@ const Login = () => {
               <label className="form-label mb-1">Adresse email</label>
               <div className="position-relative">
                 <i className="bi bi-envelope position-absolute" style={{ left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
-                <input className="form-control light-input" style={{ paddingLeft: "2.5rem" }} type="email" name="email" placeholder="votre@email.com" value={form.email} onChange={handleChange} required />
+                <input className="form-control light-input light-input-icon" type="email" name="email" placeholder="votre@email.com" value={form.email} onChange={handleChange} required />
               </div>
             </div>
 
@@ -87,7 +87,7 @@ const Login = () => {
               <label className="form-label mb-1">Mot de passe</label>
               <div className="position-relative">
                 <i className="bi bi-lock position-absolute" style={{ left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
-                <input className="form-control light-input" style={{ paddingLeft: "2.5rem" }} type="password" name="password" placeholder="Votre mot de passe" value={form.password} onChange={handleChange} required />
+                <input className="form-control light-input light-input-icon" type="password" name="password" placeholder="Votre mot de passe" value={form.password} onChange={handleChange} required />
               </div>
             </div>
 
