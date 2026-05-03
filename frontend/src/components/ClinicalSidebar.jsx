@@ -82,8 +82,8 @@ const ClinicalSidebar = () => {
   return (
     <aside className="clinical-sidebar">
       <div className="sidebar-brand">
-        <div className="brand-mark">
-          <i className="bi bi-plus-square-pulse-fill" />
+        <div className="brand-mark" style={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="Logo" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover' }} />
         </div>
         <div>
           <div className="sidebar-eyebrow">Calm Clinical Care</div>

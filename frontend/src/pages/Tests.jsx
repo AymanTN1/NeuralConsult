@@ -301,45 +301,6 @@ const Tests = () => {
 
       {error && <div className="alert alert-danger mb-4">{error}</div>}
 
-      <div className="card form-card mb-4" data-guide-id="tests-clinical">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start">
-            <div>
-              <h5 className="card-title mb-1">Dossier patient (donnees synchronisees)</h5>
-              <p className="muted-text mb-0">Les informations demographiques proviennent du dossier initial.</p>
-            </div>
-            <Link to="/evaluation" className="btn btn-outline-dark btn-sm">
-              Mettre a jour
-            </Link>
-          </div>
-          <div className="row g-3 mt-2">
-            <div className="col-12 col-md-6">
-              <div className="p-3 border rounded-3 bg-light h-100">
-                <div className="text-uppercase small muted-text">Date de naissance</div>
-                <div className="fw-semibold">{profile?.dateOfBirth || "Non renseigne"}</div>
-              </div>
-            </div>
-            <div className="col-12 col-md-6">
-              <div className="p-3 border rounded-3 bg-light h-100">
-                <div className="text-uppercase small muted-text">Sexe</div>
-                <div className="fw-semibold">{formatSex(profile?.sex)}</div>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="p-3 border rounded-3 bg-light h-100">
-                <div className="text-uppercase small muted-text">Taille</div>
-                <div className="fw-semibold">{profile?.heightCm ? `${profile.heightCm} cm` : "Non renseigne"}</div>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="p-3 border rounded-3 bg-light h-100">
-                <div className="text-uppercase small muted-text">Poids</div>
-                <div className="fw-semibold">{profile?.weightKg ? `${profile.weightKg} kg` : "Non renseigne"}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="card form-card mb-4">
         <div className="card-body">

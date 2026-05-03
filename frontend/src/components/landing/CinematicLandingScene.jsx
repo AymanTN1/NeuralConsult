@@ -249,15 +249,15 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
 
   const burnProgress = THREE.MathUtils.clamp(progress, 0, 1);
   const shellColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#c84f5b"), new THREE.Color("#71767b"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#e87d88"), new THREE.Color("#2a2b2e"), burnProgress),
     [burnProgress]
   );
   const tarColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#8f5257"), new THREE.Color("#5e6268"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#ab5f66"), new THREE.Color("#0a0a0c"), burnProgress),
     [burnProgress]
   );
   const clinicalGlow = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#ff9ca3"), new THREE.Color("#838992"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#ffb3ba"), new THREE.Color("#4a4d52"), burnProgress),
     [burnProgress]
   );
   const fissureColor = useMemo(
@@ -265,7 +265,7 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
     [burnProgress]
   );
   const branchColor = useMemo(
-    () => new THREE.Color().lerpColors(new THREE.Color("#b35e66"), new THREE.Color("#737980"), burnProgress),
+    () => new THREE.Color().lerpColors(new THREE.Color("#d47781"), new THREE.Color("#3c3e42"), burnProgress),
     [burnProgress]
   );
   const smokeColor = useMemo(
@@ -489,8 +489,8 @@ const HologramScene = ({ progress, scrollVelocity }) => (
         attach="background"
         args={[
           new THREE.Color().lerpColors(
-            new THREE.Color("#081628"),
-            new THREE.Color("#2b3540"),
+            new THREE.Color("#f4f7fb"),
+            new THREE.Color("#e2e8f0"),
             THREE.MathUtils.clamp(progress * 0.9, 0, 1)
           ).getStyle()
         ]}
@@ -499,8 +499,8 @@ const HologramScene = ({ progress, scrollVelocity }) => (
         attach="fog"
         args={[
           new THREE.Color().lerpColors(
-            new THREE.Color("#0d2038"),
-            new THREE.Color("#434d57"),
+            new THREE.Color("#f4f7fb"),
+            new THREE.Color("#e2e8f0"),
             THREE.MathUtils.clamp(progress * 0.92, 0, 1)
           ).getStyle(),
           8,
@@ -519,7 +519,7 @@ const HologramScene = ({ progress, scrollVelocity }) => (
 const CinematicLandingScene = ({ progress, scrollVelocity, copyVisibility = 1 }) => {
   const burnProgress = THREE.MathUtils.clamp(progress, 0, 1);
   const cigaretteBodyScale = Math.max(0.12, 1 - burnProgress * 0.84);
-  const smokeDensity = THREE.MathUtils.clamp(0.18 + burnProgress * 0.3 + scrollVelocity * 0.12, 0.18, 0.62);
+  const smokeDensity = THREE.MathUtils.clamp(0.25 + burnProgress * 0.45 + scrollVelocity * 0.15, 0.25, 0.85);
   const emberGlow = 8 + burnProgress * 12 + scrollVelocity * 8;
   const statusTone = burnProgress < 0.34 ? "Repere initial" : burnProgress < 0.68 ? "Repere en cours" : "Repere de vigilance";
 

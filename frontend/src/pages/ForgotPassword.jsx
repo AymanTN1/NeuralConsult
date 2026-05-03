@@ -30,10 +30,10 @@ const ForgotPassword = () => {
     try {
       const response = await forgotPassword(email);
       setStep(2);
-      setMessage(response?.message || "Si un compte existe pour cet email, un code de reinitialisation a ete envoye.");
+      setMessage(response?.message || "Un code de reinitialisation a ete envoye.");
     } catch (err) {
       const apiError = err?.response?.data?.message || err?.response?.data?.error;
-      setError(apiError || "Impossible d'envoyer le code de reinitialisation.");
+      setError(apiError || "Aucun compte ne correspond a cet email.");
     } finally {
       setSending(false);
     }
@@ -74,7 +74,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <section className="auth-stage">
+    <section className="auth-stage light-auth-stage">
       <div className="container auth-stage-grid">
         <div className="auth-story">
           <div className="hero-kicker">Recuperation d'acces</div>
@@ -101,7 +101,7 @@ const ForgotPassword = () => {
         </div>
 
         <div className="auth-card-shell">
-          <div className="auth-card">
+          <div className="auth-card light-glass-panel">
             <div className="hero-kicker">Mot de passe oublie</div>
             <h2 className="auth-card-title">Recuperer l'acces</h2>
             <p className="muted-text">
@@ -117,14 +117,14 @@ const ForgotPassword = () => {
               <form onSubmit={handleSendCode} className="auth-form">
                 <label className="form-label">Email</label>
                 <input
-                  className="form-control"
+                  className="form-control light-input"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
                 />
 
-                <button className="btn btn-dark w-100" disabled={sending}>
+                <button className="btn light-btn-submit w-100" disabled={sending}>
                   {sending ? "Envoi..." : "Envoyer le code a 6 chiffres"}
                 </button>
               </form>
@@ -132,7 +132,7 @@ const ForgotPassword = () => {
               <form onSubmit={handleResetPassword} className="auth-form">
                 <label className="form-label">Email</label>
                 <input
-                  className="form-control"
+                  className="form-control light-input"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -141,7 +141,7 @@ const ForgotPassword = () => {
 
                 <label className="form-label">Code a 6 chiffres</label>
                 <input
-                  className="form-control auth-code-input"
+                  className="form-control auth-code-input light-input"
                   type="text"
                   value={code}
                   onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -152,7 +152,7 @@ const ForgotPassword = () => {
 
                 <label className="form-label">Nouveau mot de passe</label>
                 <input
-                  className="form-control"
+                  className="form-control light-input"
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
@@ -162,7 +162,7 @@ const ForgotPassword = () => {
 
                 <label className="form-label">Confirmer le mot de passe</label>
                 <input
-                  className="form-control"
+                  className="form-control light-input"
                   type="password"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
@@ -170,7 +170,7 @@ const ForgotPassword = () => {
                   required
                 />
 
-                <button className="btn btn-dark w-100" disabled={saving}>
+                <button className="btn light-btn-submit w-100" disabled={saving}>
                   {saving ? "Reinitialisation..." : "Changer le mot de passe"}
                 </button>
               </form>

@@ -136,7 +136,7 @@ public class AuthController {
     return ResponseEntity.ok(new PasswordResetResponse(
         request.email(),
         true,
-        "Si un compte existe pour cet email, un code de reinitialisation a ete envoye."
+        "Un code de reinitialisation a ete envoye."
     ));
   }
 

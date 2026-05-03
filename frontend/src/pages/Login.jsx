@@ -44,85 +44,69 @@ const Login = () => {
   };
 
   return (
-    <section className="auth-stage">
-      <div className="container auth-stage-grid">
-        <div className="auth-story">
-          <div className="hero-kicker">Acces clinique apaise</div>
-          <h1 className="auth-title">Reconnecter le patient a une interface plus douce, plus lisible et plus rassurante.</h1>
-          <p className="auth-copy">
-            Retrouver le tableau de bord, les scores, la note clinique et le protocole de sevrage
-            dans un espace de travail qui privilegie le calme et la comprehension.
-          </p>
-
-          <div className="auth-story-pulse">
-            <div className="pulse-ring" />
-            <div className="pulse-core">
-              <span>HAD / Fagerstrom</span>
-              <strong>Repères cliniques centralises</strong>
-            </div>
+    <section className="tabac-auth-wrapper">
+      <div className="tabac-auth-container">
+        <div className="tabac-auth-left">
+          <div className="d-flex align-items-center gap-2 mb-4">
+            <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="Logo" style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }} />
+            <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#064e3b" }}>NeuralConsult</span>
           </div>
-
-          <div className="auth-feature-list">
-            <div className="auth-feature-card">
-              <i className="bi bi-activity" />
-              <span>Vue d'ensemble du risque</span>
-            </div>
-            <div className="auth-feature-card">
-              <i className="bi bi-journal-medical" />
-              <span>Journal et progression quotidienne</span>
-            </div>
-            <div className="auth-feature-card">
-              <i className="bi bi-stars" />
-              <span>Insights cliniques et notes AI</span>
-            </div>
-          </div>
+          <h2>Pourquoi rejoindre NeuralConsult ?</h2>
+          <ul>
+            <li><i className="bi bi-graph-up-arrow" /> Suivi personnalisé de vos progrès</li>
+            <li><i className="bi bi-people" /> Communauté de soutien active</li>
+            <li><i className="bi bi-shield-check" /> Données sécurisées et privées</li>
+            <li><i className="bi bi-journal-medical" /> Protocoles médicaux validés</li>
+          </ul>
         </div>
 
-        <div className="auth-card-shell">
-          <div className="auth-card">
-            <div className="hero-kicker">Authentification</div>
-            <h2 className="auth-card-title">Connexion</h2>
-            <p className="muted-text">Accedez a votre espace clinique et reprenez le suivi la ou il s'etait arrete.</p>
-
-            {error && <div className="alert alert-danger mt-3">{error}</div>}
-            {successMessage && <div className="alert alert-success mt-3">{successMessage}</div>}
-
-            <form onSubmit={handleSubmit} className="auth-form">
-              <label className="form-label">Email</label>
-              <input
-                className="form-control"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-              />
-
-              <label className="form-label">Mot de passe</label>
-              <input
-                className="form-control"
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-              />
-
-              <div className="d-flex justify-content-end mt-1">
-                <Link to="/forgot-password" className="auth-inline-link">
-                  Mot de passe oublie ?
-                </Link>
-              </div>
-
-              <button className="btn btn-dark w-100" disabled={loading}>
-                {loading ? "Connexion..." : "Entrer dans l'espace clinique"}
-              </button>
-            </form>
-
-            <p className="auth-alt-link">
-              Nouveau ici ? <Link to="/register">Creer le dossier d'acces</Link>
-            </p>
+        <div className="tabac-auth-right">
+          <div className="tabac-auth-header">
+            <h2>Bienvenue !</h2>
+            <p>Commencez votre parcours vers une vie sans tabac</p>
           </div>
+          
+          <div className="tabac-auth-tabs">
+            <Link to="/login" className="tabac-auth-tab active">Connexion</Link>
+            <Link to="/register" className="tabac-auth-tab">Inscription</Link>
+          </div>
+
+          {error && <div className="alert alert-danger mb-3">{error}</div>}
+          {successMessage && <div className="alert alert-success mb-3">{successMessage}</div>}
+
+          <form onSubmit={handleSubmit} className="auth-form" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div>
+              <label className="form-label mb-1">Adresse email</label>
+              <div className="position-relative">
+                <i className="bi bi-envelope position-absolute" style={{ left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+                <input className="form-control light-input" style={{ paddingLeft: "2.5rem" }} type="email" name="email" placeholder="votre@email.com" value={form.email} onChange={handleChange} required />
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label mb-1">Mot de passe</label>
+              <div className="position-relative">
+                <i className="bi bi-lock position-absolute" style={{ left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+                <input className="form-control light-input" style={{ paddingLeft: "2.5rem" }} type="password" name="password" placeholder="Votre mot de passe" value={form.password} onChange={handleChange} required />
+              </div>
+            </div>
+
+            <div className="d-flex justify-content-between align-items-center mt-2">
+              <label className="light-checkbox d-flex align-items-center gap-2 m-0" style={{ cursor: "pointer" }}>
+                <input type="checkbox" />
+                <span className="muted-text">Se souvenir de moi</span>
+              </label>
+              <Link to="/forgot-password" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 600, fontSize: "0.9rem" }}>Mot de passe oublié ?</Link>
+            </div>
+
+            <button className="btn tabac-btn-submit w-100" disabled={loading}>
+              {loading ? "Connexion..." : <><i className="bi bi-box-arrow-in-right me-2" /> Se connecter</>}
+            </button>
+
+            <p className="text-center mt-3 mb-0" style={{ color: "#6b7280" }}>
+              Pas encore de compte ? <Link to="/register" style={{ color: "#3b82f6", fontWeight: 600, textDecoration: "none" }}>Inscrivez-vous gratuitement</Link>
+            </p>
+          </form>
         </div>
       </div>
     </section>

@@ -11,8 +11,8 @@ const TopNav = () => {
     <header className={`public-nav ${isLanding ? "public-nav-landing" : ""}`}>
       <div className="container public-nav-inner">
         <Link className="public-brand" to="/">
-          <span className="public-brand-mark">
-            <i className="bi bi-plus-square-fill" />
+          <span className="public-brand-mark" style={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="NeuralConsult Icon" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
           </span>
           <span>
             <span className="public-brand-eyebrow">Accompagnement clinique</span>

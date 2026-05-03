@@ -40,10 +40,8 @@ public class PasswordResetService {
 
   @Transactional
   public void issueResetCode(String email) {
-    User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
-    if (user == null) {
-      return;
-    }
+    User user = userRepository.findByEmailIgnoreCase(email)
+        .orElseThrow(() -> new IllegalArgumentException("Aucun compte ne correspond a cet email."));
 
     invalidateOpenCodes(user);
 
