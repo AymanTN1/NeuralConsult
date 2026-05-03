@@ -7027,3 +7027,68 @@ body {
 .light-input-icon {
   padding-left: 2.8rem !important;
 }
+\n\n.sidebar-link.active { background: rgba(59, 130, 246, 0.1) !important; color: #2563eb !important; border-right: 3px solid #2563eb !important; }
+
+/* ====== OVERRIDES FOR VISIBILITY & ANIMATION ====== */
+
+.sidebar-link.active {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: #2563eb !important;
+  font-weight: 600 !important;
+  border-right: 3px solid #2563eb !important;
+}
+
+.sidebar-link.active span,
+.sidebar-link.active i {
+  color: #2563eb !important;
+}
+
+.sidebar-link.active .sidebar-link-icon {
+  background: rgba(59, 130, 246, 0.12) !important;
+}
+
+.btn-dark {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.btn-dark:hover {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+.tabac-btn-submit {
+  background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 0.8rem !important;
+  font-weight: 600 !important;
+  border: none !important;
+  margin-top: 1rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+.tabac-btn-submit:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+  background: linear-gradient(to right, #60a5fa, #3b82f6) !important;
+  color: #ffffff !important;
+}
+
+.auth-form-slide-enter {
+  animation: formSlideEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes formSlideEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

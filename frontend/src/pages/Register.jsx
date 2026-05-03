@@ -90,35 +90,11 @@ const Register = () => {
     }
   };
 
+  
+
   return (
-    <section className="tabac-auth-wrapper">
-      <div className="tabac-auth-container">
-        <div className="tabac-auth-left">
-          <div className="d-flex align-items-center gap-2 mb-4">
-            <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="Logo" style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }} />
-            <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#064e3b" }}>NeuralConsult</span>
-          </div>
-          <h2>Pourquoi rejoindre NeuralConsult ?</h2>
-          <ul>
-            <li><i className="bi bi-graph-up-arrow" /> Suivi personnalisé de vos progrès</li>
-            <li><i className="bi bi-people" /> Communauté de soutien active</li>
-            <li><i className="bi bi-shield-check" /> Données sécurisées et privées</li>
-            <li><i className="bi bi-journal-medical" /> Protocoles médicaux validés</li>
-          </ul>
-        </div>
-
-        <div className="tabac-auth-right">
-          <div className="tabac-auth-header">
-            <h2>Créer un compte</h2>
-            <p>Choisissez votre rôle et complétez les informations</p>
-          </div>
-          
-          <div className="tabac-auth-tabs">
-            <Link to="/login" className="tabac-auth-tab">Connexion</Link>
-            <Link to="/register" className="tabac-auth-tab active">Inscription</Link>
-          </div>
-
-          {error && <div className="alert alert-danger mb-3">{error}</div>}
+    <div className="auth-form-slide-enter w-100">
+      {error && <div className="alert alert-danger mb-3">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <label className="form-label">Type de compte</label>
@@ -260,11 +236,10 @@ const Register = () => {
               Déjà inscrit ? <Link to="/login" style={{ color: "#3b82f6", fontWeight: 600, textDecoration: "none" }}>Revenir à la connexion</Link>
             </p>
           </form>
-        </div>
-      </div>
-
+        
+      
       {showTermsModal && <TermsModal accountType={form.accountType} onClose={() => setShowTermsModal(false)} />}
-    </section>
+    </div>
   );
 };
 

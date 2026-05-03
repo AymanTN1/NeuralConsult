@@ -27,3 +27,19 @@ Thumbs.db
 
 # Local docker client/buildx state (DOCKER_CONFIG)
 .docker/
+
+# CIN test documents (private)
+CIN/
+
+# Temporary OCR debug files
+frontend/test_*.jpg
+frontend/test_ocr.cjs
+frontend/fra.traineddata
+patch_ocr.js
+fix_ocr_threshold.js
+full_image_ocr.js
+implement_zones.js
+remove_filters.js
+final_css_overrides.js
+update_app.js
+

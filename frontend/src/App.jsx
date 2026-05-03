@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import TopNav from "./components/TopNav";
+import AuthLayout from "./components/AuthLayout";
 import ClinicalSidebar from "./components/ClinicalSidebar";
 import ClinicalTopbar from "./components/ClinicalTopbar";
 import PatientGuide from "./components/PatientGuide";
@@ -49,8 +50,12 @@ const AppShell = () => {
           <Suspense fallback={<RouteLoader />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route element={<AuthLayout />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+              </Route>
+              
+              
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/onboarding" element={<Navigate to="/evaluation" replace />} />

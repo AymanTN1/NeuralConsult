@@ -44,34 +44,8 @@ const Login = () => {
   };
 
   return (
-    <section className="tabac-auth-wrapper">
-      <div className="tabac-auth-container">
-        <div className="tabac-auth-left">
-          <div className="d-flex align-items-center gap-2 mb-4">
-            <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="Logo" style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }} />
-            <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#064e3b" }}>NeuralConsult</span>
-          </div>
-          <h2>Pourquoi rejoindre NeuralConsult ?</h2>
-          <ul>
-            <li><i className="bi bi-graph-up-arrow" /> Suivi personnalisé de vos progrès</li>
-            <li><i className="bi bi-people" /> Communauté de soutien active</li>
-            <li><i className="bi bi-shield-check" /> Données sécurisées et privées</li>
-            <li><i className="bi bi-journal-medical" /> Protocoles médicaux validés</li>
-          </ul>
-        </div>
-
-        <div className="tabac-auth-right">
-          <div className="tabac-auth-header">
-            <h2>Bienvenue !</h2>
-            <p>Commencez votre parcours vers une vie sans tabac</p>
-          </div>
-          
-          <div className="tabac-auth-tabs">
-            <Link to="/login" className="tabac-auth-tab active">Connexion</Link>
-            <Link to="/register" className="tabac-auth-tab">Inscription</Link>
-          </div>
-
-          {error && <div className="alert alert-danger mb-3">{error}</div>}
+    <div className="auth-form-slide-enter w-100">
+      {error && <div className="alert alert-danger mb-3">{error}</div>}
           {successMessage && <div className="alert alert-success mb-3">{successMessage}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -107,9 +81,8 @@ const Login = () => {
               Pas encore de compte ? <Link to="/register" style={{ color: "#3b82f6", fontWeight: 600, textDecoration: "none" }}>Inscrivez-vous gratuitement</Link>
             </p>
           </form>
-        </div>
-      </div>
-    </section>
+        
+    </div>
   );
 };
 

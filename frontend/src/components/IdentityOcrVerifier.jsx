@@ -402,57 +402,36 @@ const extractLabeledValue = (lines, labels) => {
 };
 
 const extractFallbackNames = (lines) => {
-  // Skip lines that start with common field indicators - they're labels not values
-  const candidates = lines
-    .map((line) => {
-      const cleaned = stripNoise(line);
-      // Skip if line starts with field labels (likely a label, not a value)
-      if (/^(nom|prenom|prénom|nom|surname|given|first|last|sexe|sexe|date|naissance|birth|validite|expiry)/i.test(cleaned)) {
-        return "";
-      }
-      return cleaned;
-    })
-    .filter((line) => line && line.length >= 2)
-    .filter((line) => /^[A-Za-z' -]+$/.test(line))
-.filter((line) => !NOISE_WORDS.some((word) => normalizeName(line).includes(word)))
-    .filter((line) => {
-      const upperOnly = normalizeName(line).replace(/[^A-Z]/g, "");
-      // Must have at least 2 letters (minimum for a valid name)
-      return upperOnly.length >= 2;
-    })
-    // Filter out single-letter entries (likely OCR noise)
-    .filter((line) => {
-      const words = line.trim().split(/\s+/);
-      // All words should be at least 2 letters
-      return words.every((w) => w.length >= 2);
-    });
-
-  // Deduplicate while preserving order
-  const seen = new Set();
-  const unique = [];
-  for (const line of candidates) {
-    const normalized = normalizeName(line);
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
-      unique.push(normalized);
+  const nameCandidates = [];
+  
+  for (const line of lines) {
+    const cleaned = stripNoise(line);
+    // Ignore lines that are just field labels
+    if (/^(nom|prenom|prénom|surname|given|first|last|sexe|date|naissance|birth|validite|expiry)/i.test(cleaned)) {
+      continue;
+    }
+    
+    // Extract strictly uppercase words of length >= 3
+    const uppercaseWords = cleaned.match(/[A-Z]{3,}/g);
+    if (uppercaseWords) {
+      nameCandidates.push(...uppercaseWords);
     }
   }
 
-  // First element is typically PRENOM (first name), second is NOM (last name) on Moroccan CIN
-  const firstCandidate = unique[0] || "";
-  const secondCandidate = unique[1] || "";
-
-  // If we have only one candidate, return it as firstName (most common case)
-  if (unique.length === 1) {
-    return {
-      firstName: firstCandidate,
-      lastName: ""
-    };
+  // Deduplicate and filter noise words
+  const unique = [];
+  const seen = new Set();
+  
+  for (const word of nameCandidates) {
+    if (!seen.has(word) && !NOISE_WORDS.includes(word)) {
+      seen.add(word);
+      unique.push(word);
+    }
   }
 
   return {
-    firstName: firstCandidate || "",
-    lastName: secondCandidate || ""
+    firstName: unique[0] || "",
+    lastName: unique[1] || ""
   };
 };
 
@@ -483,10 +462,16 @@ const extractBirthDate = (text) => {
   const candidates = [];
   lines.forEach((line) => {
     const sanitized = line.replace(/[Oo]/g, "0").replace(/[Il|]/g, "1");
-    const matches = sanitized.match(/\d{2}[\/.\-]\d{2}[\/.\-]\d{4}/g) || [];
+    // Support spaces, dots, slashes, dashes, or nothing (27072005)
+    const matches = sanitized.match(/\d{2}[\s\/\.\-]?\d{2}[\s\/\.\-]?\d{4}/g) || [];
     matches.forEach((match) => {
-      const isoDate = normalizeDate(match);
-      if (isoDate) {
+      // Normalize to YYYY-MM-DD
+      let cleanMatch = match.replace(/[^\d]/g, '');
+      if (cleanMatch.length === 8) {
+        const dd = cleanMatch.slice(0, 2);
+        const mm = cleanMatch.slice(2, 4);
+        const yyyy = cleanMatch.slice(4, 8);
+        const isoDate = `${yyyy}-${mm}-${dd}`;
         candidates.push({ isoDate, score: scoreBirthDateCandidate(line, isoDate) });
       }
     });
@@ -568,20 +553,15 @@ const renderPdfPages = async (file) => {
 };
 
 const preprocessCanvas = (source) => {
-  const sourceWidth = source.width || source.naturalWidth;
-  const sourceHeight = source.height || source.naturalHeight;
-  const scale = sourceWidth < MIN_CANVAS_WIDTH ? MIN_CANVAS_WIDTH / sourceWidth : 1;
-
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(sourceWidth * scale);
-  canvas.height = Math.round(sourceHeight * scale);
+  canvas.width = source.width || source.naturalWidth;
+  canvas.height = source.height || source.naturalHeight;
 
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.filter = "grayscale(100%) contrast(135%) brightness(108%)";
+  
+  // No CSS filters, no scaling.
+  // Feed the raw, untouched pixels directly to Tesseract for maximum accuracy.
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  context.filter = "none";
 
   return canvas;
 };
@@ -1102,7 +1082,7 @@ const IdentityOcrVerifier = ({ firstName, lastName, dateOfBirth, onVerificationC
     });
   }, [comparison.verified, ocr, onVerificationChange]);
 
-  const runOcr = async () => {
+    const runOcr = async () => {
     if (!selectedFile) {
       setError("Ajoutez d'abord une photo nette ou un PDF de la face de la CIN.");
       return;
@@ -1127,73 +1107,49 @@ const IdentityOcrVerifier = ({ firstName, lastName, dateOfBirth, onVerificationC
         }
       });
 
-      let bestFront = { firstName: "", lastName: "", dateOfBirth: "", rawText: "", score: 0 };
-      let bestBack = { firstName: "", lastName: "", dateOfBirth: "", rawText: "", score: 0 };
-      let processedRegionCount = 0;
-      const totalRegions = pages.reduce((count, pageCanvas) => count + extractDocumentRegions(pageCanvas).length, 0) || 1;
+      let fullText = "";
 
-      for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-        const pageCanvas = pages[pageIndex];
-        const regions = extractDocumentRegions(pageCanvas);
-
-        for (let index = 0; index < regions.length; index += 1) {
-          const region = regions[index];
-          processedRegionCount += 1;
-          setProgress(Math.min(78, 18 + Math.round((processedRegionCount / totalRegions) * 42)));
-
-          const backCandidate = alignNamesWithForm(
-            await analyzeBackRegion(worker, region.canvas),
-            firstName,
-            lastName
-          );
-          if ((backCandidate.score || 0) > (bestBack.score || 0)) {
-            bestBack = backCandidate;
-          }
-
-          if ((backCandidate.score || 0) < 30) {
-            const frontCandidate = alignNamesWithForm(
-              await analyzeFrontRegion(worker, region.canvas),
-              firstName,
-              lastName
-            );
-            if ((frontCandidate.score || 0) > (bestFront.score || 0)) {
-              bestFront = frontCandidate;
-            }
-          }
-        }
+      // Perform a single pass of OCR on each page without cropping or rotation.
+      // Tesseract performs much better when it has the full context, and our smart regex handles the noise.
+      for (let i = 0; i < pages.length; i++) {
+        const { data } = await worker.recognize(pages[i], {
+          preserve_interword_spaces: "1",
+        });
+        fullText += data.text + "\n---\n";
       }
 
       await worker.terminate();
       setProgress(92);
 
-      const merged = mergeCandidate(bestBack, bestFront);
+      // Parse using the smart regex
+      const parsed = parseCinText(fullText);
+      const mrzParsed = parseMoroccanCinMrz(fullText);
+      
+      const bestFirstName = parsed.firstName || mrzParsed.firstName || "";
+      const bestLastName = parsed.lastName || mrzParsed.lastName || "";
+      const bestDate = parsed.dateOfBirth || mrzParsed.dateOfBirth || "";
+
+      // Verify against user input
       const result = alignNamesWithForm(
-        {
-          ...merged,
-          confidence: merged.score > 0 ? Math.min(99, 55 + Math.round(merged.score)) : null
-        },
+        { firstName: bestFirstName, lastName: bestLastName },
         firstName,
         lastName
       );
 
-      setOcr(result);
-      setProgress(100);
+      const confidence = (bestFirstName ? 33 : 0) + (bestLastName ? 33 : 0) + (bestDate ? 34 : 0);
 
-      if (!result.firstName || !result.lastName || !result.dateOfBirth) {
-        const missing = [
-          !result.firstName && "Prénom",
-          !result.lastName && "Nom",
-          !result.dateOfBirth && "Date de naissance"
-        ].filter(Boolean).join(", ");
-        
-        setError(
-          `Lecture OCR partielle (manque: ${missing}). Suggestions: assurez-vous que la photo est droite, bien éclairée, et en haute résolution. Vous pouvez aussi essayer un PDF du document.`
-        );
-      }
-    } catch (ocrError) {
-      setOcr(null);
-      setError("Impossible de lire la CIN pour le moment. Vérifiez que l'image est claire, nette et bien éclairée. Réessayez.");
-      console.error("OCR Error:", ocrError);
+      setOcr({
+        firstName: result?.firstName || "",
+        lastName: result?.lastName || "",
+        dateOfBirth: bestDate,
+        rawText: fullText,
+        confidence
+      });
+
+      setProgress(100);
+    } catch (err) {
+      setError("La lecture de la carte a échoué. Assurez-vous que l'image est nette.");
+      console.error("OCR Error:", err);
     } finally {
       setLoading(false);
     }
