@@ -12,7 +12,6 @@ apscheduler
 lxml
 langchain
 langchain-community
+langchain-google-genai
 chromadb
 pymupdf
-sentence-transformers
-torch --index-url https://download.pytorch.org/whl/cpu
