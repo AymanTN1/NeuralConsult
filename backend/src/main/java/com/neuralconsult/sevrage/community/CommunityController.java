@@ -121,6 +121,17 @@ public class CommunityController {
     return communityService.createPost(currentUser(principal), request);
   }
 
+  @PostMapping("/social/bot/posts")
+  public CommunityPostResponse createBotPost(@RequestBody CommunityPostCreateRequest request,
+                                             @RequestParam(name = "secret") String secret) {
+    if (!"NeuralBotSecret2025".equals(secret)) {
+      throw new IllegalArgumentException("Unauthorized bot call");
+    }
+    User bot = userRepository.findByCommunityUsernameIgnoreCase("neuralconsult.sevrage")
+        .orElseThrow(() -> new IllegalStateException("Bot user not found"));
+    return communityService.createPost(bot, request);
+  }
+
   @PostMapping("/social/posts/{postId}/reactions")
   public CommunityPostResponse react(@AuthenticationPrincipal UserDetails principal,
                                      @PathVariable UUID postId,

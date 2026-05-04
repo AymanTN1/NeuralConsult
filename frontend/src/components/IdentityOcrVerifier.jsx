@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import CINLiveScannerModal from "./CINLiveScannerModal";
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 
 const OCR_LANGS = ["fra", "eng"];
@@ -22,12 +23,19 @@ const BIRTH_LABEL_PATTERN =
 const NOISE_WORDS = [
   "ROYAUME",
   "MAROC",
+  "ROYAUMEDUMAROC",  // collated without spaces
   "KINGDOM",
+  "MOROCCO",
   "CARTE",
   "NATIONALE",
   "IDENTITE",
   "NATIONAL",
   "IDENTITY",
+  "DIDENTITE",
+  "DDENTITE",
+  "NIDENTITE",
+  "CARTENA",
+  "CARTENATIONALE",
   "SIGNATURE",
   "SEXE",
   "SEX",
@@ -47,56 +55,30 @@ const NOISE_WORDS = [
   // Moroccan cities - exclude these from name extraction
   "RABAT",
   "CASABLANCA",
-"FES",
+  "FES",
   "MARRAKECH",
   "TANGIER",
   "AGADIR",
   "OUJDA",
   "KENITRA",
-  "EL JADIDA",
-  "TEFUAL",
-  "ERRACHIDIA",
-  "BENI MELLAL",
-  "KHOURIBGA",
-  "SETTAT",
-  "SAFI",
-  "EL AIOUN",
-  "LOUKOS",
   "NADOR",
-  "AL HOCEIMA",
-  "KSAR EL KBIR",
-  "LARACHE",
-  "TIZNIT",
-  "RICH",
+  "HASSAN",
   "OUARZAZATE",
   "ESSAOUIRA",
-  "CHICHAOUA",
-  "TARFAYA",
   "LAAYOUNE",
   "DAKHLA",
-  "FIGUIG",
-  "SMARA",
-  "BIR GANDOUZ",
-  // Common OCR misreads for cities
-  "NE",
-  "NE",
-  "A",
-  "LE",
-  "D",
-  "DU",
-  "ET",
-  "AU",
-  "DELA",
-  // Common words to exclude
-  "CARTE",
-  "NATIONALE",
-  "SEXE",
-  "M",
-  "F",
-  "MASCULIN",
-  "FEMININ",
-  "DN",
-  "NA"
+  // Short common noise tokens
+  "VAS",  "LIT",  "LIS",  "LUS",  "LES",
+  "NE",   "NEE",  "A",    "LE",   "D",
+  "DU",   "ET",   "AU",   "DELA", "BIR",
+  "LOUKOS", "TIZNIT", "RICH", "SAFI", "NADO",
+  "SETTAT", "KHOURIBGA", "BENI", "MELLAL",
+  "SEEN",  "LITE",  "SEEN",  "SOC",  "TEE",
+  "INVIN", "WTAN",  "ALAM",  "ALAMI",
+  // common OCR misreads for city/labels  
+  "M", "F", "MASCULIN", "FEMININ", "DN", "NA",
+  "NOLO", "NOLE", "NELC", "NEL", "BIT",
+  "CARTE", "NATIONALE", "SEXE"
 ];
 
 // ============= IMAGE VALIDATION FUNCTIONS =============
@@ -402,28 +384,52 @@ const extractLabeledValue = (lines, labels) => {
 };
 
 const extractFallbackNames = (lines) => {
-  const nameCandidates = [];
-  
-  for (const line of lines) {
-    const cleaned = stripNoise(line);
-    // Ignore lines that are just field labels
-    if (/^(nom|prenom|prénom|surname|given|first|last|sexe|date|naissance|birth|validite|expiry)/i.test(cleaned)) {
-      continue;
+  // Step 1: Find where the card header ends.
+  // The header contains "ROYAUME", "CARTE NATIONALE", "IDENTITE" etc.
+  // Names always appear AFTER the header.
+  const HEADER_MARKERS = /ROYAUME|MAROC|CARTE|NATIONALE|IDENTIT|DIDENTIT|DDENTIT|KINGDOM|Bطاقة|ملكية/i;
+  let headerEndIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (HEADER_MARKERS.test(lines[i])) {
+      headerEndIdx = i;
     }
-    
-    // Extract strictly uppercase words of length >= 3
-    const uppercaseWords = cleaned.match(/[A-Z]{3,}/g);
-    if (uppercaseWords) {
-      nameCandidates.push(...uppercaseWords);
+    // Stop looking for header after the 5th line
+    if (i > 5) break;
+  }
+
+  // Process only lines AFTER the header
+  const postHeader = headerEndIdx >= 0 ? lines.slice(headerEndIdx + 1) : lines;
+
+  const nameCandidates = [];
+
+  for (const line of postHeader) {
+    const cleaned = cleanLine(line);
+    if (!cleaned) continue;
+
+    // Skip date lines
+    if (/\d{2}[\s./\-]\d{2}[\s./\-]\d{4}/.test(cleaned)) continue;
+    if (/\d{6,}/.test(cleaned)) continue;
+
+    // Skip lines containing known labels
+    if (/^(nom|prenom|prénom|surname|given|first|last|sexe|date|naissance|birth|validite|expiry|nolo|nele|nelo|nel|nole|bale|mlle|mle)/i.test(cleaned)) continue;
+
+    // Extract uppercase words of 3+ chars that aren't noise
+    const upperWords = cleaned.match(/[A-Z]{3,}/g);
+    if (!upperWords) continue;
+
+    for (const word of upperWords) {
+      const noiseSet = new Set(NOISE_WORDS);
+      if (!noiseSet.has(word)) {
+        nameCandidates.push(word);
+      }
     }
   }
 
-  // Deduplicate and filter noise words
-  const unique = [];
+  // Deduplicate preserving order
   const seen = new Set();
-  
+  const unique = [];
   for (const word of nameCandidates) {
-    if (!seen.has(word) && !NOISE_WORDS.includes(word)) {
+    if (!seen.has(word)) {
       seen.add(word);
       unique.push(word);
     }
@@ -431,7 +437,7 @@ const extractFallbackNames = (lines) => {
 
   return {
     firstName: unique[0] || "",
-    lastName: unique[1] || ""
+    lastName:  unique[1] || ""
   };
 };
 
@@ -993,6 +999,31 @@ const IdentityOcrVerifier = ({ firstName, lastName, dateOfBirth, onVerificationC
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [validationError, setValidationError] = useState(null);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  // Called when the live camera scanner returns a result
+  const handleScannerResult = (scanResult) => {
+    setShowCameraScanner(false);
+    if (!scanResult) return;
+    const aligned = alignNamesWithForm(
+      { firstName: scanResult.firstName, lastName: scanResult.lastName },
+      firstName,
+      lastName
+    );
+    const confidence =
+      (scanResult.firstName ? 33 : 0) +
+      (scanResult.lastName  ? 33 : 0) +
+      (scanResult.dateOfBirth ? 34 : 0);
+    setOcr({
+      firstName:   aligned?.firstName   || scanResult.firstName   || "",
+      lastName:    aligned?.lastName    || scanResult.lastName    || "",
+      dateOfBirth: scanResult.dateOfBirth || "",
+      rawText: `Prénom zone: ${scanResult.rawPrenom || ""}\nNom zone: ${scanResult.rawNom || ""}\nDate zone: ${scanResult.rawDate || ""}`,
+      confidence,
+    });
+    setPreviewLabel("Scan caméra live");
+    setProgress(100);
+  };
 
   useEffect(() => {
     if (!selectedFile) {
@@ -1192,8 +1223,16 @@ const IdentityOcrVerifier = ({ firstName, lastName, dateOfBirth, onVerificationC
           </label>
 
           <div className="identity-ocr-actions">
-            <button type="button" className="btn btn-success" onClick={runOcr} disabled={loading}>
-              {loading ? "Lecture OCR..." : "Lire la CIN"}
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowCameraScanner(true)}
+              disabled={loading}
+            >
+              <i className="bi bi-camera-fill" /> Scanner avec la caméra
+            </button>
+            <button type="button" className="btn btn-outline-secondary" onClick={runOcr} disabled={loading || !selectedFile}>
+              {loading ? "Lecture OCR..." : "Lire le fichier"}
             </button>
             {selectedFile && <span className="identity-ocr-file">{selectedFile.name}</span>}
             {previewLabel && <span className="identity-ocr-file">{previewLabel}</span>}
@@ -1247,6 +1286,14 @@ const IdentityOcrVerifier = ({ firstName, lastName, dateOfBirth, onVerificationC
           </div>
         </div>
       </div>
+
+      {/* Live camera scanner modal */}
+      {showCameraScanner && (
+        <CINLiveScannerModal
+          onClose={() => setShowCameraScanner(false)}
+          onResult={handleScannerResult}
+        />
+      )}
     </section>
   );
 };

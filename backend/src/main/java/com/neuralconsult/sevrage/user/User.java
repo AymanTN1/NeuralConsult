@@ -95,6 +95,14 @@ public class User extends AuditableEntity {
   @Column(name = "role", nullable = false, length = 50)
   private Set<String> roles = new HashSet<>();
 
+  @Comment("True for the official @neuralconsult.sevrage bot account")
+  @Column(name = "is_official_account", nullable = false)
+  private boolean officialAccount = false;
+
+  @Comment("Blue verified badge shown in community feed")
+  @Column(name = "is_verified_badge", nullable = false)
+  private boolean verifiedBadge = false;
+
   public enum UserStatus {
     ACTIVE,
     SUSPENDED,

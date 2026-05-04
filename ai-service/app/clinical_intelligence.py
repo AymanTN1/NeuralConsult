@@ -38,6 +38,7 @@ class PlanCandidateItem(ApiModel):
     nrt_recommendation: str
     behavioral_focus: str
     follow_up_plan: str
+    scientific_reference: str = Field(default="", description="Ex: Selon Guide Marocain p.12")
     doctor_warnings: List[str] = Field(default_factory=list)
     steps: List[str] = Field(default_factory=list)
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import LungLoader from "../components/LungLoader";
 
 const Login = () => {
   const { login } = useAuth();
@@ -45,6 +46,7 @@ const Login = () => {
 
   return (
     <div className="auth-form-slide-enter w-100">
+      {loading && <LungLoader text="Ouverture de votre session clinique..." />}
       {error && <div className="alert alert-danger mb-3">{error}</div>}
           {successMessage && <div className="alert alert-success mb-3">{successMessage}</div>}
 

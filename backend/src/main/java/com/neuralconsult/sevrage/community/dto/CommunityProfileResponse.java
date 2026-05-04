@@ -9,6 +9,7 @@ public record CommunityProfileResponse(
     String role,
     String profilePhotoUrl,
     String bio,
-    boolean profileCompleted
+    boolean profileCompleted,
+    boolean verifiedBadge
 ) {
 }

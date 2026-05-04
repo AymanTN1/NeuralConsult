@@ -13,6 +13,7 @@ public record CommunityUserSummaryResponse(
     boolean following,
     String connectionStatus,
     long followersCount,
-    long postsCount
+    long postsCount,
+    boolean verifiedBadge
 ) {
 }

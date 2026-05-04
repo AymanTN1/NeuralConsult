@@ -7,6 +7,7 @@ from app.services.clinical_notes import ClinicalNotesService
 from app.services.domain_knowledge import ClinicalIntelligenceKnowledgeBaseClient
 from app.services.knowledge_base import KnowledgeReference
 from app.services.llm_client import DefaultLlmClient
+from app.knowledge_engine import knowledge_engine
 
 
 class ClinicalIntelligenceService:
@@ -32,7 +33,12 @@ class ClinicalIntelligenceService:
 
         if self.llm.is_configured():
             try:
-                generated = await self._generate_with_llm(facts, references)
+                # NEW: Fetch scientific guidelines via RAG based on patient profile
+                guideline_query = f"Protocole sevrage tabagique NRT dependance fagerstrom {facts.get('patient_profile', {}).get('fagerstrom_score', 0)}"
+                guideline_results = knowledge_engine.query(guideline_query, n_results=3)
+                scientific_context = "\n".join([f"Source ({r.metadata['source']}): {r.page_content}" for r in guideline_results])
+
+                generated = await self._generate_with_llm(facts, references, scientific_context)
                 return self._validate_result(
                     generated,
                     references,
@@ -48,26 +54,26 @@ class ClinicalIntelligenceService:
         self,
         facts: Dict[str, Any],
         references: List[KnowledgeReference],
+        scientific_context: str = ""
     ) -> Dict[str, Any]:
         system_prompt = (
             "Tu es un moteur d'intelligence clinique pour une plateforme de sevrage tabagique. "
             "Ta mission est d'aider le medecin a comprendre rapidement le dossier: tu resumes, tu structures, "
             "tu reperes les signaux de dependance et tu proposes des pistes, sans jamais inventer de diagnostic. "
-            "Tu dois rester strictement base sur les faits fournis: evaluation initiale, scores HAD/Fagerstrom/HONC/CAGE/EPICES, "
-            "journal quotidien et notes. "
+            "Tu dois baser tes recommandations de sevrage sur les GUIDELINES SCIENTIFIQUES fournies (OMS et Guide Marocain). "
             "Le ton doit etre medical, sobre, lisible par un medecin, avec des phrases courtes en francais. "
             "Retourne uniquement du JSON valide."
         )
         user_prompt = (
             "Genere les elements suivants pour le dossier patient:\n"
-            "- 5 resumes IA par phase: 2 a 3 lignes chacun, centres sur ce que les reponses disent de la dependance tabagique, "
-            "des risques et des leviers de sevrage.\n"
-            "- 1 resume global IA de type synthese diagnostique clinique, base sur toutes les phases + tests + journal. "
-            "Il doit aider le medecin a prendre une decision, pas remplacer son jugement.\n"
+            "- 5 resumes IA par phase: 2 a 3 lignes chacun.\n"
+            "- 1 resume global IA de type synthese diagnostique clinique.\n"
             "- 3 plans candidats de sevrage: INTENSIVE, BALANCED, LONG_TERM.\n\n"
-            f"Facts:\n{json.dumps(facts, ensure_ascii=True, indent=2)}\n\n"
-            f"References:\n{json.dumps([r.__dict__ for r in references], ensure_ascii=True, indent=2)}\n\n"
+            f"GUIDELINES SCIENTIFIQUES (Protocole Officiel):\n{scientific_context}\n\n"
+            f"Facts Patient:\n{json.dumps(facts, ensure_ascii=True, indent=2)}\n\n"
+            f"References Internes:\n{json.dumps([r.__dict__ for r in references], ensure_ascii=True, indent=2)}\n\n"
             "Contraintes importantes:\n"
+            "- Chaque plan candidat doit justifier ses choix en citant brievement la source (ex: selon Guide Marocain).\n"
             "- Ne jamais inventer une maladie, un score ou une reponse absente.\n"
             "- Si une information manque, la mettre dans missing_information.\n"
             "- Le summary de chaque phase doit etre utile au medecin et comprehensible par le patient.\n"
@@ -221,6 +227,7 @@ class ClinicalIntelligenceService:
                 "behavioral_focus": "Coaching serre, gestion des declencheurs, routine anti-craving.",
                 "follow_up_plan": "Suivi hebdomadaire, coordination medecin / patient.",
                 "doctor_warnings": ["Confirmer la tolerance aux substituts et la charge psychique."],
+                "scientific_reference": "Guide Marocain p.24 - Protocole Intensif",
                 "steps": [
                     "Fixer une date cible de sevrage.",
                     "Mettre en place un suivi rapproche la premiere phase.",
@@ -234,6 +241,7 @@ class ClinicalIntelligenceService:
                 "behavioral_focus": "Stabiliser les routines et les strategies de remplacement.",
                 "follow_up_plan": "Suivi toutes les 1 a 2 semaines.",
                 "doctor_warnings": ["Verifier l'observance et les situations a risque."],
+                "scientific_reference": "Guidelines OMS - Strategie de sevrage pharmacologique",
                 "steps": [
                     "Identifier les situations declenchantes.",
                     "Mettre en place une routine de remplacement.",
@@ -247,6 +255,7 @@ class ClinicalIntelligenceService:
                 "behavioral_focus": "Motivation, entourage, activite physique et prevention des rechutes.",
                 "follow_up_plan": "Suivi mensuel et auto-observation reguliere.",
                 "doctor_warnings": ["Risque de perte d'elan si l'encadrement est trop leger."],
+                "scientific_reference": "Dossier Tabacologie - Approche Motivationnelle",
                 "steps": [
                     "Consolider la motivation du patient.",
                     "Ancrer des habitudes de compensation saines.",

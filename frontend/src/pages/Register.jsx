@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import IdentityOcrVerifier from "../components/IdentityOcrVerifier";
 import TermsModal from "../components/TermsModal";
 import { useAuth } from "../context/AuthContext";
+import LungLoader from "../components/LungLoader";
 
 const initialForm = {
   email: "",
@@ -94,6 +95,7 @@ const Register = () => {
 
   return (
     <div className="auth-form-slide-enter w-100">
+      {loading && <LungLoader text="Création de votre dossier clinique..." />}
       {error && <div className="alert alert-danger mb-3">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

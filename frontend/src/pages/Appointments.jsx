@@ -3,6 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { isDoctor } from "../utils/roles";
+import ConsultationReportForm from "../components/ConsultationReportForm";
+import LungLoader from "../components/LungLoader";
+import Modal from "react-bootstrap/Modal";
 
 const statusCopy = {
   REQUESTED: "En attente",
@@ -174,6 +177,7 @@ const Appointments = () => {
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [savingUrgent, setSavingUrgent] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [reportingAppointmentId, setReportingAppointmentId] = useState(null);
   const [savingAppointmentUpdate, setSavingAppointmentUpdate] = useState(false);
 
   const activeAppointments = useMemo(
@@ -726,6 +730,9 @@ const hasReachedWeeklyLimit = (dateValue) => {
                       {appointment.status === "CONFIRMED" && editingAppointment?.id !== appointment.id && (
                         <>
                           <button type="button" className="btn btn-success btn-sm" onClick={() => openMeeting(appointment)}>Rejoindre la visio</button>
+                          <button type="button" className="btn btn-warning btn-sm fw-bold" onClick={() => setReportingAppointmentId(appointment.id)}>
+                            <i className="bi bi-file-medical me-1" /> Bilan médical
+                          </button>
                           <button type="button" className="btn btn-primary btn-sm" onClick={() => doctorDecision(appointment.id, "complete")}>Marquer termine</button>
                           <button type="button" className="btn btn-danger btn-sm" onClick={() => cancelAppointmentAsDoctor(appointment.id)}>Annuler</button>
                         </>
@@ -738,6 +745,23 @@ const hasReachedWeeklyLimit = (dateValue) => {
           </table>
         </div>
       )}
+
+      {/* Medical Report Modal */}
+      <Modal show={!!reportingAppointmentId} onHide={() => setReportingAppointmentId(null)} size="lg" centered scrollable>
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold">Rapport de Consultation</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-0">
+          {reportingAppointmentId && (
+            <ConsultationReportForm 
+              appointmentId={reportingAppointmentId} 
+              onSave={() => {
+                // Optionally refresh something
+              }} 
+            />
+          )}
+        </Modal.Body>
+      </Modal>
     </section>
   );
 
@@ -836,6 +860,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
 
   return (
     <div className="container py-4 app-shell" data-guide-id="appointments-main">
+      {(loading || savingAvailability || savingUrgent || savingAppointmentUpdate) && <LungLoader text="Mise à jour de votre agenda clinique..." />}
       <div className="profile-page-header" data-guide-id="appointments-header">
         <div>
           <div className="hero-kicker">Rendez-vous clinique</div>

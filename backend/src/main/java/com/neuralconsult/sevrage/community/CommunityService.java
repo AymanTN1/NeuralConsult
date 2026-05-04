@@ -262,6 +262,18 @@ public class CommunityService {
     post.setAuthor(actor);
     post.setContent(content != null ? content : "");
     post.setImageUrl(imageUrl);
+    
+    if (request.postType() != null) {
+      try {
+        post.setPostType(CommunityPost.PostType.valueOf(request.postType()));
+      } catch (IllegalArgumentException e) {
+        post.setPostType(CommunityPost.PostType.USER_POST);
+      }
+    }
+    
+    post.setSourceUrl(request.sourceUrl());
+    post.setSourceLabel(request.sourceLabel());
+
     if (request.serverId() != null) {
       CommunityServer server = serverRepository.findById(request.serverId()).orElseThrow();
       ensureMembership(server, actor);
@@ -526,7 +538,10 @@ public class CommunityService {
         post.getCreatedAt(),
         reactionCounts,
         myReaction,
-        comments
+        comments,
+        post.getPostType().name(),
+        post.getSourceUrl(),
+        post.getSourceLabel()
     );
   }
 
@@ -555,7 +570,8 @@ public class CommunityService {
         followRepository.existsByFollowerAndFollowedAndActiveTrue(viewer, target),
         connectionStatus(viewer, target),
         followRepository.countByFollowedAndActiveTrue(target),
-        postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).size()
+        postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).size(),
+        target.isVerifiedBadge()
     );
   }
 
@@ -567,7 +583,8 @@ public class CommunityService {
         roleLabel(user),
         user.getCommunityAvatarUrl(),
         trimToLength(user.getCommunityBio(), MAX_BIO_LENGTH),
-        user.getCommunityUsername() != null && !user.getCommunityUsername().isBlank()
+        user.getCommunityUsername() != null && !user.getCommunityUsername().isBlank(),
+        user.isVerifiedBadge()
     );
   }
 
@@ -660,7 +677,10 @@ public class CommunityService {
   }
 
   private boolean isCommunityVisibleUser(User user) {
-    return user.getRoles().contains("ROLE_PATIENT") || user.getRoles().contains("ROLE_USER") || user.getRoles().contains("ROLE_DOCTOR");
+    return user.getRoles().contains("ROLE_PATIENT") 
+        || user.getRoles().contains("ROLE_USER") 
+        || user.getRoles().contains("ROLE_DOCTOR")
+        || user.getRoles().contains("ROLE_ADMIN");
   }
 
   private String roleLabel(User user) {
@@ -702,7 +722,8 @@ public class CommunityService {
 
   private Comparator<CommunityPostResponse> feedComparator() {
     return Comparator
-        .comparing((CommunityPostResponse post) -> post.author().following()).reversed()
+        .comparing((CommunityPostResponse post) -> "OFFICIAL_NEWS".equals(post.postType())).reversed()
+        .thenComparing((CommunityPostResponse post) -> post.author().following()).reversed()
         .thenComparingLong(this::engagementScore).reversed()
         .thenComparing(CommunityPostResponse::createdAt, Comparator.reverseOrder());
   }

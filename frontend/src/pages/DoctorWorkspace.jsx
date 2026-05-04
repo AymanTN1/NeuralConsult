@@ -1,4 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ClinicalGuidelinesSearch from "../components/ClinicalGuidelinesSearch";
+import ConsultationReportForm from "../components/ConsultationReportForm";
+import LungLoader from "../components/LungLoader";
+import Modal from "react-bootstrap/Modal";
 import Dropdown from "react-bootstrap/Dropdown";
 import {
   Area,
@@ -31,14 +35,14 @@ const matchingCopy = {
 };
 
 const patientWorkspaceViews = [
-  { key: "overview", label: "Vue clinique", icon: "bi bi-grid-1x2-fill" },
-  { key: "profile", label: "Profil", icon: "bi bi-person-vcard-fill" },
-  { key: "evaluation", label: "Dossier medical", icon: "bi bi-journal-medical" },
-  { key: "dashboard", label: "Dashboard", icon: "bi bi-activity" },
-  { key: "journal", label: "Journal", icon: "bi bi-clipboard2-pulse-fill" },
-  { key: "conversation", label: "Conversation", icon: "bi bi-chat-square-heart-fill" },
-  { key: "ai", label: "Synthese IA", icon: "bi bi-cpu-fill" },
-  { key: "appointments", label: "Rendez-vous", icon: "bi bi-calendar2-week-fill" }
+  { key: "overview", label: "Bilan & Historique", icon: "bi bi-grid-1x2-fill" },
+  { key: "profile", label: "Profil Patient", icon: "bi bi-person-vcard-fill" },
+  { key: "evaluation", label: "Dossier Médical Initial", icon: "bi bi-journal-medical" },
+  { key: "dashboard", label: "Suivi Quotidien", icon: "bi bi-activity" },
+  { key: "ai", label: "Plan de Sevrage IA (Groq)", icon: "bi bi-cpu-fill" },
+  { key: "medical-reports", label: "Système de Rapports", icon: "bi bi-clipboard2-pulse-fill" },
+  { key: "medical-guidance", label: "Centre de Ressources Cliniques", icon: "bi bi-book-half" },
+  { key: "appointments", label: "Agenda & Visio", icon: "bi bi-calendar2-week-fill" }
 ];
 
 const chartTooltipStyle = chartTheme.tooltip;
@@ -244,6 +248,23 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     () => new Map(patients.map((patient) => [patient.patientProfileId, patient])),
     [patients]
   );
+
+  const [medicalReports, setMedicalReports] = useState([]);
+
+  const loadMedicalReports = async (patientUserId) => {
+    try {
+      const { data } = await api.get(`/api/medical/patients/${patientUserId}/reports`);
+      setMedicalReports(data);
+    } catch (error) {
+      console.error("Error loading medical reports:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPatientId && (selectedPatientView === "medical-reports" || selectedPatientView === "overview")) {
+      loadMedicalReports(selectedPatientId);
+    }
+  }, [selectedPatientId, selectedPatientView]);
 
   const selectedPatientSummary = useMemo(
     () => patientMap.get(selectedPatientId) || null,
@@ -508,8 +529,29 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         </div>
       </div>
       <div className="doctor-dossier-section doctor-overview-grid">
-        <div className="doctor-overview-card"><span className="profile-data-label">Resume global IA</span><p className="mb-0">{dossier.clinicalIntelligence?.globalSummary?.summary || "Aucun resume global disponible pour le moment."}</p></div>
-        <div className="doctor-overview-card"><span className="profile-data-label">Note clinique IA</span><p className="mb-0">{dossier.clinicalNote?.medicalSummary || "Aucune note clinique n'a encore ete generee."}</p></div>
+        <div className="doctor-overview-card">
+          <span className="profile-data-label">Plan de Sevrage Actif</span>
+          {dossier.validatedPlan ? (
+            <div className="mt-2">
+              <strong className="text-primary d-block">{dossier.validatedPlan.title}</strong>
+              <p className="mb-0 small mt-1">{dossier.validatedPlan.summary}</p>
+            </div>
+          ) : (
+            <p className="mb-0 text-muted">Aucun plan validé. Consultez l'onglet "Plan de Sevrage IA".</p>
+          )}
+        </div>
+        <div className="doctor-overview-card">
+          <span className="profile-data-label">Dernier Rapport Médical</span>
+          {medicalReports.length > 0 ? (
+            <div className="mt-2">
+              <strong className="d-block">{medicalReports[0].title}</strong>
+              <p className="mb-0 small text-secondary">{formatDate(medicalReports[0].consultationDate)} · {medicalReports[0].tobaccoConsumptionDaily} cig/j</p>
+              <button type="button" className="btn btn-link btn-sm p-0 mt-1" onClick={() => setSelectedPatientView("medical-reports")}>Voir tout l'historique</button>
+            </div>
+          ) : (
+            <p className="mb-0 text-muted">Aucun rapport. Effectuez un bilan depuis l'agenda.</p>
+          )}
+        </div>
       </div>
     </>
   );
@@ -629,9 +671,70 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       </div>
       <div className="doctor-dossier-section">
         <strong>Plans IA candidats</strong>
-        {safeList(dossier.clinicalIntelligence?.planCandidates).length === 0 ? <p className="muted-text mb-0 mt-3">Aucun plan candidat disponible.</p> : <div className="doctor-plan-stack mt-3">{safeList(dossier.clinicalIntelligence?.planCandidates).map((plan) => <div key={plan.id} className="doctor-plan-card"><div className="doctor-plan-card-head"><div><span className="profile-data-label">{plan.track}</span><strong>{plan.title}</strong></div><span className="doctor-status-chip status-pending">IA</span></div><p>{plan.rationale}</p><ul>{safeList(plan.steps).map((step) => <li key={step}>{step}</li>)}</ul><textarea className="form-control" rows="2" placeholder="Note medecin avant validation" value={planNotes[plan.id] || ""} onChange={(e) => setPlanNotes((previous) => ({ ...previous, [plan.id]: e.target.value }))} /><div className="doctor-card-actions"><button type="button" className="btn btn-dark" onClick={() => validatePlan(plan.id)}>Valider ce plan</button></div></div>)}</div>}
+        {safeList(dossier.clinicalIntelligence?.planCandidates).length === 0 ? <p className="muted-text mb-0 mt-3">Aucun plan candidat disponible.</p> : <div className="doctor-plan-stack mt-3">{safeList(dossier.clinicalIntelligence?.planCandidates).map((plan) => (
+          <div key={plan.id} className="doctor-plan-card">
+            <div className="doctor-plan-card-head">
+              <div>
+                <span className="profile-data-label">{plan.track}</span>
+                <strong>{plan.title}</strong>
+              </div>
+              <span className="doctor-status-chip status-pending">IA</span>
+            </div>
+            <p className="mb-2">{plan.rationale}</p>
+            {plan.scientific_reference && (
+              <div className="badge bg-primary-subtle text-primary mb-3 border border-primary-subtle d-flex align-items-center" style={{ width: 'fit-content', fontSize: '0.7rem' }}>
+                <i className="bi bi-patch-check-fill me-1"></i> Source : {plan.scientific_reference}
+              </div>
+            )}
+            <ul>{safeList(plan.steps).map((step) => <li key={step}>{step}</li>)}</ul>
+            <textarea className="form-control" rows="2" placeholder="Note medecin avant validation" value={planNotes[plan.id] || ""} onChange={(e) => setPlanNotes((previous) => ({ ...previous, [plan.id]: e.target.value }))} />
+            <div className="doctor-card-actions">
+              <button type="button" className="btn btn-dark" onClick={() => validatePlan(plan.id)}>Valider ce plan</button>
+            </div>
+          </div>
+        ))}</div>}
       </div>
     </>
+  );
+  const renderMedicalReportsSection = () => (
+    <div className="doctor-dossier-section">
+      <strong>Historique des consultations médicales</strong>
+      <p className="muted-text mb-0">Retrouvez ici tous les bilans et suivis effectués pour ce patient.</p>
+      {medicalReports.length === 0 ? (
+        <p className="muted-text mt-3 mb-0">Aucun rapport médical enregistré pour ce patient.</p>
+      ) : (
+        <div className="doctor-request-stack mt-3">
+          {medicalReports.map((report) => (
+            <div key={report.id} className="doctor-request-card">
+              <div className="doctor-request-card-head">
+                <div>
+                  <span className="profile-data-label">{formatDate(report.consultationDate)}</span>
+                  <strong>{report.title}</strong>
+                </div>
+                <span className={`doctor-status-chip ${report.reportType === 'INITIAL_ASSESSMENT' ? 'status-accepted' : 'status-info'}`}>
+                  {report.reportType === 'INITIAL_ASSESSMENT' ? 'Bilan Initial' : 'Suivi'}
+                </span>
+              </div>
+              <div className="mt-2 small text-muted">
+                 <strong>Consommation:</strong> {report.tobaccoConsumptionDaily} cig/j · <strong>CO:</strong> {report.coExpiredPpm} ppm
+              </div>
+              {report.observations && (
+                <p className="mt-2 mb-0 small text-secondary">
+                   <i className="bi bi-chat-left-text me-1"></i> {report.observations}
+                </p>
+              )}
+              {report.prescribedNrt && (
+                <div className="mt-2 d-flex flex-wrap gap-2">
+                   {report.nrtPatch && <span className="badge bg-light text-dark border">Patch {report.nrtPatchDosage}</span>}
+                   {report.nrtGum && <span className="badge bg-light text-dark border">Gommes {report.nrtGumDosage}</span>}
+                   {report.nrtLozenge && <span className="badge bg-light text-dark border">Comprimés {report.nrtLozengeDosage}</span>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 
   const renderAppointmentsSection = () => (
@@ -654,6 +757,8 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       case "journal": return renderJournalSection();
       case "conversation": return renderConversationSection();
       case "ai": return renderAiSection();
+      case "medical-reports": return renderMedicalReportsSection();
+      case "medical-guidance": return <ClinicalGuidelinesSearch />;
       case "appointments": return renderAppointmentsSection();
       default: return renderOverview();
     }
@@ -661,6 +766,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   return (
     <div className="container py-4 app-shell">
+      {(loading || dossierLoading) && <LungLoader text={dossierLoading ? "Chargement du dossier patient..." : "Chargement de l'espace medecin..."} />}
       <div className="profile-page-header">
         <div>
           <div className="hero-kicker">Espace medecin</div>

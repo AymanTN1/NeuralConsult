@@ -5716,11 +5716,110 @@ textarea.form-control:focus {
 
 .appointment-calendar-weekdays span {
   text-align: center;
-  font-size: 0.82rem;
+}
+
+.medical-section-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.medical-report-container .form-label {
+  color: #4a5568;
+  margin-bottom: 0.25rem;
+}
+
+.medical-report-container .input-group-text {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.medical-report-container .btn-outline-secondary {
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.medical-report-container .card {
+  transition: transform 0.2s;
+}
+
+.medical-report-container .card:hover {
+  transform: translateY(-2px);
+}
+
+/* LUNG BREATHING LOADER */
+.lung-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.lung-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.lung-left, .lung-right {
+  width: 45px;
+  height: 80px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
+  border-radius: 50% 50% 20% 80% / 40% 40% 60% 60%;
+  position: absolute;
+  animation: breathe 3s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.lung-left {
+  left: 10px;
+  transform-origin: right bottom;
+}
+
+.lung-right {
+  right: 10px;
+  transform-origin: left bottom;
+  transform: scaleX(-1);
+  animation: breathe-right 3s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.8) rotate(-5deg); opacity: 0.6; }
+  50% { transform: scale(1.1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes breathe-right {
+  0%, 100% { transform: scaleX(-1) scale(0.8) rotate(-5deg); opacity: 0.6; }
+  50% { transform: scaleX(-1) scale(1.1) rotate(0deg); opacity: 1; }
+}
+
+.loading-text {
+  margin-top: 2rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #486581;
+  color: #1e3a8a;
+  letter-spacing: 1px;
   text-transform: uppercase;
+  font-size: 0.9rem;
+  animation: pulse-text 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .appointment-calendar-day {
@@ -7092,3 +7191,273 @@ body {
     transform: translateX(0);
   }
 }
+
+/* ============================================================
+   CIN LIVE SCANNER MODAL
+   ============================================================ */
+
+.cin-scanner-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: cinModalIn 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+
+@keyframes cinModalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.cin-scanner-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(6px);
+}
+
+.cin-scanner-container {
+  position: relative;
+  z-index: 1;
+  width: min(900px, 100%);
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.cin-scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.cin-scanner-header h3 {
+  margin: 0 0 0.25rem;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.cin-scanner-header p {
+  margin: 0;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+}
+
+.cin-scanner-close {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.cin-scanner-close:hover { background: rgba(255,255,255,0.25); }
+
+.cin-scanner-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cin-scanner-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cin-scanner-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Status badge */
+.cin-scanner-status-badge {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.15);
+  white-space: nowrap;
+  transition: all 0.3s;
+}
+
+.cin-scanner-status-badge.is-success {
+  background: rgba(5, 150, 105, 0.85);
+  border-color: #10b981;
+}
+.cin-scanner-status-badge.is-scanning {
+  background: rgba(30, 64, 175, 0.85);
+  border-color: #3b82f6;
+}
+.cin-scanner-status-badge.is-error {
+  background: rgba(185, 28, 28, 0.85);
+  border-color: #ef4444;
+}
+
+.cin-scanner-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cinSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes cinSpin { to { transform: rotate(360deg); } }
+
+/* Progress */
+.cin-scanner-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.15);
+}
+.cin-scanner-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  transition: width 0.3s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Frozen snapshot */
+.cin-scanner-frozen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+}
+.cin-scanner-snapshot {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  opacity: 0.7;
+  filter: brightness(0.8);
+}
+
+/* Result panel */
+.cin-scanner-result-panel {
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(180deg, #0f172a, #1e293b);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.cin-scanner-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 600px) {
+  .cin-scanner-result-grid { grid-template-columns: 1fr; }
+}
+
+.cin-scanner-result-field {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+.cin-scanner-result-field span {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.3rem;
+}
+.cin-scanner-result-field strong {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.cin-scanner-result-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Error panel */
+.cin-scanner-error-panel {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+  text-align: center;
+}
+.cin-scanner-error-panel i {
+  font-size: 2.5rem;
+  color: #ef4444;
+}
+
+/* Guide text */
+.cin-scanner-guide {
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+  background: rgba(0,0,0,0.2);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.cin-scanner-guide i { color: #fbbf24; }
+
+/* CIN Scanner — counting-down badge */
+.cin-scanner-status-badge.is-ok-counting {
+  background: rgba(5, 150, 105, 0.85);
+  border-color: #22c55e;
+}
+
+/* NeuralConsult Official News Bot Styles */
+.social-space-avatar-wrapper { position: relative; display: inline-flex; }
+.social-verified-badge { position: absolute; bottom: -2px; right: -2px; color: #0d6efd; background: white; border-radius: 50%; font-size: 1.1rem; line-height: 1; border: 2px solid white; z-index: 2; }
+.social-space-post-author-row { display: flex; align-items: center; }
+.social-blog-badge { font-size: 0.65rem; letter-spacing: 0.5px; padding: 4px 8px; border-radius: 4px; font-weight: 700; background: linear-gradient(135deg, #0d6efd 0%, #00d2ff 100%) !important; border: none; }
+.social-blog-footer { padding: 0 16px 12px; }
+.social-blog-footer .btn-outline-primary { border-radius: 8px; font-weight: 600; transition: all 0.2s ease; }
+.social-blog-footer .btn-outline-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15); }
+.social-space-post:has(.social-blog-badge) { border-left: 4px solid #0d6efd; background: linear-gradient(to right, rgba(13, 110, 253, 0.02), white); }
+

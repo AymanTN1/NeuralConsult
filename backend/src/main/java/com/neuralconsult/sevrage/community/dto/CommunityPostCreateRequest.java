@@ -2,5 +2,12 @@ package com.neuralconsult.sevrage.community.dto;
 
 import java.util.UUID;
 
-public record CommunityPostCreateRequest(String content, UUID serverId, String imageUrl) {
+public record CommunityPostCreateRequest(
+    String content,
+    UUID serverId,
+    String imageUrl,
+    String postType,
+    String sourceUrl,
+    String sourceLabel
+) {
 }

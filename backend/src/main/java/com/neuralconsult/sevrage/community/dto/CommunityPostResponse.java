@@ -15,6 +15,9 @@ public record CommunityPostResponse(
     Instant createdAt,
     Map<String, Long> reactions,
     String myReaction,
-    List<CommunityCommentResponse> comments
+    List<CommunityCommentResponse> comments,
+    String postType,
+    String sourceUrl,
+    String sourceLabel
 ) {
 }

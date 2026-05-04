@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISIC · Veille Sportive</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Syne:wght@700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    :root,
+    [data-theme="dark"] {
+      --bg: #08090E;
+      --bg2: #0F1019;
+      --bg3: #161724;
+      --panel: #1C1D2B;
+      --panel2: #252640;
+      --border: rgba(255, 255, 255, .07);
+      --border2: rgba(255, 255, 255, .13);
+      --fire: #FF4C00;
+      --fire2: #FF7A35;
+      --gold: #FFB800;
+      --lime: #7EE080;
+      --ice: #4EC9F7;
+      --text: #EEEEF5;
+      --text2: #9A9BB5;
+      --text3: #52536A;
+      --glow: 0 0 20px rgba(255, 76, 0, .3);
+      --card-hover: #1E1F30;
+      --topbg: rgba(8, 9, 14, .88);
+      --chart-grid: rgba(255, 255, 255, .06);
+    }
+
+    [data-theme="light"] {
+      --bg: #F2F0EB;
+      --bg2: #FFFFFF;
+      --bg3: #E9E7E1;
+      --panel: #F8F7F3;
+      --panel2: #EDEBE5;
+      --border: rgba(0, 0, 0, .08);
+      --border2: rgba(0, 0, 0, .13);
+      --fire: #D93A00;
+      --fire2: #FF5722;
+      --gold: #9B6A00;
+      --lime: #2D7A30;
+      --ice: #0077AA;
+      --text: #111209;
+      --text2: #4A4A3A;
+      --text3: #A09D90;
+      --glow: 0 0 16px rgba(217, 58, 0, .18);
+      --card-hover: #F0EDE6;
+      --topbg: rgba(242, 240, 235, .9);
+      --chart-grid: rgba(0, 0, 0, .07);
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background .3s, color .3s
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh
+    }
+
+    .sidebar {
+      width: 64px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.25rem 0;
+      gap: 4px;
+      z-index: 100;
+    }
+
+    .s-logo {
+      width: 38px;
+      height: 38px;
+      background: var(--fire);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: .8rem;
+      color: #fff;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--glow);
+    }
+
+    .nav-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      position: relative;
+    }
+
+    .nav-icon.on {
+      background: var(--panel2);
+      border-color: rgba(255, 76, 0, .4)
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      background: var(--topbg);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 58px;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .topbar-brand {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem
+    }
+
+    .topbar-brand span {
+      color: var(--fire)
+    }
+
+    .ticker-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 26px
+    }
+
+    .ticker {
+      display: flex;
+      gap: 2.5rem;
+      align-items: center;
+      animation: ticker 35s linear infinite;
+      white-space: nowrap
+    }
+
+    @keyframes ticker {
+      from {
+        transform: translateX(0)
+      }
+
+      to {
+        transform: translateX(-50%)
+      }
+    }
+
+    .content {
+      padding: 1.5rem;
+      flex: 1
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 1.5rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px
+    }
+
+    .tab {
+      flex: 1;
+      padding: .6rem 1rem;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: .82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+      color: var(--text3);
+      border: none;
+      background: transparent;
+    }
+
+    .tab.on {
+      background: var(--fire);
+      color: #fff;
+      box-shadow: var(--glow)
+    }
+
+    .panel {
+      display: none
+    }
+
+    .panel.on {
+      display: block
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1.5rem
+    }
+
+    .kpi-cell {
+      background: var(--bg2);
+      padding: 1.2rem 1.5rem
+    }
+
+    .kpi-lbl {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: .68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: .4rem
+    }
+
+    .kpi-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2.6rem;
+      font-weight: 900;
+      line-height: 1
+    }
+
+    .filters {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.5rem
+    }
+
+    .fld {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+      flex: 1;
+      min-width: 140px
+    }
+
+    .fld label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: .67rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text3)
+    }
+
+    .fld select,
+    .fld input {
+      padding: .55rem .9rem;
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      color: var(--text)
+    }
+
+    .btn {
+      padding: .6rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer
+    }
+
+    .btn-fire {
+      background: var(--fire);
+      color: #fff
+    }
+
+    .date-group {
+      margin-bottom: 2rem
+    }
+
+    .date-label {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: .85rem;
+      padding: .6rem 1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem
+    }
+
+    .date-articles {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid var(--border);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    @media (min-width: 800px) {
+      .card.featured {
+        grid-column: span 2;
+      }
+
+      .card.featured .card-image {
+        height: 280px;
+      }
+    }
+
+    .card-image {
+      width: 100%;
+      height: 200px;
+      position: relative;
+      background: var(--bg3);
+    }
+
+    .card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-gradient {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .card-tags {
+      position: absolute;
+      top: 0.8rem;
+      left: 0.8rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .card-tag {
+      background: #007AFF;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      text-transform: capitalize;
+    }
+
+    .card-tag.breaking {
+      background: #FF3B30;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .card-img-meta {
+      position: absolute;
+      bottom: 0.8rem;
+      left: 0.8rem;
+      right: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .source-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .card-body {
+      padding: 1.2rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-family: 'Barlow', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      line-height: 1.35;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .card.featured .card-title {
+      font-size: 1.6rem;
+    }
+
+    .card-summary {
+      font-size: 0.95rem;
+      color: var(--text3);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 0.8rem;
+      color: var(--text3);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .action-btn:hover {
+      color: var(--text);
+    }
+
+    .lire-plus {
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .lire-plus:hover {
+      background: var(--border);
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem
+    }
+
+    .chart-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem
+    }
+
+    .chart-box.full {
+      grid-column: 1/-1
+    }
+
+    .report-bar {
+      display: flex;
+      gap: .65rem;
+      align-items: center;
+      background: rgba(255, 184, 0, .06);
+      border: 1px solid rgba(255, 184, 0, .18);
+      border-radius: 8px;
+      padding: .8rem 1.2rem;
+      margin-bottom: 1.5rem
+    }
+
+    .rpt-btn {
+      padding: .28rem .8rem;
+      border: 1px solid rgba(255, 184, 0, .3);
+      border-radius: 4px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: .72rem;
+      color: var(--gold);
+      text-decoration: none
+    }
+
+    .source-avatar-fallback {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--fire), var(--fire2));
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      flex-shrink: 0;
+    }
+
+    .card-image.card-image-fallback {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top left, rgba(255, 184, 0, 0.24), transparent 32%),
+        linear-gradient(135deg, rgba(255, 76, 0, 0.22), rgba(78, 201, 247, 0.18));
+    }
+
+    .card-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.16);
+      letter-spacing: 0.08em;
+      pointer-events: none;
+    }
+
+    .report-status {
+      color: var(--text2);
+      margin-bottom: 1rem;
+      min-height: 1.2rem;
+      font-size: .92rem;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .report-card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .015));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .report-media {
+      height: 160px;
+      background:
+        radial-gradient(circle at top left, rgba(255, 184, 0, 0.24), transparent 36%),
+        linear-gradient(135deg, rgba(255, 76, 0, 0.2), rgba(78, 201, 247, 0.16));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .report-media::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(8, 9, 14, 0.85), transparent 65%);
+      pointer-events: none;
+    }
+
+    .report-media-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.18);
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+
+    .report-body {
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .85rem;
+      flex: 1;
+    }
+
+    .report-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+    }
+
+    .report-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: rgba(255, 255, 255, .04);
+      padding: .28rem .65rem;
+      font-size: .76rem;
+      color: var(--text2);
+    }
+
+    .report-chip.primary {
+      color: #fff;
+      background: rgba(255, 76, 0, .18);
+      border-color: rgba(255, 76, 0, .26);
+    }
+
+    .report-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--text);
+    }
+
+    .report-text {
+      color: var(--text2);
+      font-size: .95rem;
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .report-actions {
+      display: flex;
+      gap: .65rem;
+      flex-wrap: wrap;
+      margin-top: .15rem;
+    }
+
+    .report-link-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: .55rem .9rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      background: rgba(255, 255, 255, .04);
+      color: var(--text);
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .86rem;
+    }
+
+    .report-link-btn.primary {
+      border-color: rgba(255, 184, 0, .22);
+      background: rgba(255, 184, 0, .1);
+      color: var(--gold);
+    }
+
+    .report-link-btn:hover {
+      background: rgba(255, 255, 255, .08);
+    }
+
+    .empty-state {
+      padding: 1.4rem;
+      border-radius: 12px;
+      border: 1px dashed var(--border2);
+      color: var(--text2);
+      background: rgba(255, 255, 255, .02);
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-row,
+      .charts-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .sidebar {
+        display: none;
+      }
+
+      .topbar {
+        padding: 0 1rem;
+      }
+
+      .content {
+        padding: 1rem;
+      }
+
+      .tabs,
+      .report-bar {
+        flex-wrap: wrap;
+      }
+
+      .kpi-row,
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .date-articles,
+      .report-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <nav class="sidebar">
+      <div class="s-logo">IS</div>
+      <div class="nav-icon on" data-tab="articles" title="Articles" onclick="showTab('articles')">📋</div>
+      <div class="nav-icon" data-tab="stats" title="Statistiques" onclick="showTab('stats')">📊</div>
+      <div class="nav-icon" data-tab="report" title="Rapport IA" onclick="showTab('report')">🤖</div>
+    </nav>
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-brand">ISIC · <span>Veille Sport</span></div>
+        <div class="ticker-wrap">
+          <div class="ticker" id="ticker"></div>
+        </div>
+        <div class="topbar-right">
+          <div id="topDate" style="font-size:.8rem;color:var(--text3)"></div>
+        </div>
+      </header>
+      <div class="content">
+        <div class="tabs">
+          <button class="tab on" id="tab-articles" data-tab="articles" onclick="showTab('articles')">📋 Articles</button>
+          <button class="tab" id="tab-stats" data-tab="stats" onclick="showTab('stats')">📊 Statistiques</button>
+          <button class="tab" id="tab-report" data-tab="report" onclick="showTab('report')">🤖 Rapports</button>
+        </div>
+        <div class="panel on" id="panel-articles">
+          <div class="kpi-row">
+            <div class="kpi-cell">
+              <div class="kpi-lbl">Articles</div>
+              <div class="kpi-val" id="kA">—</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-lbl">Catégories</div>
+              <div class="kpi-val" id="kC">—</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-lbl">Sources</div>
+              <div class="kpi-val" id="kS">—</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-lbl">Crédibilité</div>
+              <div class="kpi-val" id="kCr">—</div>
+            </div>
+          </div>
+          <div class="filters">
+            <div class="fld"><label>Catégorie</label><select id="fCat">
+                <option value="">Toutes</option>
+              </select></div>
+            <div class="fld"><label>Source</label><select id="fSrc">
+                <option value="">Toutes</option>
+              </select></div>
+            <div class="fld"><label>Recherche</label><input type="text" id="fSearch" placeholder="Mot-clé…"></div>
+            <button class="btn btn-fire" onclick="applyFilters()">Filtrer</button>
+          </div>
+          <div id="articlesWrap"></div>
+        </div>
+        <div class="panel" id="panel-stats">
+          <div class="charts-grid">
+            <div class="chart-box"><canvas id="chartCat"></canvas></div>
+            <div class="chart-box"><canvas id="chartSrc"></canvas></div>
+            <div class="chart-box full"><canvas id="chartDate"></canvas></div>
+          </div>
+        </div>
+        <div class="panel" id="panel-report">
+          <div class="report-bar">
+            <span style="font-weight:700;color:var(--gold)">RAPPORTS QUOTIDIENS</span>
+            <a class="rpt-btn" href="/reports/index_latest.html" target="_blank">Index global</a>
+            <button class="btn btn-fire" onclick="generateDailyReports()"
+              style="margin-left:auto;padding:.4rem 1rem;font-size:.75rem">▶ Générer</button>
+          </div>
+          <div id="reportStatus" class="report-status"></div>
+          <div id="catReportGrid" class="report-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const ARTICLES_API = '/api/v1/articles?page=1&page_size=5000';
+
+    const BREAKING_WORDS = ['urgent', 'officiel', 'breaking', 'alerte', 'officiel'];
+    const chartRefs = { cat: null, src: null, date: null };
+    let all = [];
+    let filtered = [];
+    let loadedSource = '';
+    let reportsIndexFiles = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('topDate').textContent = new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+      bindFilters();
+      loadData();
+      loadReportFiles();
+    });
+
+    function bindFilters() {
+      document.getElementById('fCat').addEventListener('change', applyFilters);
+      document.getElementById('fSrc').addEventListener('change', applyFilters);
+      document.getElementById('fSearch').addEventListener('input', applyFilters);
+    }
+
+    async function loadData() {
+      const status = document.getElementById('reportStatus');
+      status.textContent = 'Chargement des articles en cours...';
+      try {
+        const payload = await fetchArticlesFromApi();
+        loadedSource = 'API backend SQLAlchemy';
+        all = normalizeApiArticles(payload.items || []);
+        fillFilters();
+        applyFilters();
+        renderTicker();
+        renderReportCards();
+        status.textContent = `Donnees chargees depuis ${loadedSource}.`;
+      } catch (error) {
+        all = [];
+        filtered = [];
+        renderArticles();
+        renderReportCards();
+        updateKpis();
+        destroyCharts();
+        document.getElementById('ticker').innerHTML = '';
+        status.textContent = error.message;
+      }
+    }
+
+    async function fetchArticlesFromApi() {
+      const response = await fetch(ARTICLES_API, { cache: 'no-store' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.detail || 'Chargement API impossible.');
+      }
+      return payload;
+    }
+
+    function normalizeApiArticles(items) {
+      const unique = new Map();
+      items.forEach(item => {
+        const title = polishText(item.title);
+        if (!title) {
+          return;
+        }
+
+        const dateValue = cleanValue(item.date || item.published_at || '');
+        const article = {
+          id: item.id,
+          title,
+          source: polishText(item.source || item.source_meta?.name || 'Source inconnue'),
+          cat: polishText(item.category || 'Autre'),
+          date: dateValue,
+          dateLabel: formatDateLabel(dateValue),
+          resume: buildExcerpt(item.summary, title),
+          url: cleanValue(item.url),
+          image: normalizeImageUrl(item.image_url),
+          credibility: Number.parseFloat(item.credibility) || 0,
+          sortDate: getSortTimestamp(dateValue)
+        };
+
+        const key = `${article.title}|${article.source}|${article.url}`.toLowerCase();
+        if (!unique.has(key)) {
+          unique.set(key, article);
+        }
+      });
+
+      return Array.from(unique.values()).sort((left, right) => {
+        if (right.sortDate !== left.sortDate) {
+          return right.sortDate - left.sortDate;
+        }
+        if (Number(Boolean(right.image)) !== Number(Boolean(left.image))) {
+          return Number(Boolean(right.image)) - Number(Boolean(left.image));
+        }
+        return left.title.localeCompare(right.title, 'fr');
+      });
+    }
+
+    async function fetchFirstAvailableCsv(sources) {
+      let lastError = 'Aucune source de donnees disponible.';
+      for (const source of sources) {
+        try {
+          const response = await fetch(source, { cache: 'no-store' });
+          if (!response.ok) {
+            lastError = `Lecture impossible pour ${source}`;
+            continue;
+          }
+          const text = await response.text();
+          if (!text.trim()) {
+            lastError = `Le fichier ${source} est vide.`;
+            continue;
+          }
+          return { text, source };
+        } catch (error) {
+          lastError = `Erreur de chargement pour ${source}`;
+        }
+      }
+      throw new Error(lastError);
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = '';
+      let inQuotes = false;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            value += '"';
+            index += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+          continue;
+        }
+
+        if (char === ',' && !inQuotes) {
+          row.push(value);
+          value = '';
+          continue;
+        }
+
+        if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && next === '\n') {
+            index += 1;
+          }
+          row.push(value);
+          if (row.some(cell => cell !== '')) {
+            rows.push(row);
+          }
+          row = [];
+          value = '';
+          continue;
+        }
+
+        value += char;
+      }
+
+      if (value !== '' || row.length) {
+        row.push(value);
+        if (row.some(cell => cell !== '')) {
+          rows.push(row);
+        }
+      }
+
+      return rows;
+    }
+
+    function normalizeArticles(rows) {
+      if (!rows.length) {
+        return [];
+      }
+
+      const headers = rows[0].map(header => normalizeHeader(header));
+      const headerIndex = headers.reduce((acc, header, index) => {
+        if (!acc[header]) {
+          acc[header] = [];
+        }
+        acc[header].push(index);
+        return acc;
+      }, {});
+
+      const unique = new Map();
+      rows.slice(1).forEach((row, index) => {
+        const title = getCell(row, headerIndex, ['title', 'titre']);
+        if (!title) {
+          return;
+        }
+
+        const item = {
+          id: index,
+          title: polishText(title),
+          source: polishText(getCell(row, headerIndex, ['source']) || 'Source inconnue'),
+          cat: polishText(getCell(row, headerIndex, ['category', 'categorie', 'discipline']) || 'Autre'),
+          date: getCell(row, headerIndex, ['date']),
+          dateLabel: formatDateLabel(getCell(row, headerIndex, ['date'])),
+          resume: buildExcerpt(
+            getCell(row, headerIndex, ['summary', 'summary.1', 'resume', 'resume.1']),
+            title
+          ),
+          url: getCell(row, headerIndex, ['url', 'lien']),
+          image: normalizeImageUrl(
+            getCell(row, headerIndex, ['image', 'image_url', 'image.1', 'image_url.1'])
+          ),
+          credibility: Number.parseFloat(getCell(row, headerIndex, ['credibility'])) || 0,
+          sortDate: getSortTimestamp(getCell(row, headerIndex, ['date']))
+        };
+
+        const key = `${item.title}|${item.source}|${item.url}`.toLowerCase();
+        if (!unique.has(key)) {
+          unique.set(key, item);
+        }
+      });
+
+      return Array.from(unique.values()).sort((left, right) => {
+        if (right.sortDate !== left.sortDate) {
+          return right.sortDate - left.sortDate;
+        }
+        if (Number(Boolean(right.image)) !== Number(Boolean(left.image))) {
+          return Number(Boolean(right.image)) - Number(Boolean(left.image));
+        }
+        return left.title.localeCompare(right.title, 'fr');
+      });
+    }
+
+    function normalizeHeader(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function getCell(row, headerIndex, aliases) {
+      for (const alias of aliases) {
+        const positions = headerIndex[alias] || [];
+        for (const position of positions) {
+          const value = cleanValue(row[position]);
+          if (value) {
+            return value;
+          }
+        }
+      }
+      return '';
+    }
+
+    function cleanValue(value) {
+      const text = String(value ?? '').trim().replace(/^"|"$/g, '');
+      return ['nan', 'none', 'null', 'undefined'].includes(text.toLowerCase()) ? '' : text;
+    }
+
+    function normalizeImageUrl(value) {
+      const text = cleanValue(value);
+      if (!text) {
+        return '';
+      }
+      if (/^https?:\/\//i.test(text) || text.startsWith('/images/')) {
+        return text;
+      }
+      const normalized = text.replace(/\\/g, '/')
+        .replace(/^data\/images\//i, '')
+        .replace(/^images\//i, '');
+      return `/images/${normalized.replace(/^\/+/, '')}`;
+    }
+
+    function buildExcerpt(value, fallback) {
+      const text = polishText(value);
+      const source = text && text !== fallback ? text : polishText(fallback);
+      return source.length > 220 ? `${source.slice(0, 219).trim()}…` : source;
+    }
+
+    function polishText(value) {
+      return cleanValue(value)
+        .replace(/\s+/g, ' ')
+        .replace(/([,;:!?])([^\s])/g, '$1 $2')
+        .replace(/([a-zà-öø-ÿ])([A-ZÀ-ÖØ-Þ])/g, '$1 $2')
+        .replace(/([0-9])([A-Za-zÀ-ÖØ-öø-ÿ])/g, '$1 $2')
+        .replace(/([A-Za-zÀ-ÖØ-öø-ÿ])([0-9])/g, '$1 $2')
+        .trim();
+    }
+
+    function getSortTimestamp(value) {
+      const text = cleanValue(value);
+      if (!text) {
+        return 0;
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+        const date = new Date(`${text.slice(0, 10)}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+      }
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
+        const [day, month, year] = text.split('/');
+        const date = new Date(`${year}-${month}-${day}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+      }
+      return 0;
+    }
+
+    function formatDateLabel(value) {
+      const text = cleanValue(value);
+      if (!text) {
+        return 'Date non renseignee';
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+        const date = new Date(`${text.slice(0, 10)}T00:00:00`);
+        if (!Number.isNaN(date.getTime())) {
+          return date.toLocaleDateString('fr-FR', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+        }
+      }
+      return text;
+    }
+
+    function fillFilters() {
+      const categorySelect = document.getElementById('fCat');
+      const sourceSelect = document.getElementById('fSrc');
+      resetSelect(categorySelect, 'Toutes');
+      resetSelect(sourceSelect, 'Toutes');
+
+      Array.from(new Set(all.map(article => article.cat))).sort((a, b) => a.localeCompare(b, 'fr'))
+        .forEach(value => categorySelect.add(new Option(value, value)));
+      Array.from(new Set(all.map(article => article.source))).sort((a, b) => a.localeCompare(b, 'fr'))
+        .forEach(value => sourceSelect.add(new Option(value, value)));
+    }
+
+    function resetSelect(select, label) {
+      select.innerHTML = '';
+      select.add(new Option(label, ''));
+    }
+
+    function applyFilters() {
+      const category = document.getElementById('fCat').value;
+      const source = document.getElementById('fSrc').value;
+      const query = document.getElementById('fSearch').value.trim().toLowerCase();
+
+      filtered = all.filter(article => {
+        const matchesCategory = !category || article.cat === category;
+        const matchesSource = !source || article.source === source;
+        const matchesQuery = !query || [article.title, article.resume, article.source, article.cat]
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+        return matchesCategory && matchesSource && matchesQuery;
+      });
+
+      renderArticles();
+      updateKpis();
+      renderCharts();
+      renderTicker();
+      renderReportCards();
+    }
+
+    function renderArticles() {
+      const wrap = document.getElementById('articlesWrap');
+      if (!filtered.length) {
+        wrap.innerHTML = '<div class="empty-state">Aucun article ne correspond aux filtres actuels.</div>';
+        return;
+      }
+
+      const groups = [];
+      const grouped = new Map();
+      filtered.forEach(article => {
+        if (!grouped.has(article.dateLabel)) {
+          grouped.set(article.dateLabel, []);
+          groups.push(article.dateLabel);
+        }
+        grouped.get(article.dateLabel).push(article);
+      });
+
+      wrap.innerHTML = groups.map((label, groupIndex) => `
+        <section class="date-group">
+          <div class="date-label">${escapeHtml(label)}</div>
+          <div class="date-articles">
+            ${grouped.get(label).map((article, articleIndex) => renderArticleCard(article, groupIndex === 0 && articleIndex === 0)).join('')}
+          </div>
+        </section>
+      `).join('');
+    }
+
+    function renderArticleCard(article, featured) {
+      const isFeatured = featured ? 'featured' : '';
+      const tagHtml = article.cat ? `<div class="card-tag">${escapeHtml(article.cat)}</div>` : '';
+      const breakingHtml = BREAKING_WORDS.some(word => article.title.toLowerCase().includes(word))
+        ? '<div class="card-tag breaking">Urgent</div>'
+        : '';
+      const initials = getInitials(article.source);
+      const imageHtml = article.image
+        ? `
+          <div class="card-image">
+            <div class="card-placeholder">${escapeHtml(initials)}</div>
+            <img src="${escapeAttribute(article.image)}" alt="${escapeAttribute(article.title)}" loading="lazy" onerror="this.remove()">
+            <div class="card-gradient"></div>
+            <div class="card-tags">${tagHtml}${breakingHtml}</div>
+            <div class="card-img-meta">
+              <span class="source-avatar-fallback">${escapeHtml(initials)}</span>
+              <span>${escapeHtml(article.source)}</span>
+              <span style="opacity:0.6">•</span>
+              <span>${escapeHtml(article.dateLabel)}</span>
+            </div>
+          </div>`
+        : `
+          <div class="card-image card-image-fallback">
+            <div class="card-placeholder">${escapeHtml(initials)}</div>
+            <div class="card-gradient"></div>
+            <div class="card-tags">${tagHtml}${breakingHtml}</div>
+            <div class="card-img-meta">
+              <span class="source-avatar-fallback">${escapeHtml(initials)}</span>
+              <span>${escapeHtml(article.source)}</span>
+              <span style="opacity:0.6">•</span>
+              <span>${escapeHtml(article.dateLabel)}</span>
+            </div>
+          </div>`;
+
+      return `
+        <article class="card ${isFeatured}" ${article.url ? `onclick="window.open('${escapeJsString(article.url)}','_blank')"` : ''}>
+          ${imageHtml}
+          <div class="card-body">
+            ${!article.image ? `<div class="card-tags" style="position:static; margin-bottom:1rem;">${tagHtml}${breakingHtml}</div>` : ''}
+            <div class="card-title">${escapeHtml(article.title)}</div>
+            <div class="card-summary">${escapeHtml(article.resume)}</div>
+            <div class="card-footer" onclick="event.stopPropagation()">
+              <div class="card-actions">
+                <div class="action-btn">${escapeHtml(article.source)}</div>
+                <div class="action-btn">${article.credibility ? `Fiabilite ${article.credibility.toFixed(1)}/5` : 'Fiabilite N/A'}</div>
+              </div>
+              <button class="lire-plus" onclick="${article.url ? `window.open('${escapeJsString(article.url)}','_blank')` : 'return false'}">Lire plus</button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function updateKpis() {
+      const list = filtered;
+      const avgCredibility = list.length
+        ? list.reduce((total, article) => total + (article.credibility || 0), 0) / list.length
+        : 0;
+
+      document.getElementById('kA').textContent = String(list.length);
+      document.getElementById('kC').textContent = String(new Set(list.map(article => article.cat)).size);
+      document.getElementById('kS').textContent = String(new Set(list.map(article => article.source)).size);
+      document.getElementById('kCr').textContent = list.length ? `${avgCredibility.toFixed(1)}/5` : '—';
+    }
+
+    function renderTicker() {
+      const ticker = document.getElementById('ticker');
+      const items = filtered.slice(0, 12);
+      if (!items.length) {
+        ticker.innerHTML = '<span>Aucun titre disponible</span>';
+        return;
+      }
+      const content = items.map(article => `<span>${escapeHtml(article.cat)} · ${escapeHtml(article.title)}</span>`).join('');
+      ticker.innerHTML = `${content}${content}`;
+    }
+
+    function buildReportSummaries() {
+      const source = filtered;
+      const grouped = source.reduce((acc, article) => {
+        if (!acc[article.cat]) {
+          acc[article.cat] = [];
+        }
+        acc[article.cat].push(article);
+        return acc;
+      }, {});
+
+      return Object.entries(grouped)
+        .map(([category, articles]) => {
+          const sortedArticles = articles.slice().sort((left, right) => right.sortDate - left.sortDate);
+          const lead = sortedArticles.find(article => article.image) || sortedArticles[0];
+          const sources = Array.from(new Set(sortedArticles.map(article => article.source)));
+          const summary = createDailySummary(category, sortedArticles, sources);
+          return {
+            category,
+            count: sortedArticles.length,
+            sources: sources.length,
+            summary,
+            image: lead?.image || '',
+            dateLabel: mostFrequent(sortedArticles.map(article => article.dateLabel)) || 'Aujourd\'hui',
+            reportHref: `/reports/${slugify(category)}_latest.html`
+          };
+        })
+        .sort((left, right) => right.count - left.count || left.category.localeCompare(right.category, 'fr'));
+    }
+
+    function createDailySummary(category, articles, sources) {
+      const intro = `${articles.length} article${articles.length > 1 ? 's' : ''} aujourd'hui pour ${category}.`;
+      const firstHeadline = articles[0]?.title ? ` Temps fort: ${trimText(articles[0].title, 86)}.` : '';
+      const secondHeadline = articles[1]?.title ? ` Suivi aussi: ${trimText(articles[1].title, 86)}.` : '';
+      const sourceLine = sources.length ? ` Sources principales: ${sources.slice(0, 3).join(', ')}.` : '';
+      return `${intro}${firstHeadline}${secondHeadline}${sourceLine}`.trim();
+    }
+
+    function renderReportCards() {
+      const grid = document.getElementById('catReportGrid');
+      const summaries = buildReportSummaries();
+      if (!summaries.length) {
+        grid.innerHTML = '<div class="empty-state">Aucune categorie disponible pour le rapport du jour.</div>';
+        return;
+      }
+
+      grid.innerHTML = summaries.map(card => `
+        <article class="report-card">
+          <div class="report-media">
+            ${card.image
+              ? `<img src="${escapeAttribute(card.image)}" alt="${escapeAttribute(card.category)}" loading="lazy" onerror="this.remove()">`
+              : `<div class="report-media-fallback">${escapeHtml(card.category.slice(0, 1).toUpperCase())}</div>`
+            }
+          </div>
+          <div class="report-body">
+            <div class="report-chip-row">
+              <span class="report-chip primary">${escapeHtml(card.category)}</span>
+              <span class="report-chip">${card.count} articles</span>
+              <span class="report-chip">${card.sources} sources</span>
+            </div>
+            <div class="report-title">${escapeHtml(card.category)}</div>
+            <div class="report-text">${escapeHtml(card.summary)}</div>
+            <div class="report-chip-row">
+              <span class="report-chip">${escapeHtml(card.dateLabel)}</span>
+              <span class="report-chip">${reportsIndexFiles.length ? 'Rapports HTML disponibles' : 'Rapport HTML a generer'}</span>
+            </div>
+            <div class="report-actions">
+              <a class="report-link-btn primary" href="${escapeAttribute(card.reportHref)}" target="_blank" rel="noopener noreferrer">Ouvrir le rapport</a>
+              <button class="report-link-btn" onclick="focusCategory('${escapeJsString(card.category)}')">Voir les articles</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function focusCategory(category) {
+      document.getElementById('fCat').value = category;
+      showTab('articles');
+      applyFilters();
+    }
+
+    function showTab(id) {
+      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('on'));
+      document.getElementById(`panel-${id}`).classList.add('on');
+      document.querySelectorAll('.tab,.nav-icon').forEach(node => node.classList.remove('on'));
+      document.querySelectorAll(`[data-tab="${id}"]`).forEach(node => node.classList.add('on'));
+    }
+
+    async function loadReportFiles() {
+      try {
+        const response = await fetch('/api/v1/reports', { cache: 'no-store' });
+        reportsIndexFiles = response.ok ? await response.json() : [];
+      } catch (error) {
+        reportsIndexFiles = [];
+      }
+      updateReportStatus();
+    }
+
+    function updateReportStatus(message) {
+      const status = document.getElementById('reportStatus');
+      if (message) {
+        status.textContent = message;
+        return;
+      }
+      if (!all.length) {
+        status.textContent = 'Les rapports seront disponibles des que les donnees seront chargees.';
+        return;
+      }
+      const sourceLabel = loadedSource ? ` Source active: ${loadedSource}.` : '';
+      status.textContent = reportsIndexFiles.length
+        ? `${reportsIndexFiles.length} index de rapport detecte(s).${sourceLabel}`
+        : `Aucun index de rapport detecte pour le moment.${sourceLabel}`;
+    }
+
+    async function generateDailyReports() {
+      updateReportStatus('Generation des rapports en cours...');
+      try {
+        const response = await fetch('/api/v1/reports/generate', { method: 'POST' });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.detail || 'Generation du rapport impossible.');
+        }
+        await loadReportFiles();
+        updateReportStatus(`Rapports regeneres pour ${payload.count || 0} categorie(s).`);
+        renderReportCards();
+      } catch (error) {
+        updateReportStatus(error.message);
+      }
+    }
+
+    function renderCharts() {
+      if (typeof Chart === 'undefined') {
+        return;
+      }
+
+      const dataset = filtered;
+      if (!dataset.length) {
+        return;
+      }
+      destroyCharts();
+
+      const categoryCounts = countBy(dataset, article => article.cat);
+      const sourceCounts = countBy(dataset, article => article.source, 6);
+      const dateCounts = countBy(dataset, article => article.dateLabel, 7);
+
+      chartRefs.cat = new Chart(document.getElementById('chartCat'), {
+        type: 'bar',
+        data: {
+          labels: categoryCounts.labels,
+          datasets: [{
+            label: 'Articles',
+            data: categoryCounts.values,
+            backgroundColor: 'rgba(255, 76, 0, 0.72)',
+            borderRadius: 8
+          }]
+        },
+        options: chartOptions('x')
+      });
+
+      chartRefs.src = new Chart(document.getElementById('chartSrc'), {
+        type: 'doughnut',
+        data: {
+          labels: sourceCounts.labels,
+          datasets: [{
+            data: sourceCounts.values,
+            backgroundColor: [
+              'rgba(255, 76, 0, 0.8)',
+              'rgba(255, 184, 0, 0.78)',
+              'rgba(78, 201, 247, 0.78)',
+              'rgba(126, 224, 128, 0.78)',
+              'rgba(255, 122, 53, 0.78)',
+              'rgba(154, 155, 181, 0.78)'
+            ]
+          }]
+        },
+        options: chartOptions()
+      });
+
+      chartRefs.date = new Chart(document.getElementById('chartDate'), {
+        type: 'line',
+        data: {
+          labels: dateCounts.labels,
+          datasets: [{
+            label: 'Articles par date',
+            data: dateCounts.values,
+            fill: false,
+            tension: 0.3,
+            borderColor: 'rgba(78, 201, 247, 0.95)',
+            backgroundColor: 'rgba(78, 201, 247, 0.25)'
+          }]
+        },
+        options: chartOptions('x')
+      });
+    }
+
+    function destroyCharts() {
+      Object.keys(chartRefs).forEach(key => {
+        if (chartRefs[key]) {
+          chartRefs[key].destroy();
+          chartRefs[key] = null;
+        }
+      });
+    }
+
+    function chartOptions(indexAxis = 'x') {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis,
+        plugins: {
+          legend: {
+            labels: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text')
+            }
+          }
+        },
+        scales: indexAxis === 'x' ? {
+          x: {
+            ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text2') },
+            grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid') }
+          },
+          y: {
+            ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text2') },
+            grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid') }
+          }
+        } : {}
+      };
+    }
+
+    function countBy(items, resolver, limit = 8) {
+      const counter = new Map();
+      items.forEach(item => {
+        const key = resolver(item) || 'Autre';
+        counter.set(key, (counter.get(key) || 0) + 1);
+      });
+      const sorted = Array.from(counter.entries())
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, limit);
+      return {
+        labels: sorted.map(entry => entry[0]),
+        values: sorted.map(entry => entry[1])
+      };
+    }
+
+    function mostFrequent(values) {
+      const counts = countBy(values.map(value => ({ value })), item => item.value, values.length);
+      return counts.labels[0] || '';
+    }
+
+    function slugify(value) {
+      return cleanValue(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'categorie';
+    }
+
+    function trimText(value, limit) {
+      return value.length > limit ? `${value.slice(0, limit - 1).trim()}…` : value;
+    }
+
+    function getInitials(value) {
+      const parts = cleanValue(value).split(/\s+/).filter(Boolean).slice(0, 2);
+      if (!parts.length) {
+        return 'IS';
+      }
+      return parts.map(part => part[0]).join('').toUpperCase();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, '&#96;');
+    }
+
+    function escapeJsString(value) {
+      return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+  </script>
+</body>
+
+</html>

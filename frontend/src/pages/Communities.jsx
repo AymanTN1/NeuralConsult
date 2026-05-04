@@ -387,10 +387,17 @@ const Communities = () => {
   };
 
   const renderAvatar = (person, className = "social-space-avatar") => {
-    if (person?.profilePhotoUrl) {
-      return <img className={className} src={person.profilePhotoUrl} alt={userLabel(person)} />;
-    }
-    return <div className={`${className} is-fallback`}>{avatarFallback(person?.name || person?.username)}</div>;
+    const isVerified = person?.verifiedBadge;
+    return (
+      <div className="social-space-avatar-wrapper">
+        {person?.profilePhotoUrl ? (
+          <img className={className} src={person.profilePhotoUrl} alt={userLabel(person)} />
+        ) : (
+          <div className={`${className} is-fallback`}>{avatarFallback(person?.name || person?.username)}</div>
+        )}
+        {isVerified && <i className="bi bi-patch-check-fill social-verified-badge" title="Compte officiel"></i>}
+      </div>
+    );
   };
 
   const renderPostCard = (post) => {
@@ -400,7 +407,10 @@ const Communities = () => {
         <button type="button" className="social-space-post-head" onClick={() => openProfile(post.author.id)}>
           {renderAvatar(post.author)}
           <div className="social-space-post-meta">
-            <strong>{post.author.name}</strong>
+            <div className="social-space-post-author-row">
+              <strong>{post.author.name}</strong>
+              {post.postType === "OFFICIAL_NEWS" && <span className="badge bg-primary ms-2 social-blog-badge">ARTICLE OFFICIEL</span>}
+            </div>
             <span>{post.author.role} · {post.serverName} · {formatDate(post.createdAt)}</span>
           </div>
         </button>
@@ -409,6 +419,15 @@ const Communities = () => {
         {post.imageUrl && (
           <div className="social-space-post-media">
             <img src={post.imageUrl} alt={post.content || "Publication communautaire"} />
+          </div>
+        )}
+
+        {post.postType === "OFFICIAL_NEWS" && post.sourceUrl && (
+          <div className="social-blog-footer">
+            <a href={post.sourceUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm w-100 mt-2">
+              <i className="bi bi-box-arrow-up-right me-2"></i>
+              Lire l'article sur {post.sourceLabel || "la source originale"}
+            </a>
           </div>
         )}
 

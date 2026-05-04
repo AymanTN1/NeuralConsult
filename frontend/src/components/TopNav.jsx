@@ -12,7 +12,7 @@ const TopNav = () => {
       <div className="container public-nav-inner">
         <Link className="public-brand" to="/">
           <span className="public-brand-mark" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="NeuralConsult Icon" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
+            <img src="/icons/icon_Neural_Consult_severage.png" alt="NeuralConsult Icon" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
           </span>
           <span>
             <span className="public-brand-eyebrow">Accompagnement clinique</span>
