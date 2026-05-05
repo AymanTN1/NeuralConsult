@@ -1,57 +1,82 @@
-import React, { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import React from 'react';
 
-const GlassShape = ({ position, rotation, scale, geometryType }) => {
-  const meshRef = useRef();
-
-  useFrame((state, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x += delta * 0.2;
-      meshRef.current.rotation.y += delta * 0.3;
-      meshRef.current.position.y += Math.sin(state.clock.elapsedTime + position[0]) * 0.005;
-    }
-  });
-
-  return (
-    <mesh ref={meshRef} position={position} rotation={rotation} scale={scale}>
-      {geometryType === 'torus' ? (
-        <torusGeometry args={[1, 0.4, 32, 64]} />
-      ) : geometryType === 'sphere' ? (
-        <sphereGeometry args={[1, 64, 64]} />
-      ) : (
-        <octahedronGeometry args={[1, 0]} />
-      )}
-      <meshPhysicalMaterial 
-        color="#ffffff"
-        transmission={0.9}
-        opacity={1}
-        metalness={0}
-        roughness={0.1}
-        ior={1.5}
-        thickness={0.5}
-        clearcoat={1}
-        clearcoatRoughness={0.1}
-      />
-    </mesh>
-  );
-};
+const ENCOURAGEMENTS = [
+  { text: "Vos poumons vous disent merci 🫁", delay: "0s", duration: "16s", top: "15%", left: "10%", scale: "1.0" },
+  { text: "Respirez la liberté 🌬️", delay: "2s", duration: "14s", top: "42%", left: "40%", scale: "1.05" },
+  { text: "Chaque jour est une victoire ✨", delay: "4s", duration: "18s", top: "75%", left: "12%", scale: "0.95" },
+  { text: "Un souffle de vie retrouvé 💨", delay: "1s", duration: "15s", top: "28%", left: "52%", scale: "1.0" },
+  { text: "NeuralConsult à vos côtés 🩺", delay: "3s", duration: "17s", top: "60%", left: "6%", scale: "1.02" },
+  { text: "Libre et en pleine santé 🌟", delay: "5s", duration: "19s", top: "82%", left: "45%", scale: "0.98" },
+];
 
 const Auth3DScene = () => {
   return (
-    <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: 0, pointerEvents: 'none' }}>
-      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[5, 5, 5]} intensity={1.5} color="#3b82f6" />
-        <directionalLight position={[-5, -5, -5]} intensity={1} color="#60a5fa" />
-        <pointLight position={[0, 0, 0]} intensity={0.5} color="#dbeafe" />
+    <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+      {/* Background Soft Gradients */}
+      <div style={{
+        position: 'absolute',
+        top: '-10%',
+        left: '-10%',
+        width: '120%',
+        height: '120%',
+        background: 'radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%)',
+        zIndex: -1
+      }} />
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes float-around {
+          0% {
+            transform: translate(0, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate(15px, -25px) rotate(2deg);
+          }
+          66% {
+            transform: translate(-10px, 15px) rotate(-2deg);
+          }
+          100% {
+            transform: translate(0, 0) rotate(0deg);
+          }
+        }
         
-        <group position={[0, 0, 0]}>
-          <GlassShape geometryType="torus" position={[-1, 1, -1]} scale={[0.8, 0.8, 0.8]} rotation={[0.5, 0.2, 0]} />
-          <GlassShape geometryType="sphere" position={[1.5, -0.5, -2]} scale={[1.2, 1.2, 1.2]} rotation={[0, 0, 0]} />
-          <GlassShape geometryType="octahedron" position={[-1.2, -1.5, 0]} scale={[0.6, 0.6, 0.6]} rotation={[0.2, 0.8, 0.1]} />
-        </group>
-      </Canvas>
+        .floating-encouragement {
+          animation-name: float-around;
+          animation-iteration-count: infinite;
+          animation-timing-function: ease-in-out;
+          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          transition: transform 0.3s ease;
+        }
+      `}} />
+
+      {ENCOURAGEMENTS.map((item, index) => (
+        <div
+          key={index}
+          className="floating-encouragement"
+          style={{
+            position: 'absolute',
+            top: item.top,
+            left: item.left,
+            padding: '0.75rem 1.25rem',
+            borderRadius: '50px',
+            background: 'rgba(255, 255, 255, 0.65)',
+            color: '#1e3a8a',
+            fontWeight: '600',
+            fontSize: '0.9rem',
+            animationDelay: item.delay,
+            animationDuration: item.duration,
+            transform: `scale(${item.scale})`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {item.text}
+        </div>
+      ))}
     </div>
   );
 };
