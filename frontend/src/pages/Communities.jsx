@@ -478,8 +478,126 @@ const Communities = () => {
     );
   };
 
+  const renderStories = () => {
+    const storyList = [
+      { id: "story-1", name: "Dr. Amrani", avatar: "/icons/icon Neural Consult severage.jpg", active: true, isDr: true },
+      { id: "story-2", name: "Samy_Zen", avatar: "", active: true, initial: "SZ" },
+      { id: "story-3", name: "PneumoCare", avatar: "", active: false, initial: "PC" },
+      { id: "story-4", name: "Yasmine_M", avatar: "", active: true, initial: "YM" },
+      { id: "story-5", name: "Anas_S", avatar: "", active: true, initial: "AS" },
+      { id: "story-6", name: "SevrePure", avatar: "", active: false, initial: "SP" },
+    ];
+
+    return (
+      <div className="instagram-stories-bar mb-3" style={{
+        display: "flex",
+        gap: "1.2rem",
+        overflowX: "auto",
+        padding: "1rem",
+        background: "rgba(255, 255, 255, 0.8)",
+        borderRadius: "16px",
+        border: "1px solid rgba(59, 130, 246, 0.15)",
+        scrollbarWidth: "none"
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }}>
+          <div style={{
+            width: "66px",
+            height: "66px",
+            borderRadius: "50%",
+            padding: "3px",
+            background: "linear-gradient(45deg, #3b82f6, #8b5cf6, #10b981)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative"
+          }}>
+            <div style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: "50%",
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden"
+            }}>
+              {viewer?.profilePhotoUrl ? (
+                <img src={viewer.profilePhotoUrl} alt="Moi" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#3b82f6" }}>{avatarFallback(viewer?.displayName)}</div>
+              )}
+            </div>
+            <div style={{
+              position: "absolute",
+              bottom: "0",
+              right: "0",
+              background: "#3b82f6",
+              color: "#fff",
+              borderRadius: "50%",
+              width: "20px",
+              height: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "2px solid #fff",
+              fontSize: "0.8rem",
+              fontWeight: "bold"
+            }}>+</div>
+          </div>
+          <span style={{ fontSize: "0.78rem", marginTop: "0.4rem", color: "#4b5563", fontWeight: 600 }}>Votre story</span>
+        </div>
+
+        {storyList.map((story) => (
+          <div key={story.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }}>
+            <div style={{
+              width: "66px",
+              height: "66px",
+              borderRadius: "50%",
+              padding: "3px",
+              background: story.active ? "linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6)" : "rgba(156, 163, 175, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <div style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden"
+              }}>
+                {story.avatar ? (
+                  <img src={story.avatar} alt={story.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
+                    color: story.active ? "#ec4899" : "#9ca3af",
+                    background: "rgba(243, 244, 246, 1)",
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>{story.initial}</div>
+                )}
+              </div>
+            </div>
+            <span style={{ fontSize: "0.78rem", marginTop: "0.4rem", color: "#4b5563", fontWeight: 500 }}>
+              {story.name} {story.isDr && "🩺"}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderFeed = () => (
     <div className="social-space-column">
+      {renderStories()}
       <section className="social-space-panel social-space-composer">
         <div className="social-space-panel-head">
           <div>

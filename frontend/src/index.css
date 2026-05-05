@@ -7567,3 +7567,77 @@ body {
 
 .link-btn:hover { color: #1d4ed8; }
 
+/* Instagram & Threads Premium Social Experience Overrides */
+.instagram-stories-bar::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+}
+.social-space-post {
+  background: #ffffff !important;
+  border: 1px solid rgba(229, 231, 235, 0.7) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.social-space-post:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+.social-space-avatar {
+  border-radius: 50% !important;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.social-space-avatar-sm {
+  border-radius: 50% !important;
+}
+.social-space-post-media img {
+  border-radius: 16px !important;
+  transition: transform 0.4s ease !important;
+}
+.social-space-post-media img:hover {
+  transform: scale(1.02);
+}
+.social-space-action {
+  background: rgba(243, 244, 246, 0.6) !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+}
+.social-space-action:hover {
+  background: rgba(243, 244, 246, 1) !important;
+  transform: scale(1.05);
+}
+.social-space-action.is-active {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+.social-space-composer {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(229, 231, 235, 0.7) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02) !important;
+}
+.social-space-sidebar {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 20px !important;
+  border: 1px solid rgba(229, 231, 235, 0.7) !important;
+  padding: 1.5rem !important;
+}
+.social-space-nav-item {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+.social-space-nav-item:hover {
+  background: rgba(59, 130, 246, 0.08) !important;
+  color: #3b82f6 !important;
+  transform: translateX(4px);
+}
+.social-space-nav-item.is-active {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25) !important;
+}
+
