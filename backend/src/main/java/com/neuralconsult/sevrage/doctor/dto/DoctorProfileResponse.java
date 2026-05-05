@@ -17,6 +17,16 @@ public record DoctorProfileResponse(
     boolean active,
     String accountStatus,
     String matchingMode,
-    Integer matchingScore
+    Integer matchingScore,
+    // ── Identification officielle ──────────────────────────────────────────
+    String cinNumber,
+    String cabinetAddress,
+    // ── Identification professionnelle ─────────────────────────────────────
+    String cnomNumber,
+    String inpeNumber,
+    // ── Documents de vérification ──────────────────────────────────────────
+    boolean professionalCardUploaded,
+    boolean cinCopyUploaded,
+    boolean documentsVerified
 ) {
 }

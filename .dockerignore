@@ -18,3 +18,13 @@ build
 coverage
 .next
 .cache
+isic-main
+target
+database
+MOBILE
+CIN
+docs
+*.md
+*.bat
+*.sh
+*.js

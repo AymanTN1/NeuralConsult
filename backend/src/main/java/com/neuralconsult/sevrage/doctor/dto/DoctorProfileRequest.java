@@ -6,6 +6,12 @@ public record DoctorProfileRequest(
     String specialty,
     String bio,
     Boolean acceptsTeleconsultation,
-    Integer yearsExperience
+    Integer yearsExperience,
+    // ── Identification officielle ──────────────────────────────────────────
+    String cinNumber,
+    String cabinetAddress,
+    // ── Identification professionnelle (bouclier juridique) ────────────────
+    String cnomNumber,
+    String inpeNumber
 ) {
 }

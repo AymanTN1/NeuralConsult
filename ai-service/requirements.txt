@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 pydantic
 httpx
-easyocr
 Pillow
 numpy
 python-multipart
@@ -13,5 +12,6 @@ lxml
 langchain
 langchain-community
 langchain-google-genai
+google-generativeai
 chromadb
 pymupdf

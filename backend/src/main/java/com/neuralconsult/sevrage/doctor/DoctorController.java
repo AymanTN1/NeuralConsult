@@ -62,7 +62,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -148,6 +151,30 @@ public class DoctorController {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     DoctorProfile profile = doctorProfileService.getOrNull(user);
     return profile != null ? toResponse(profile, null, null) : null;
+  }
+
+  @PostMapping("/profile/documents")
+  @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+  public Map<String, Object> uploadDocuments(
+      @AuthenticationPrincipal UserDetails principal,
+      @RequestParam(value = "professionalCard", required = false) MultipartFile professionalCard,
+      @RequestParam(value = "cinCopy", required = false) MultipartFile cinCopy) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    DoctorProfile profile = doctorProfileRepository.findByUser(user)
+        .orElseThrow(() -> new IllegalArgumentException("Profil médecin introuvable"));
+    // Mark as uploaded (in production: save files to cloud storage and store URLs)
+    if (professionalCard != null && !professionalCard.isEmpty()) {
+      profile.setProfessionalCardUploaded(true);
+    }
+    if (cinCopy != null && !cinCopy.isEmpty()) {
+      profile.setCinCopyUploaded(true);
+    }
+    doctorProfileRepository.save(profile);
+    return Map.of(
+        "professionalCardUploaded", profile.isProfessionalCardUploaded(),
+        "cinCopyUploaded", profile.isCinCopyUploaded(),
+        "message", "Documents reçus et en attente de vérification par l'équipe NeuralConsult."
+    );
   }
 
   @GetMapping
@@ -446,7 +473,17 @@ public class DoctorController {
         profile.isActive(),
         profile.getUser().getStatus().name(),
         matchingMode,
-        matchingScore
+        matchingScore,
+        // ── Identification officielle ──────────────────────────────────
+        profile.getCinNumber(),
+        profile.getCabinetAddress(),
+        // ── Identification professionnelle ─────────────────────────────
+        profile.getCnomNumber(),
+        profile.getInpeNumber(),
+        // ── Documents de vérification ──────────────────────────────────
+        profile.isProfessionalCardUploaded(),
+        profile.isCinCopyUploaded(),
+        profile.isDocumentsVerified()
     );
   }
 

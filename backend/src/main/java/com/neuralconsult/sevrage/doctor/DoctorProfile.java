@@ -44,4 +44,29 @@ public class DoctorProfile extends AuditableEntity {
 
   @Column(name = "success_score")
   private Integer successScore;
+
+  // ── Identification officielle ────────────────────────────────────────────
+  @Column(name = "cin_number", length = 20)
+  private String cinNumber;
+
+  @Column(name = "cabinet_address", length = 300)
+  private String cabinetAddress;
+
+  // ── Identification professionnelle (bouclier juridique) ───────────────────
+  @Column(name = "cnom_number", length = 50)
+  private String cnomNumber;
+
+  @Column(name = "inpe_number", length = 50)
+  private String inpeNumber;
+
+  // ── Documents de vérification ────────────────────────────────────────────
+  @Column(name = "professional_card_uploaded", nullable = false)
+  private boolean professionalCardUploaded = false;
+
+  @Column(name = "cin_copy_uploaded", nullable = false)
+  private boolean cinCopyUploaded = false;
+
+  @Column(name = "documents_verified", nullable = false)
+  private boolean documentsVerified = false;
 }
+

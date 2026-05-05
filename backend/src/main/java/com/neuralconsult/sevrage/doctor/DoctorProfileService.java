@@ -37,6 +37,12 @@ public class DoctorProfileService {
     profile.setBio(request.bio());
     profile.setAcceptsTeleconsultation(Boolean.TRUE.equals(request.acceptsTeleconsultation()));
     profile.setYearsExperience(request.yearsExperience());
+    // ── Identification officielle ────────────────────────────────────────
+    if (request.cinNumber() != null) profile.setCinNumber(request.cinNumber().trim());
+    if (request.cabinetAddress() != null) profile.setCabinetAddress(request.cabinetAddress().trim());
+    // ── Identification professionnelle ───────────────────────────────────
+    if (request.cnomNumber() != null) profile.setCnomNumber(request.cnomNumber().trim());
+    if (request.inpeNumber() != null) profile.setInpeNumber(request.inpeNumber().trim());
     if (isNewProfile) {
       profile.setActive(!needsApproval(user));
     }
