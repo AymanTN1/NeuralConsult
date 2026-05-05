@@ -24,6 +24,12 @@ const initialForm = {
   acceptsLiabilityClause: false,
   acceptsSecretMedical: false,
   acceptsCndp: false,
+  pseudonym: "",
+  emergencyContact: "",
+  acceptsEmergencyDisclaimer: false,
+  acceptsAiDisclaimer: false,
+  acceptsComplicationsDisclaimer: false,
+  acceptsHealthDataConsent: false,
   // ── Identification officielle ─────────────────────────────────────────
   cinNumber: "",
   cabinetAddress: "",
@@ -64,9 +70,21 @@ const Register = () => {
   });
 
   const doctorMode = form.accountType === "DOCTOR";
+  const isUnder18 = useMemo(() => {
+    if (!form.dateOfBirth) return false;
+    const today = new Date();
+    const birthDate = new Date(form.dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age < 18;
+  }, [form.dateOfBirth]);
+
   const termsAccepted = doctorMode 
     ? (form.acceptsTerms && form.acceptsDeontology && form.acceptsLiabilityClause && form.acceptsSecretMedical && form.acceptsCndp) 
-    : form.acceptsTerms;
+    : (form.acceptsTerms && form.acceptsEmergencyDisclaimer && form.acceptsAiDisclaimer && form.acceptsComplicationsDisclaimer && form.acceptsHealthDataConsent);
 
   // For doctors, require CNOM + professional card
   const doctorFieldsValid = !doctorMode || (
@@ -165,12 +183,31 @@ const Register = () => {
 
         <label className="form-label">Date de naissance</label>
         <input className="form-control light-input" type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} required />
+        {isUnder18 && (
+          <div className="alert alert-danger p-2 mb-0" style={{ fontSize: "0.85rem", borderRadius: "10px" }}>
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            NeuralConsult est strictement réservé aux personnes majeures (18 ans et plus). L'inscription est bloquée.
+          </div>
+        )}
 
         <label className="form-label">Téléphone</label>
         <input className="form-control light-input" type="text" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} />
 
         <label className="form-label">Email</label>
         <input className="form-control light-input" type="email" name="email" value={form.email} onChange={handleChange} required />
+
+        {!doctorMode && (
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label">Pseudonyme (Optionnel - Pour chat anonyme)</label>
+              <input className="form-control light-input" type="text" name="pseudonym" value={form.pseudonym} onChange={handleChange} placeholder="Ex: SevreZen" />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Contact d'urgence (Optionnel)</label>
+              <input className="form-control light-input" type="text" name="emergencyContact" value={form.emergencyContact} onChange={handleChange} placeholder="Ex: Proche +212..." />
+            </div>
+          </div>
+        )}
 
         <label className="form-label">Mot de passe</label>
         <input className="form-control light-input" type="password" name="password" value={form.password} onChange={handleChange} required />
@@ -368,6 +405,66 @@ const Register = () => {
             </span>
           </label>
 
+          {!doctorMode && (
+            <>
+              {/* 🚨 Non service d'urgence */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsEmergencyDisclaimer"
+                  checked={form.acceptsEmergencyDisclaimer}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Pas un service d'urgence :</strong> J'accepte et comprends que NeuralConsult n'est pas un service d'urgence médicale. En cas de douleur thoracique, de forte détresse respiratoire ou de pensées critiques, je m'engage à contacter les urgences (le 15) ou à me rendre immédiatement à l'hôpital.
+                </span>
+              </label>
+
+              {/* 🤖 IA de soutien */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsAiDisclaimer"
+                  checked={form.acceptsAiDisclaimer}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Soutien comportemental par l'IA :</strong> J'accepte expressément que les conseils prodigués par l'IA (Psy-RAG, chatbot) constituent un soutien de coaching comportemental et psychologique, et ne remplacent en aucun cas un diagnostic ou une prescription médicale faite par un professionnel de santé.
+                </span>
+              </label>
+
+              {/* 🩺 Limitation de responsabilité santé */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsComplicationsDisclaimer"
+                  checked={form.acceptsComplicationsDisclaimer}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Limitation de responsabilité santé :</strong> J'accepte que l'éditeur de l'application ne puisse être tenu responsable des échecs de mon sevrage ou de toute complication de santé survenant durant mon parcours.
+                </span>
+              </label>
+
+              {/* 🔒 Données de santé (CNDP) */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsHealthDataConsent"
+                  checked={form.acceptsHealthDataConsent}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Traitement des données de santé :</strong> J'accepte explicitement que mes données sensibles (habitudes de consommation, historique de chat, évolution) soient collectées et traitées par NeuralConsult pour personnaliser mon accompagnement, sachant que les données d'amélioration de l'algorithme sont strictement anonymisées.
+                </span>
+              </label>
+            </>
+          )}
+
           {doctorMode && (
             <>
               <label className="auth-checkbox-terms light-checkbox">
@@ -445,7 +542,7 @@ const Register = () => {
 
         <button
           className="btn tabac-btn-submit w-100"
-          disabled={loading || !identityVerification.verified || !termsAccepted || !doctorFieldsValid}
+          disabled={loading || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18}
         >
           {loading ? "Création..." : doctorMode ? "Créer le compte médecin" : "Activer mon espace patient"}
         </button>
@@ -464,6 +561,21 @@ const Register = () => {
         )}
         {doctorMode && !form.acceptsCndp && (
           <p className="muted-text alert-text mb-0">✓ Cochez la case de Consentement Loi 09-08 (CNDP)</p>
+        )}
+        {!doctorMode && !form.acceptsEmergencyDisclaimer && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case de Clause de Non-Urgence</p>
+        )}
+        {!doctorMode && !form.acceptsAiDisclaimer && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case pour reconnaître l'IA comme soutien</p>
+        )}
+        {!doctorMode && !form.acceptsComplicationsDisclaimer && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case de Limitation de responsabilité santé</p>
+        )}
+        {!doctorMode && !form.acceptsHealthDataConsent && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case de Consentement au traitement des données de santé</p>
+        )}
+        {isUnder18 && (
+          <p className="muted-text alert-text mb-0">✓ L'inscription est bloquée car vous êtes mineur(e)</p>
         )}
         {!identityVerification.verified && (
           <p className="muted-text alert-text mb-0">✓ La vérification CIN est requise pour créer le compte</p>
