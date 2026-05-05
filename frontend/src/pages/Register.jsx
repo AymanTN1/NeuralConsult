@@ -21,6 +21,9 @@ const initialForm = {
   acceptsTeleconsultation: true,
   acceptsTerms: false,
   acceptsDeontology: false,
+  acceptsLiabilityClause: false,
+  acceptsSecretMedical: false,
+  acceptsCndp: false,
   // ── Identification officielle ─────────────────────────────────────────
   cinNumber: "",
   cabinetAddress: "",
@@ -61,7 +64,9 @@ const Register = () => {
   });
 
   const doctorMode = form.accountType === "DOCTOR";
-  const termsAccepted = doctorMode ? (form.acceptsTerms && form.acceptsDeontology) : form.acceptsTerms;
+  const termsAccepted = doctorMode 
+    ? (form.acceptsTerms && form.acceptsDeontology && form.acceptsLiabilityClause && form.acceptsSecretMedical && form.acceptsCndp) 
+    : form.acceptsTerms;
 
   // For doctors, require CNOM + professional card
   const doctorFieldsValid = !doctorMode || (
@@ -364,26 +369,77 @@ const Register = () => {
           </label>
 
           {doctorMode && (
-            <label className="auth-checkbox-terms light-checkbox">
-              <input
-                type="checkbox"
-                name="acceptsDeontology"
-                checked={form.acceptsDeontology}
-                onChange={handleChange}
-                required
-              />
-              <span>
-                J'accepte de respecter le Code de Déontologie médicale
-                (<button
-                  type="button"
-                  className="link-btn"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.open("/Code-de-Deontologie-de-la-profession-medicale-BO-n-7066-17-2-2022%20ordre%20national%20des%20medcins.pdf", "_blank");
-                  }}
-                >consulter</button>)
-              </span>
-            </label>
+            <>
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsDeontology"
+                  checked={form.acceptsDeontology}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  J'accepte de respecter le Code de Déontologie médicale
+                  (<button
+                    type="button"
+                    className="link-btn"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open("/Code-de-Deontologie-de-la-profession-medicale-BO-n-7066-17-2-2022%20ordre%20national%20des%20medcins.pdf", "_blank");
+                    }}
+                  >consulter</button>)
+                </span>
+              </label>
+
+              {/* ⚖️ Clause de limitation de responsabilité (CGU/CGV) */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsLiabilityClause"
+                  checked={form.acceptsLiabilityClause}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Limitation de responsabilité :</strong> J'accepte et reconnais expressément que 
+                  NeuralConsult est un "fournisseur de technologie d'assistance" et que je demeure, en tant que médecin, 
+                  le seul et unique responsable des décisions médicales, des diagnostics et des prescriptions de sevrage 
+                  donnés aux patients via l'application.
+                </span>
+              </label>
+
+              {/* 🔒 Engagement Secret Médical */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsSecretMedical"
+                  checked={form.acceptsSecretMedical}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Secret Médical :</strong> Je certifie sur l'honneur m'engager à traiter l'ensemble des données 
+                  de santé des patients de la plateforme avec la plus stricte confidentialité, conformément au secret médical 
+                  et à la législation en vigueur au Maroc.
+                </span>
+              </label>
+
+              {/* 🛡️ Consentement Loi 09-08 (CNDP) */}
+              <label className="auth-checkbox-terms light-checkbox">
+                <input
+                  type="checkbox"
+                  name="acceptsCndp"
+                  checked={form.acceptsCndp}
+                  onChange={handleChange}
+                  required
+                />
+                <span>
+                  <strong>Consentement Loi 09-08 (CNDP) :</strong> J'accepte expressément que mes données d'identification 
+                  professionnelle soient collectées, stockées et traitées de manière sécurisée par l'application NeuralConsult, 
+                  conformément aux dispositions de la loi 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.
+                </span>
+              </label>
+            </>
           )}
         </div>
 
@@ -399,6 +455,15 @@ const Register = () => {
         )}
         {doctorMode && !form.acceptsDeontology && (
           <p className="muted-text alert-text mb-0">✓ Cochez la case pour accepter le Code de Déontologie</p>
+        )}
+        {doctorMode && !form.acceptsLiabilityClause && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case de Limitation de responsabilité (CGU/CGV)</p>
+        )}
+        {doctorMode && !form.acceptsSecretMedical && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case d'Engagement au respect du Secret Médical</p>
+        )}
+        {doctorMode && !form.acceptsCndp && (
+          <p className="muted-text alert-text mb-0">✓ Cochez la case de Consentement Loi 09-08 (CNDP)</p>
         )}
         {!identityVerification.verified && (
           <p className="muted-text alert-text mb-0">✓ La vérification CIN est requise pour créer le compte</p>
