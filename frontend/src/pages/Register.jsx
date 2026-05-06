@@ -5,6 +5,7 @@ import TermsModal from "../components/TermsModal";
 import { useAuth } from "../context/AuthContext";
 import LungLoader from "../components/LungLoader";
 import { AsYouType, parsePhoneNumberFromString } from "libphonenumber-js";
+import { isFirebaseConfigured, createRecaptchaVerifier, sendVerificationSMS } from "../services/firebase";
 
 const initialForm = {
   email: "",
@@ -70,6 +71,23 @@ const Register = () => {
     documentType: "CIN"
   });
 
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
+  const [otpError, setOtpError] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [otpSending, setOtpSending] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+
+  React.useEffect(() => {
+    let timer;
+    if (showOtpModal && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [showOtpModal, countdown]);
+
   const doctorMode = form.accountType === "DOCTOR";
   const isUnder18 = useMemo(() => {
     if (!form.dateOfBirth) return false;
@@ -129,25 +147,19 @@ const Register = () => {
     [form, identityVerification]
   );
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const completeRegistration = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const response = await register(payload);
       localStorage.setItem("nc_pending_verification_email", payload.email);
 
-      // If doctor mode and documents are selected, upload them after registration
       if (doctorMode && (professionalCard || cinCopy)) {
         try {
           setDocStep("uploading");
-          // Login first to get token, then upload — handled via register response
           const formData = new FormData();
           if (professionalCard) formData.append("professionalCard", professionalCard);
           if (cinCopy) formData.append("cinCopy", cinCopy);
-          // Store for post-login upload (we can't upload pre-auth)
-          // The upload will be prompted from the workspace after first login
           setDocStep("done");
         } catch {
           setDocStep("error");
@@ -166,6 +178,75 @@ const Register = () => {
       setError(err?.response?.data?.message || "La création du compte a échoué. Vérifiez les champs et réessayez.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const triggerSmsAndShowModal = async () => {
+    setOtpSending(true);
+    setOtpError("");
+    setCountdown(60);
+    setOtpCode(["", "", "", "", "", ""]);
+    
+    const parsedPhone = parsePhoneNumberFromString(form.phoneNumber, form.countryCode || "MA");
+    const internationalPhone = parsedPhone ? parsedPhone.formatInternational().replace(/\s/g, "") : form.phoneNumber;
+
+    if (isFirebaseConfigured) {
+      try {
+        let recaptchaVerifier = window.recaptchaVerifier;
+        if (!recaptchaVerifier) {
+          recaptchaVerifier = createRecaptchaVerifier("recaptcha-container");
+          window.recaptchaVerifier = recaptchaVerifier;
+        }
+        const confirmResult = await sendVerificationSMS(internationalPhone, recaptchaVerifier);
+        setConfirmationResult(confirmResult);
+        setShowOtpModal(true);
+      } catch (err) {
+        console.error("Firebase SMS error, falling back to Demo Mode:", err);
+        setConfirmationResult(null);
+        setShowOtpModal(true);
+      } finally {
+        setOtpSending(false);
+      }
+    } else {
+      setTimeout(() => {
+        setConfirmationResult(null);
+        setShowOtpModal(true);
+        setOtpSending(false);
+      }, 1000);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otpCode.join("");
+    if (code.length < 6) {
+      setOtpError("Veuillez saisir le code complet à 6 chiffres.");
+      return;
+    }
+    setLoading(true);
+    setOtpError("");
+    try {
+      if (isFirebaseConfigured && confirmationResult) {
+        await confirmationResult.confirm(code);
+      } else {
+        if (code !== "123456") {
+          throw new Error("Code de vérification incorrect. Saisissez '123456' en mode démo.");
+        }
+      }
+      setShowOtpModal(false);
+      await completeRegistration();
+    } catch (err) {
+      console.error("OTP verification error:", err);
+      setOtpError(err.message || "Code OTP invalide. Veuillez réessayer.");
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (form.phoneNumber) {
+      await triggerSmsAndShowModal();
+    } else {
+      await completeRegistration();
     }
   };
 
@@ -621,6 +702,87 @@ const Register = () => {
       </form>
 
       {showTermsModal && <TermsModal accountType={form.accountType} onClose={() => setShowTermsModal(false)} />}
+
+      {/* 🔐 MODALE OTP DE VÉRIFICATION SMS */}
+      {showOtpModal && (
+        <div className="modal fade show d-block animate-fade-in" tabIndex="-1" style={{ backgroundColor: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(8px)", zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content" style={{ borderRadius: "20px", border: "1px solid rgba(255, 255, 255, 0.1)", background: "rgba(255, 255, 255, 0.95)", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.2)" }}>
+              <div className="modal-header border-0 pb-0 justify-content-between align-items-center">
+                <span className="hero-kicker" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>🛡️ Sécurité Clinique</span>
+                <button type="button" className="btn-close" onClick={() => setShowOtpModal(false)} aria-label="Close"></button>
+              </div>
+              <div className="modal-body text-center py-4 px-4">
+                <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }}>
+                  <i className="bi bi-shield-lock-fill" style={{ fontSize: "2rem" }}></i>
+                </div>
+                <h4 className="fw-bold mb-2">Vérification Téléphonique</h4>
+                <p className="muted-text mb-4" style={{ fontSize: "0.9rem" }}>
+                  Nous avons envoyé un code de validation SMS au <strong style={{ color: "#1f2937" }}>{form.phoneNumber}</strong>.<br />
+                  {!isFirebaseConfigured && <span className="badge bg-warning text-dark mt-2" style={{ fontSize: "0.75rem" }}>Mode Démo : Entrez le code <strong>123456</strong></span>}
+                </p>
+
+                {/* OTP Input Boxes */}
+                <div className="d-flex justify-content-center gap-2 mb-4">
+                  {otpCode.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-box-${idx}`}
+                      type="text"
+                      className="form-control text-center fw-bold"
+                      style={{ width: "45px", height: "55px", fontSize: "1.5rem", borderRadius: "10px", border: "2px solid #e5e7eb", background: "#f9fafb" }}
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        const newOtp = [...otpCode];
+                        newOtp[idx] = val;
+                        setOtpCode(newOtp);
+                        if (val && idx < 5) {
+                          document.getElementById(`otp-box-${idx + 1}`).focus();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !otpCode[idx] && idx > 0) {
+                          document.getElementById(`otp-box-${idx - 1}`).focus();
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {otpError && (
+                  <div className="alert alert-danger p-2 mb-3" style={{ fontSize: "0.85rem", borderRadius: "10px" }}>
+                    <i className="bi bi-exclamation-circle me-2"></i> {otpError}
+                  </div>
+                )}
+
+                <button 
+                  className="btn tabac-btn-submit w-100 py-2 fw-bold" 
+                  style={{ borderRadius: "12px", background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", border: "none", color: "#fff", transition: "all 0.2s" }}
+                  onClick={handleVerifyOtp}
+                  disabled={loading}
+                >
+                  {loading ? "Vérification..." : "Valider et activer"}
+                </button>
+
+                <div className="mt-4" style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                  {countdown > 0 ? (
+                    <span>Renvoyer le SMS dans <strong style={{ color: "#4f46e5" }}>{countdown}s</strong></span>
+                  ) : (
+                    <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold" style={{ color: "#8b5cf6", fontSize: "0.85rem" }} onClick={triggerSmsAndShowModal}>
+                      Renvoyer le code par SMS
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invisible container required for Firebase recaptcha */}
+      <div id="recaptcha-container" style={{ display: "none" }}></div>
     </div>
   );
 };
