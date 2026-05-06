@@ -42,6 +42,41 @@ public class AdminAccountSeeder implements ApplicationRunner {
   @Override
   @Transactional
   public void run(ApplicationArguments args) {
+    // Seed a Default Doctor Account for testing
+    if (userRepository.findByEmailIgnoreCase("dr.amrani@neuralconsult.com").isEmpty()) {
+      User doctor = new User();
+      doctor.setEmail("dr.amrani@neuralconsult.com");
+      doctor.setPasswordHash(passwordEncoder.encode("password"));
+      doctor.setFullName("Dr. Amrani");
+      doctor.setFirstName("Dr.");
+      doctor.setLastName("Amrani");
+      doctor.setCommunityUsername("dr.amrani");
+      doctor.setAccountEnabled(true);
+      doctor.setIdentityVerified(true);
+      doctor.setVerifiedBadge(true);
+      doctor.setStatus(User.UserStatus.ACTIVE);
+      doctor.setRoles(Set.of("ROLE_DOCTOR", "ROLE_USER"));
+      userRepository.save(doctor);
+      log.info("✅ Default Test Doctor account created (email: dr.amrani@neuralconsult.com).");
+    }
+
+    // Seed a Default Patient Account for testing
+    if (userRepository.findByEmailIgnoreCase("samy@neuralconsult.com").isEmpty()) {
+      User patient = new User();
+      patient.setEmail("samy@neuralconsult.com");
+      patient.setPasswordHash(passwordEncoder.encode("password"));
+      patient.setFullName("Samy Zen");
+      patient.setFirstName("Samy");
+      patient.setLastName("Zen");
+      patient.setCommunityUsername("samy.zen");
+      patient.setAccountEnabled(true);
+      patient.setIdentityVerified(true);
+      patient.setStatus(User.UserStatus.ACTIVE);
+      patient.setRoles(Set.of("ROLE_PATIENT", "ROLE_USER"));
+      userRepository.save(patient);
+      log.info("✅ Default Test Patient account created (email: samy@neuralconsult.com).");
+    }
+
     boolean exists = userRepository.findByCommunityUsernameIgnoreCase(OFFICIAL_USERNAME).isPresent();
     if (exists) {
       log.info("Official @{} account already exists — skipping seed.", OFFICIAL_USERNAME);
