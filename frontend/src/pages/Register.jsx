@@ -4,6 +4,7 @@ import IdentityOcrVerifier from "../components/IdentityOcrVerifier";
 import TermsModal from "../components/TermsModal";
 import { useAuth } from "../context/AuthContext";
 import LungLoader from "../components/LungLoader";
+import { AsYouType, parsePhoneNumberFromString } from "libphonenumber-js";
 
 const initialForm = {
   email: "",
@@ -82,6 +83,12 @@ const Register = () => {
     return age < 18;
   }, [form.dateOfBirth]);
 
+  const isPhoneValid = useMemo(() => {
+    if (!form.phoneNumber) return true;
+    const phoneNumber = parsePhoneNumberFromString(form.phoneNumber, form.countryCode || "MA");
+    return phoneNumber ? phoneNumber.isValid() : false;
+  }, [form.phoneNumber, form.countryCode]);
+
   const termsAccepted = doctorMode 
     ? (form.acceptsTerms && form.acceptsDeontology && form.acceptsLiabilityClause && form.acceptsSecretMedical && form.acceptsCndp) 
     : (form.acceptsTerms && form.acceptsEmergencyDisclaimer && form.acceptsAiDisclaimer && form.acceptsComplicationsDisclaimer && form.acceptsHealthDataConsent);
@@ -95,9 +102,13 @@ const Register = () => {
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
+    let finalValue = value;
+    if (name === "phoneNumber") {
+      finalValue = new AsYouType(form.countryCode || "MA").input(value);
+    }
     setForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : finalValue
     }));
   };
 
@@ -191,7 +202,24 @@ const Register = () => {
         )}
 
         <label className="form-label">Téléphone</label>
-        <input className="form-control light-input" type="text" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} />
+        <input 
+          className={`form-control light-input ${form.phoneNumber ? (isPhoneValid ? "is-valid" : "is-invalid") : ""}`} 
+          type="text" 
+          name="phoneNumber" 
+          placeholder="Ex: 0612345678"
+          value={form.phoneNumber} 
+          onChange={handleChange} 
+        />
+        {form.phoneNumber && !isPhoneValid && (
+          <div className="text-danger mt-1" style={{ fontSize: "0.8rem" }}>
+            <i className="bi bi-x-circle me-1"></i> Numéro de téléphone invalide pour le pays sélectionné ({form.countryCode || "MA"}).
+          </div>
+        )}
+        {form.phoneNumber && isPhoneValid && (
+          <div className="text-success mt-1" style={{ fontSize: "0.8rem" }}>
+            <i className="bi bi-check-circle me-1"></i> Numéro de téléphone valide.
+          </div>
+        )}
 
         <label className="form-label">Email</label>
         <input className="form-control light-input" type="email" name="email" value={form.email} onChange={handleChange} required />
@@ -542,7 +570,7 @@ const Register = () => {
 
         <button
           className="btn tabac-btn-submit w-100"
-          disabled={loading || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18}
+          disabled={loading || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid}
         >
           {loading ? "Création..." : doctorMode ? "Créer le compte médecin" : "Activer mon espace patient"}
         </button>
@@ -582,6 +610,9 @@ const Register = () => {
         )}
         {doctorMode && !doctorFieldsValid && (
           <p className="muted-text alert-text mb-0">✓ Renseignez votre N° CNOM, numéro CIN et adresse du cabinet</p>
+        )}
+        {!isPhoneValid && (
+          <p className="muted-text alert-text mb-0">✓ Veuillez renseigner un numéro de téléphone valide ({form.countryCode || "MA"})</p>
         )}
 
         <p className="text-center mt-3 mb-0" style={{ color: "#6b7280" }}>

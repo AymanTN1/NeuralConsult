@@ -696,6 +696,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       </div>
     </div>
   );
+  };
 
   const renderJournalSection = () => (
     <div className="doctor-dossier-section">
