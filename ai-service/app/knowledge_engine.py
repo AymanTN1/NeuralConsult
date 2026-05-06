@@ -1,10 +1,10 @@
 import os
 from typing import List
 import fitz  # PyMuPDF
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 
 class KnowledgeEngine:
     def __init__(self, docs_path: str, persist_directory: str = "./chroma_db"):
