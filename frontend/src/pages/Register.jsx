@@ -192,11 +192,21 @@ const Register = () => {
 
     if (isFirebaseConfigured) {
       try {
-        let recaptchaVerifier = window.recaptchaVerifier;
-        if (!recaptchaVerifier) {
-          recaptchaVerifier = createRecaptchaVerifier("recaptcha-container");
-          window.recaptchaVerifier = recaptchaVerifier;
+        // Clean up any old verifiers to avoid mounting crashes on retry
+        if (window.recaptchaVerifier) {
+          try {
+            window.recaptchaVerifier.clear();
+          } catch (e) {}
+          window.recaptchaVerifier = null;
         }
+        const container = document.getElementById("recaptcha-container");
+        if (container) {
+          container.innerHTML = "";
+        }
+        
+        const recaptchaVerifier = createRecaptchaVerifier("recaptcha-container");
+        window.recaptchaVerifier = recaptchaVerifier;
+        
         const confirmResult = await sendVerificationSMS(internationalPhone, recaptchaVerifier);
         setConfirmationResult(confirmResult);
         setShowOtpModal(true);
@@ -782,7 +792,7 @@ const Register = () => {
       )}
 
       {/* Invisible container required for Firebase recaptcha */}
-      <div id="recaptcha-container" style={{ position: "absolute", width: "0px", height: "0px", opacity: 0, pointerEvents: "none" }}></div>
+      <div id="recaptcha-container" style={{ position: "absolute", top: "-100px", left: "-9999px", width: "300px", height: "80px" }}></div>
     </div>
   );
 };
