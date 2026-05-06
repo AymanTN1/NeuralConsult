@@ -782,7 +782,7 @@ const Register = () => {
       )}
 
       {/* Invisible container required for Firebase recaptcha */}
-      <div id="recaptcha-container" style={{ display: "none" }}></div>
+      <div id="recaptcha-container" style={{ position: "absolute", width: "0px", height: "0px", opacity: 0, pointerEvents: "none" }}></div>
     </div>
   );
 };
