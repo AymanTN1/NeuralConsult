@@ -16,5 +16,6 @@ export const chartTheme = {
   stress: "#60a5fa",
   stressFillTop: "rgba(96, 165, 250, 0.24)",
   stressFillBottom: "rgba(96, 165, 250, 0)",
-  cigarettes: "#0f172a"
+  cigarettes: "#0f172a",
+  rass: "#8b5cf6"
 };

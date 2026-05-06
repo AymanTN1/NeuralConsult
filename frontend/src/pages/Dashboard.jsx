@@ -69,7 +69,22 @@ const Dashboard = () => {
   const estimatedCostPerCigarette =
     baselineDailyConsumption > 0 && weeklySpend > 0 ? weeklySpend / Math.max(baselineDailyConsumption * 7, 1) : 0;
   const moneySaved = avoidedPerDay * estimatedCostPerCigarette * Math.max(reports.length, 1);
-  const riskFocus = Math.max(scores.fagerstromScore || 0, scores.hadAnxietyScore || 0, scores.hadDepressionScore || 0);
+  const latestFScore = scores.fagerstromScore;
+  const latestAnxiety = scores.hadAnxietyScore;
+  const latestDepression = scores.hadDepressionScore;
+
+  const calculateRassScore = (fScore, aScore, dScore) => {
+    if (fScore === undefined || fScore === null || 
+        aScore === undefined || aScore === null || 
+        dScore === undefined || dScore === null) {
+      return null;
+    }
+    const score = (0.3 * fScore) + (0.35 * (aScore / 21) * 10) + (0.35 * (dScore / 21) * 10);
+    return Math.round(score);
+  };
+
+  const currentRass = calculateRassScore(latestFScore, latestAnxiety, latestDepression);
+  const riskFocus = currentRass ?? Math.max(scores.fagerstromScore || 0, scores.hadAnxietyScore || 0, scores.hadDepressionScore || 0);
 
   const habitTrend = reports.map((report) => ({
     date: report.reportDate?.slice(5),
@@ -144,6 +159,30 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {currentRass !== null && currentRass > 6 && (
+        <section className="card p-4 mb-4 border-0 shadow-sm" style={{ background: "linear-gradient(135deg, #fffcf6 0%, #fff3e0 100%)", borderRadius: "24px", borderLeft: "6px solid #f59e0b" }}>
+          <div className="d-flex align-items-start gap-3">
+            <div className="p-3 bg-warning bg-opacity-25 rounded-circle text-warning">
+              <i className="bi bi-heart-pulse-fill fs-3"></i>
+            </div>
+            <div>
+              <h4 className="fw-bold text-dark mb-2">Un instant pour vous, en toute sérénité 🌸</h4>
+              <p className="text-secondary mb-3 fs-6">
+                Nous ressentons une légère tension émotionnelle ou une envie de fumer plus forte aujourd'hui. C'est tout à fait normal dans votre parcours, et chaque étape vous renforce. Prenez une grande inspiration et accordez-vous une pause bienveillante.
+              </p>
+              <div className="d-flex flex-wrap gap-2">
+                <Link to="/chat" className="btn btn-warning text-dark fw-semibold px-4 rounded-pill">
+                  Parler à l'Assistant IA de soutien
+                </Link>
+                <button type="button" className="btn btn-outline-warning text-dark fw-semibold px-4 rounded-pill" onClick={() => alert("Pratiquez la cohérence cardiaque : Inspirez pendant 5 secondes... Expirez pendant 5 secondes... Répétez 3 fois. Vous êtes sur la bonne voie !")}>
+                  Faire un exercice de respiration (1 min)
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="life-gain-panel">
         <div className="life-gain-main">
           <span className="life-gain-label">Temps de vie gagne</span>
@@ -183,10 +222,10 @@ const Dashboard = () => {
           <p>Vigilance emotionnelle et rechute</p>
         </article>
 
-        <article className={`score-orb severity-${severityFromScore(riskFocus)}`}>
-          <span>Repere global</span>
-          <strong>{riskFocus}</strong>
-          <p>Le glow s'intensifie quand le score devient critique.</p>
+        <article className="score-orb" style={{ boxShadow: currentRass > 6 ? "0 0 20px rgba(245, 158, 11, 0.4)" : "none", border: currentRass !== null ? `2px solid ${currentRass <= 3 ? "#10b981" : currentRass <= 6 ? "#f59e0b" : "#ef4444"}` : "none" }}>
+          <span>Score RASS</span>
+          <strong>{currentRass !== null ? `${currentRass}/10` : "-"}</strong>
+          <p>{currentRass !== null ? (currentRass <= 3 ? "État Stable (Vert)" : currentRass <= 6 ? "Vigilance (Orange)" : "Soutien (Rouge)") : "Non calculé"}</p>
         </article>
       </section>
 

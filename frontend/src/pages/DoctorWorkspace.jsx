@@ -127,6 +127,30 @@ const buildPatientScoreLine = (patient) => {
   return `Fagerstrom ${displayValue(patient.fagerstromScore)} · HAD A ${displayValue(patient.hadAnxietyScore)} · HAD D ${displayValue(patient.hadDepressionScore)}`;
 };
 
+const calculateRassScore = (fagerstromScore, anxietyScore, depressionScore) => {
+  if (fagerstromScore === undefined || fagerstromScore === null || 
+      anxietyScore === undefined || anxietyScore === null || 
+      depressionScore === undefined || depressionScore === null) {
+    return null;
+  }
+  const score = (0.3 * fagerstromScore) + (0.35 * (anxietyScore / 21) * 10) + (0.35 * (depressionScore / 21) * 10);
+  return Math.round(score);
+};
+
+const getRassInterpretation = (score) => {
+  if (score === null || score === undefined) return "Non evalue";
+  if (score <= 3) return "Risque Faible (Stable)";
+  if (score <= 6) return "Risque Modere (Vigilance)";
+  return "Risque Eleve (Danger)";
+};
+
+const getRassColor = (score) => {
+  if (score === null || score === undefined) return "#6b7280";
+  if (score <= 3) return "#10b981"; // Emerald Green
+  if (score <= 6) return "#f59e0b"; // Amber Orange
+  return "#ef4444"; // Coral Red
+};
+
 const resolveNextPatientId = (preferredPatientId, previousPatientId, requestData, patientData) => {
   const allowedIds = new Set([
     ...requestData.map((item) => item.patientProfileId),
@@ -303,6 +327,23 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         })),
     [dossier]
   );
+
+  const rassTrend = useMemo(() => {
+    const fagerList = [...safeList(dossier?.fagerstromHistory)].reverse();
+    const hadList = [...safeList(dossier?.hadHistory)].reverse();
+    return hadList.map((had, idx) => {
+      const fager = fagerList[idx] || fagerList[fagerList.length - 1] || null;
+      const fScore = fager ? fager.totalScore : 5;
+      const rScore = calculateRassScore(fScore, had.anxietyScore, had.depressionScore);
+      return {
+        date: formatDate(had.createdAt),
+        anxiete: had.anxietyScore ?? 0,
+        depression: had.depressionScore ?? 0,
+        fagerstrom: fScore,
+        rass: rScore
+      };
+    });
+  }, [dossier]);
 
   const dailyTrend = useMemo(
     () =>
@@ -583,31 +624,62 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     </div>
   );
 
-  const renderDashboardSection = () => (
-    <div className="doctor-dossier-section">
-      <strong>Dashboard clinique et historiques de tests</strong>
-      <div className="doctor-score-grid mt-3">
-        <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(dossier.latestFagerstrom?.totalScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
-        <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(dossier.latestHad?.anxietyScore)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
-        <div className="doctor-score-card"><span>HAD Depression</span><strong>{displayValue(dossier.latestHad?.depressionScore)}</strong><p>{displayValue(dossier.latestHad?.depressionInterpretation)}</p></div>
-        <div className="doctor-score-card"><span>Progression</span><strong>{buildProgressLabel(selectedPatientSummary || dossier.profile)}</strong><p>{displayValue(selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel)}</p></div>
-      </div>
-      <div className="doctor-dashboard-grid mt-3">
-        <div className="doctor-chart-card">
-          <div className="chart-card-head"><div><div className="hero-kicker">HAD</div><h3>Anxiete vs Depression</h3></div></div>
-          <div className="doctor-chart-wrap">
-            {hadTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique HAD.</p> : <ResponsiveContainer><LineChart data={hadTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Line type="monotone" dataKey="anxiete" stroke={chartTheme.anxiety} strokeWidth={3} dot={{ r: 3 }} /><Line type="monotone" dataKey="depression" stroke={chartTheme.depression} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}
+  const renderDashboardSection = () => {
+    const latestFScore = dossier.latestFagerstrom?.totalScore;
+    const latestAnxiety = dossier.latestHad?.anxietyScore;
+    const latestDepression = dossier.latestHad?.depressionScore;
+    const currentRass = calculateRassScore(latestFScore, latestAnxiety, latestDepression);
+
+    return (
+      <div className="doctor-dossier-section">
+        <strong>Dashboard clinique et historiques de tests</strong>
+        <div className="doctor-score-grid mt-3">
+          <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(latestFScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
+          <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(latestAnxiety)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
+          <div className="doctor-score-card"><span>HAD Depression</span><strong>{displayValue(latestDepression)}</strong><p>{displayValue(dossier.latestHad?.depressionInterpretation)}</p></div>
+          <div className="doctor-score-card" style={{ borderLeft: `4px solid ${getRassColor(currentRass)}` }}>
+            <span>Prédiction RASS</span>
+            <strong style={{ color: getRassColor(currentRass) }}>{currentRass !== null ? `${currentRass}/10` : "Non évalue"}</strong>
+            <p>{getRassInterpretation(currentRass)}</p>
           </div>
+          <div className="doctor-score-card"><span>Progression</span><strong>{buildProgressLabel(selectedPatientSummary || dossier.profile)}</strong><p>{displayValue(selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel)}</p></div>
         </div>
-        <div className="doctor-chart-card">
-          <div className="chart-card-head"><div><div className="hero-kicker">Dependance</div><h3>Evolution Fagerstrom</h3></div></div>
-          <div className="doctor-chart-wrap">
-            {fagerTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique Fagerstrom.</p> : <ResponsiveContainer><LineChart data={fagerTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Line type="monotone" dataKey="score" stroke={chartTheme.dependence} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}
+        <div className="doctor-dashboard-grid mt-3">
+          <div className="doctor-chart-card">
+            <div className="chart-card-head"><div><div className="hero-kicker">HAD</div><h3>Anxiete vs Depression</h3></div></div>
+            <div className="doctor-chart-wrap">
+              {hadTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique HAD.</p> : <ResponsiveContainer><LineChart data={hadTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Line type="monotone" dataKey="anxiete" stroke={chartTheme.anxiety} strokeWidth={3} dot={{ r: 3 }} /><Line type="monotone" dataKey="depression" stroke={chartTheme.depression} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}
+            </div>
           </div>
-        </div>
-        <div className="doctor-chart-card doctor-chart-card-wide">
-          <div className="chart-card-head"><div><div className="hero-kicker">Journal</div><h3>Cravings, stress et cigarettes</h3></div></div>
-          <div className="doctor-chart-wrap">
+          <div className="doctor-chart-card">
+            <div className="chart-card-head"><div><div className="hero-kicker">Dependance</div><h3>Evolution Fagerstrom</h3></div></div>
+            <div className="doctor-chart-wrap">
+              {fagerTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique Fagerstrom.</p> : <ResponsiveContainer><LineChart data={fagerTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Line type="monotone" dataKey="score" stroke={chartTheme.dependence} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>}
+            </div>
+          </div>
+          <div className="doctor-chart-card doctor-chart-card-wide">
+            <div className="chart-card-head"><div><div className="hero-kicker">Prévention Prédictive</div><h3>Évolution du Risque de Rechute (Score RASS)</h3></div></div>
+            <div className="doctor-chart-wrap">
+              {rassTrend.length === 0 ? <p className="muted-text mb-0">Aucun historique RASS suffisant.</p> : (
+                <ResponsiveContainer>
+                  <LineChart data={rassTrend}>
+                    <CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" />
+                    <XAxis dataKey="date" stroke={chartTheme.axis} />
+                    <YAxis domain={[0, 10]} stroke={chartTheme.axis} />
+                    <Tooltip contentStyle={chartTooltipStyle} />
+                    <Legend />
+                    <Line type="monotone" name="Dépendance (Fagerström)" dataKey="fagerstrom" stroke={chartTheme.anxiety} strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" name="Anxiété (HAD)" dataKey="anxiete" stroke={chartTheme.stress} strokeWidth={2} strokeDasharray="3 3" dot={{ r: 2 }} />
+                    <Line type="monotone" name="Dépression (HAD)" dataKey="depression" stroke="#ec4899" strokeWidth={2} strokeDasharray="3 3" dot={{ r: 2 }} />
+                    <Line type="monotone" name="Risque RASS" dataKey="rass" stroke={chartTheme.rass} strokeWidth={4} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+          <div className="doctor-chart-card doctor-chart-card-wide">
+            <div className="chart-card-head"><div><div className="hero-kicker">Journal</div><h3>Cravings, stress et cigarettes</h3></div></div>
+            <div className="doctor-chart-wrap">
             {dailyTrend.length === 0 ? <p className="muted-text mb-0">Aucune donnee quotidienne.</p> : <ResponsiveContainer><AreaChart data={dailyTrend}><CartesianGrid stroke={chartTheme.grid} strokeDasharray="4 4" /><XAxis dataKey="date" stroke={chartTheme.axis} /><YAxis stroke={chartTheme.axis} /><Tooltip contentStyle={chartTooltipStyle} /><Legend /><Area type="monotone" dataKey="cravings" stroke={chartTheme.cravings} fill={chartTheme.cravingsFillTop} strokeWidth={2} /><Area type="monotone" dataKey="stress" stroke={chartTheme.stress} fill={chartTheme.stressFillTop} strokeWidth={2} /><Line type="monotone" dataKey="cigarettes" stroke={chartTheme.cigarettes} strokeWidth={2} dot={false} /></AreaChart></ResponsiveContainer>}
           </div>
         </div>
@@ -802,7 +874,14 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
             </section>
             <section className="card form-card mt-4">
               <div className="doctor-section-head"><div><div className="section-title-sm">Patients associes</div><p className="muted-text mb-0">Une liste plus professionnelle: identite, progression, scores et menu d'actions cliniques.</p></div></div>
-              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associe pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th>Naissance</th><th>Ville</th><th>Progression</th><th>Scores</th><th>Dependance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient) => <tr key={patient.patientProfileId} className={selectedPatientId === patient.patientProfileId ? "is-selected" : ""}><td><button type="button" className="doctor-table-link" onClick={() => openPatientView(patient.patientProfileId, "overview")}>{patient.patientName}</button><div className="doctor-table-subcopy">{patient.patientEmail}</div></td><td><div>{formatDate(patient.dateOfBirth)}</div><div className="doctor-table-subcopy">{calculateAge(patient.dateOfBirth)}</div></td><td><div>{displayValue(patient.city)}</div><div className="doctor-table-subcopy">{displayValue(patient.occupation)}</div></td><td><div className="doctor-progress-inline">{buildProgressBadges(patient).map((item) => <span key={item.key} className={`doctor-progress-pill ${item.done ? "is-done" : ""}`}>{item.label}</span>)}</div></td><td className="doctor-cell-copy">{buildPatientScoreLine(patient)}</td><td><span className="doctor-status-chip status-info">{displayValue(patient.dependenceLevel || "A evaluer")}</span></td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-outline-dark btn-sm" onClick={() => openPatientView(patient.patientProfileId, "overview")}>Ouvrir</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`patient-actions-${patient.patientProfileId}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu">{patientWorkspaceViews.map((view) => <Dropdown.Item key={view.key} onClick={() => openPatientView(patient.patientProfileId, view.key)}>{view.label}</Dropdown.Item>)}</Dropdown.Menu></Dropdown></div></td></tr>)}</tbody></table></div>}
+              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associe pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th>Naissance</th><th>Ville</th><th>Progression</th><th>Scores</th><th>Dependance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient) => <tr key={patient.patientProfileId} className={selectedPatientId === patient.patientProfileId ? "is-selected" : ""}><td><button type="button" className="doctor-table-link" onClick={() => openPatientView(patient.patientProfileId, "overview")}>{patient.patientName}</button><div className="doctor-table-subcopy">{patient.patientEmail}</div></td><td><div>{formatDate(patient.dateOfBirth)}</div><div className="doctor-table-subcopy">{calculateAge(patient.dateOfBirth)}</div></td><td><div>{displayValue(patient.city)}</div><div className="doctor-table-subcopy">{displayValue(patient.occupation)}</div></td><td><div className="doctor-progress-inline">{buildProgressBadges(patient).map((item) => <span key={item.key} className={`doctor-progress-pill ${item.done ? "is-done" : ""}`}>{item.label}</span>)}</div></td><td className="doctor-cell-copy">
+  <div>{buildPatientScoreLine(patient)}</div>
+  {calculateRassScore(patient.fagerstromScore, patient.hadAnxietyScore, patient.hadDepressionScore) !== null && (
+    <span className="badge mt-1" style={{ backgroundColor: getRassColor(calculateRassScore(patient.fagerstromScore, patient.hadAnxietyScore, patient.hadDepressionScore)), color: "#fff", borderRadius: "12px", fontSize: "0.75rem", padding: "3px 8px" }}>
+      RASS : {calculateRassScore(patient.fagerstromScore, patient.hadAnxietyScore, patient.hadDepressionScore)}/10 ({getRassInterpretation(calculateRassScore(patient.fagerstromScore, patient.hadAnxietyScore, patient.hadDepressionScore))})
+    </span>
+  )}
+</td><td><span className="doctor-status-chip status-info">{displayValue(patient.dependenceLevel || "A evaluer")}</span></td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-outline-dark btn-sm" onClick={() => openPatientView(patient.patientProfileId, "overview")}>Ouvrir</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`patient-actions-${patient.patientProfileId}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu">{patientWorkspaceViews.map((view) => <Dropdown.Item key={view.key} onClick={() => openPatientView(patient.patientProfileId, view.key)}>{view.label}</Dropdown.Item>)}</Dropdown.Menu></Dropdown></div></td></tr>)}</tbody></table></div>}
             </section>
           </div>
           <aside className="doctor-dossier-panel"><section className="card form-card"><div className="section-title-sm">Espace patient selectionne</div>{renderPatientHeader()}{renderPatientTabs()}<div className="doctor-dossier-stack">{renderSelectedPatientContent()}</div></section></aside>
