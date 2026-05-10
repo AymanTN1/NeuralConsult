@@ -56,6 +56,10 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
   }
 
   private boolean isPatient(User user) {
+    // Doctors and admins must never be forced through patient onboarding
+    if (user.getRoles().contains("ROLE_DOCTOR") || user.getRoles().contains("ROLE_ADMIN")) {
+      return false;
+    }
     return user.getRoles().isEmpty()
         || user.getRoles().contains("ROLE_PATIENT")
         || user.getRoles().contains("ROLE_USER");

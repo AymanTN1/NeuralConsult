@@ -60,6 +60,7 @@ public class AuthController {
 
   @PostMapping("/register")
   public ResponseEntity<EmailVerificationResponse> register(@Valid @RequestBody RegisterRequest request) {
+    System.out.println("Registration request for: " + request.email());
     User user = userService.register(request);
     patientProfileService.seedIdentityProfile(user, request.dateOfBirth());
     emailVerificationService.issueVerificationCode(user);

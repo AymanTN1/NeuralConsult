@@ -2,9 +2,9 @@ spring:
   application:
     name: neuralconsult-sevrage
   datasource:
-    url: jdbc:postgresql://localhost:5432/neuralconsult
-    username: neural
-    password: neuralpass
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/neuralconsult}
+    username: ${SPRING_DATASOURCE_USERNAME:neural}
+    password: ${SPRING_DATASOURCE_PASSWORD:neuralpass}
   jpa:
     hibernate:
       ddl-auto: update
@@ -27,7 +27,7 @@ spring:
             enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 ai:
   service:

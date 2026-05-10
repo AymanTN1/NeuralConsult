@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { isPatient } from "../utils/roles";
+import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -18,6 +18,10 @@ const ProtectedRoute = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (isAdmin(user) || isDoctor(user)) {
+    return children;
   }
 
   if (isPatient(user)) {

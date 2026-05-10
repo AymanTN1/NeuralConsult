@@ -88,6 +88,27 @@ const Register = () => {
     return () => clearInterval(timer);
   }, [showOtpModal, countdown]);
 
+  React.useEffect(() => {
+    if (isFirebaseConfigured) {
+      const initRecaptcha = async () => {
+        try {
+          if (!window.recaptchaVerifier) {
+            const verifier = createRecaptchaVerifier("recaptcha-container");
+            window.recaptchaVerifier = verifier;
+            if (verifier) {
+              await verifier.render();
+            }
+          }
+        } catch (err) {
+          console.error("Error rendering on-mount recaptcha:", err);
+        }
+      };
+      // Give the DOM a tiny fraction of a second to render the container div
+      const t = setTimeout(initRecaptcha, 100);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   const doctorMode = form.accountType === "DOCTOR";
   const isUnder18 = useMemo(() => {
     if (!form.dateOfBirth) return false;
@@ -192,27 +213,28 @@ const Register = () => {
 
     if (isFirebaseConfigured) {
       try {
-        // Clean up any old verifiers to avoid mounting crashes on retry
-        if (window.recaptchaVerifier) {
-          try {
-            window.recaptchaVerifier.clear();
-          } catch (e) {}
-          window.recaptchaVerifier = null;
+        let recaptchaVerifier = window.recaptchaVerifier;
+        if (!recaptchaVerifier) {
+          recaptchaVerifier = createRecaptchaVerifier("recaptcha-container");
+          window.recaptchaVerifier = recaptchaVerifier;
+          if (recaptchaVerifier) {
+            await recaptchaVerifier.render();
+          }
         }
-        const container = document.getElementById("recaptcha-container");
-        if (container) {
-          container.innerHTML = "";
-        }
-        
-        const recaptchaVerifier = createRecaptchaVerifier("recaptcha-container");
-        window.recaptchaVerifier = recaptchaVerifier;
         
         const confirmResult = await sendVerificationSMS(internationalPhone, recaptchaVerifier);
         setConfirmationResult(confirmResult);
         setShowOtpModal(true);
       } catch (err) {
         console.error("Firebase SMS error, falling back to Demo Mode:", err);
-        setConfirmationResult(null);
+        if (window.grecaptcha) {
+          try {
+            window.grecaptcha.reset();
+          } catch (e) {}
+        }
+        if (!confirmationResult) {
+          setConfirmationResult(null);
+        }
         setShowOtpModal(true);
       } finally {
         setOtpSending(false);
@@ -251,8 +273,20 @@ const Register = () => {
     }
   };
 
+  const handleResendSms = () => {
+    setShowOtpModal(false);
+    if (window.grecaptcha) {
+      try {
+        window.grecaptcha.reset();
+      } catch (e) {}
+    }
+    setOtpError("");
+    setError("Veuillez valider à nouveau la case 'Je ne suis pas un robot' pour renvoyer le code par SMS.");
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (loading || otpSending) return;
     if (form.phoneNumber) {
       await triggerSmsAndShowModal();
     } else {
@@ -659,11 +693,16 @@ const Register = () => {
           )}
         </div>
 
+        {/* 🔐 Google reCAPTCHA Checkbox */}
+        <div className="d-flex justify-content-center my-3" style={{ minHeight: "78px" }}>
+          <div id="recaptcha-container"></div>
+        </div>
+
         <button
           className="btn tabac-btn-submit w-100"
-          disabled={loading || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid}
+          disabled={loading || otpSending || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid}
         >
-          {loading ? "Création..." : doctorMode ? "Créer le compte médecin" : "Activer mon espace patient"}
+          {loading ? "Création..." : otpSending ? "Envoi du SMS..." : doctorMode ? "Créer le compte médecin" : "Activer mon espace patient"}
         </button>
 
         {!form.acceptsTerms && (
@@ -780,7 +819,7 @@ const Register = () => {
                   {countdown > 0 ? (
                     <span>Renvoyer le SMS dans <strong style={{ color: "#4f46e5" }}>{countdown}s</strong></span>
                   ) : (
-                    <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold" style={{ color: "#8b5cf6", fontSize: "0.85rem" }} onClick={triggerSmsAndShowModal}>
+                    <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold" style={{ color: "#8b5cf6", fontSize: "0.85rem" }} onClick={handleResendSms}>
                       Renvoyer le code par SMS
                     </button>
                   )}
@@ -791,8 +830,7 @@ const Register = () => {
         </div>
       )}
 
-      {/* Invisible container required for Firebase recaptcha */}
-      <div id="recaptcha-container" style={{ position: "absolute", top: "-100px", left: "-9999px", width: "300px", height: "80px" }}></div>
+
     </div>
   );
 };

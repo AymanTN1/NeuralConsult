@@ -43,7 +43,7 @@ export const createRecaptchaVerifier = (elementId) => {
   if (!isFirebaseConfigured || !auth) return null;
   try {
     return new RecaptchaVerifier(auth, elementId, {
-      size: "invisible",
+      size: "normal",
       callback: (response) => {
         // reCAPTCHA solved, allow signInWithPhoneNumber.
       },
