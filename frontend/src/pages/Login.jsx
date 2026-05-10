@@ -11,6 +11,7 @@ const Login = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(location.state?.message || null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (event) => {
     setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
@@ -63,7 +64,22 @@ const Login = () => {
               <label className="form-label mb-1">Mot de passe</label>
               <div className="position-relative">
                 <i className="bi bi-lock position-absolute" style={{ left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
-                <input className="form-control light-input light-input-icon" type="password" name="password" placeholder="Votre mot de passe" value={form.password} onChange={handleChange} required />
+                <input 
+                  className="form-control light-input light-input-icon" 
+                  type={showPassword ? "text" : "password"} 
+                  name="password" 
+                  placeholder="Votre mot de passe" 
+                  value={form.password} 
+                  onChange={handleChange} 
+                  required 
+                />
+                <button
+                  type="button"
+                  className="auth-pass-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
+                </button>
               </div>
             </div>
 

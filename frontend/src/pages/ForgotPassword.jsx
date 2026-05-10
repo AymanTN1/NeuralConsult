@@ -15,6 +15,8 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState(location.state?.message || null);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (email) {
@@ -151,24 +153,42 @@ const ForgotPassword = () => {
                 />
 
                 <label className="form-label">Nouveau mot de passe</label>
-                <input
-                  className="form-control light-input"
-                  type="password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  minLength={8}
-                  required
-                />
+                <div className="position-relative">
+                  <input
+                    className="form-control light-input"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="auth-pass-toggle"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    <i className={`bi ${showNewPassword ? "bi-eye-slash" : "bi-eye"}`} />
+                  </button>
+                </div>
 
                 <label className="form-label">Confirmer le mot de passe</label>
-                <input
-                  className="form-control light-input"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  minLength={8}
-                  required
-                />
+                <div className="position-relative">
+                  <input
+                    className="form-control light-input"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="auth-pass-toggle"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <i className={`bi ${showConfirmPassword ? "bi-eye-slash" : "bi-eye"}`} />
+                  </button>
+                </div>
 
                 <button className="btn light-btn-submit w-100" disabled={saving}>
                   {saving ? "Reinitialisation..." : "Changer le mot de passe"}

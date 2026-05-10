@@ -103,6 +103,10 @@ const Communities = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [activeStory, setActiveStory] = useState(null);
+  const [showArchives, setShowArchives] = useState(false);
 
   const viewer = overview.viewer;
   const myPosts = useMemo(
@@ -548,7 +552,7 @@ const Communities = () => {
         </div>
 
         {storyList.map((story) => (
-          <div key={story.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }}>
+          <div key={story.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setActiveStory(story)}>
             <div style={{
               width: "66px",
               height: "66px",
@@ -595,72 +599,96 @@ const Communities = () => {
     );
   };
 
-  const renderFeed = () => (
-    <div className="social-space-column">
-      {renderStories()}
-      <section className="social-space-panel social-space-composer">
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Publier dans le fil</h3>
-            <p>Une victoire, une photo, une pensee ou une difficulte du jour.</p>
+  const [activeServerFilter, setActiveServerFilter] = useState("");
+
+  const renderFeed = () => {
+    const feedPosts = activeServerFilter ? (overview.posts || []).filter(p => p.serverId === activeServerFilter) : (overview.posts || []);
+    const activeCircle = (overview.circles || []).find(c => c.id === activeServerFilter);
+
+    return (
+      <div className="social-space-column">
+        {renderStories()}
+        <section className="social-space-panel social-space-composer">
+          <div className="social-space-panel-head">
+            <div>
+              <h3>Publier dans le fil</h3>
+              <p>Une victoire, une photo, une pensee ou une difficulte du jour.</p>
+            </div>
+            <div className="social-space-circle-picker">
+              <select className="form-select" value={composer.serverId} onChange={(event) => setComposer((previous) => ({ ...previous, serverId: event.target.value }))}>
+                <option value="">Pour vous</option>
+                {(overview.circles || []).filter((circle) => circle.joined).map((circle) => (
+                  <option key={circle.id} value={circle.id}>{circle.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="social-space-circle-picker">
-            <select className="form-select" value={composer.serverId} onChange={(event) => setComposer((previous) => ({ ...previous, serverId: event.target.value }))}>
-              <option value="">Pour vous</option>
+          <form onSubmit={publishPost}>
+            <textarea
+              className="form-control social-space-textarea"
+              rows="4"
+              placeholder="Qu'est-ce qui merite d'etre partage aujourd'hui ?"
+              value={composer.content}
+              onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value }))}
+            />
+            {composer.imageUrl && (
+              <div className="social-space-upload-preview">
+                <img src={composer.imageUrl} alt="Apercu du post" />
+                <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))}>
+                  Retirer
+                </button>
+              </div>
+            )}
+            <div className="social-space-composer-row">
+              <label className="social-space-upload-btn">
+                <i className="bi bi-image" />
+                <span>Photo</span>
+                <input type="file" accept="image/*" onChange={(event) => handleProfilePhoto(event, "post")} />
+              </label>
+              <button type="submit" className="btn btn-primary" disabled={publishing}>
+                {publishing ? "Publication..." : "Publier"}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="social-space-panel social-space-feed-header">
+          <div className="d-flex justify-content-between align-items-center w-100 flex-wrap gap-3">
+            <div>
+              <h3>{activeCircle ? activeCircle.name : "Pour vous"}</h3>
+              <p className="mb-0">
+                {activeCircle ? (activeCircle.description || "Espace d'entraide communautaire.") : "Les publications des profils suivis montent naturellement en premier."}
+              </p>
+              {activeCircle && (
+                <div className="mt-2 d-flex gap-2">
+                  <span className="badge bg-light text-dark border"><i className="bi bi-people-fill me-1" /> {activeCircle.memberCount || 0} membres</span>
+                  <span className="badge bg-light text-dark border"><i className="bi bi-shield-check me-1" /> Espace modere</span>
+                </div>
+              )}
+            </div>
+            <select className="form-select w-auto shadow-sm" value={activeServerFilter} onChange={(e) => setActiveServerFilter(e.target.value)} style={{ minWidth: '200px', borderRadius: '12px' }}>
+              <option value="">🚀 Pour vous (Global)</option>
               {(overview.circles || []).filter((circle) => circle.joined).map((circle) => (
-                <option key={circle.id} value={circle.id}>{circle.name}</option>
+                <option key={circle.id} value={circle.id}># {circle.name}</option>
               ))}
             </select>
           </div>
-        </div>
-        <form onSubmit={publishPost}>
-          <textarea
-            className="form-control social-space-textarea"
-            rows="4"
-            placeholder="Qu'est-ce qui merite d'etre partage aujourd'hui ?"
-            value={composer.content}
-            onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value }))}
-          />
-          {composer.imageUrl && (
-            <div className="social-space-upload-preview">
-              <img src={composer.imageUrl} alt="Apercu du post" />
-              <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))}>
-                Retirer
-              </button>
-            </div>
-          )}
-          <div className="social-space-composer-row">
-            <label className="social-space-upload-btn">
-              <i className="bi bi-image" />
-              <span>Photo</span>
-              <input type="file" accept="image/*" onChange={(event) => handleProfilePhoto(event, "post")} />
-            </label>
-            <button type="submit" className="btn btn-primary" disabled={publishing}>
-              {publishing ? "Publication..." : "Publier"}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="social-space-panel social-space-feed-header">
-        <div>
-          <h3>Pour vous</h3>
-          <p>Les publications des profils suivis montent naturellement en premier, puis les histoires qui engagent le plus la communaute.</p>
-        </div>
-      </section>
-
-      {loading ? (
-        <section className="social-space-panel"><p className="muted-text mb-0">Chargement du fil...</p></section>
-      ) : (overview.posts || []).length === 0 ? (
-        <section className="social-space-empty">
-          <h3>Le fil attend votre premiere histoire.</h3>
-          <p>Publiez une photo, un petit progres ou un moment difficile pour demarrer les echanges.</p>
         </section>
-      ) : (
-        (overview.posts || []).map(renderPostCard)
-      )}
-    </div>
-  );
+
+        {loading ? (
+          <section className="social-space-panel"><p className="muted-text mb-0">Chargement du fil...</p></section>
+        ) : feedPosts.length === 0 ? (
+          <section className="social-space-empty p-5 text-center">
+            <div className="mb-3"><i className="bi bi-inbox fs-1 text-muted"></i></div>
+            <h3>{activeCircle ? "Ce cercle est encore calme." : "Le fil attend votre premiere histoire."}</h3>
+            <p>{activeCircle ? "Soyez le premier à partager quelque chose avec ce groupe." : "Publiez une photo, un petit progres ou un moment difficile pour demarrer les echanges."}</p>
+          </section>
+        ) : (
+          feedPosts.map(renderPostCard)
+        )}
+      </div>
+    );
+  };
 
   const renderExplore = () => (
     <div className="social-space-column">
@@ -807,15 +835,17 @@ const Communities = () => {
   const renderMessages = () => (
     <div className="social-space-messaging">
       <aside className="social-space-thread-list">
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Discussions</h3>
-            <p>Vos amis et vos echanges prives.</p>
-          </div>
+        <div className="social-space-thread-head p-3 border-bottom d-flex align-items-center justify-content-between">
+          <h3 className="mb-0 fs-5 fw-bold">Discussions</h3>
+          <button type="button" className="btn btn-link p-0 text-dark">
+            <i className="bi bi-pencil-square fs-5" />
+          </button>
         </div>
         <div className="social-space-thread-scroll">
           {conversations.length === 0 ? (
-            <p className="muted-text mb-0">Ajoutez un ami pour demarrer une conversation.</p>
+            <div className="p-4 text-center">
+              <p className="muted-text mb-0">Ajoutez un ami pour demarrer une conversation.</p>
+            </div>
           ) : (
             conversations.map((conversation) => (
               <button
@@ -826,10 +856,12 @@ const Communities = () => {
               >
                 {renderAvatar({ profilePhotoUrl: conversation.counterpartPhotoUrl, name: conversation.counterpartName, username: conversation.counterpartUsername }, "social-space-avatar social-space-avatar-sm")}
                 <div>
-                  <strong>{conversation.counterpartName}</strong>
-                  <span>{conversation.lastMessage}</span>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <strong>{conversation.counterpartName}</strong>
+                    {conversation.unreadCount > 0 && <span className="badge rounded-circle bg-primary p-1" style={{ width: '8px', height: '8px' }}> </span>}
+                  </div>
+                  <span>{conversation.lastMessage || "Nouveau message..."}</span>
                 </div>
-                {conversation.unreadCount > 0 && <small>{conversation.unreadCount}</small>}
               </button>
             ))
           )}
@@ -838,13 +870,17 @@ const Communities = () => {
 
       <section className="social-space-thread-panel">
         {!activeChat ? (
-          <div className="social-space-thread-empty">
-            <h3>Choisissez une conversation</h3>
-            <p>Les messages directs vivent ici avec plus d'espace pour lire et repondre tranquillement.</p>
+          <div className="social-space-thread-empty flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center p-5">
+            <div className="rounded-circle border border-2 border-dark p-3 mb-3">
+              <i className="bi bi-send fs-1" />
+            </div>
+            <h3>Vos messages</h3>
+            <p className="muted-text">Envoyez des messages directs a vos amis pour un soutien plus personnel.</p>
+            <button type="button" className="btn btn-primary" onClick={() => setActiveSection("explore")}>Chercher des amis</button>
           </div>
         ) : (
           <>
-            <div className="social-space-thread-head">
+            <div className="social-space-thread-head p-3 border-bottom bg-white d-flex align-items-center gap-3">
               <button type="button" className="social-space-user-head is-inline" onClick={() => openProfile(activeChat.counterpartId || activeChat.id)}>
                 {renderAvatar(
                   {
@@ -854,39 +890,48 @@ const Communities = () => {
                   },
                   "social-space-avatar"
                 )}
-                <div>
-                  <strong>{activeChat.counterpartName || activeChat.name}</strong>
-                  <span>{activeChat.counterpartUsername ? `@${activeChat.counterpartUsername}` : activeChat.counterpartRole || activeChat.role}</span>
+                <div className="ms-2">
+                  <strong className="d-block">{activeChat.counterpartName || activeChat.name}</strong>
+                  <span className="muted-text" style={{ fontSize: '0.8rem' }}>{activeChat.counterpartUsername ? `@${activeChat.counterpartUsername}` : activeChat.counterpartRole || activeChat.role}</span>
                 </div>
               </button>
             </div>
 
-            <div className="social-space-thread-body">
+            <div className="social-space-thread-body p-4 flex-grow-1 overflow-auto bg-white">
               {messageLoading ? (
                 <p className="muted-text mb-0">Chargement des messages...</p>
               ) : (
                 chatMessages.map((message) => (
                   <div key={message.id} className={`social-space-message-bubble ${message.mine ? "is-mine" : ""}`}>
                     {message.sharedPostId && (
-                      <div className="social-space-shared-post">
-                        {message.sharedPostImageUrl && <img src={message.sharedPostImageUrl} alt={message.sharedPostPreview || "Post partage"} />}
+                      <div className="social-space-shared-post mb-2 p-2 border rounded bg-light">
+                        {message.sharedPostImageUrl && <img src={message.sharedPostImageUrl} alt={message.sharedPostPreview || "Post partage"} className="img-fluid rounded mb-2" />}
                         <div>
-                          <strong>{message.sharedPostAuthorName}</strong>
-                          <span>{message.sharedPostPreview}</span>
+                          <strong className="d-block small">{message.sharedPostAuthorName}</strong>
+                          <span className="small text-muted">{message.sharedPostPreview}</span>
                         </div>
                       </div>
                     )}
-                    {message.content && <p>{message.content}</p>}
-                    <small>{formatDate(message.createdAt)} · {message.status}</small>
+                    {message.content && <p className="mb-1">{message.content}</p>}
+                    <small className="opacity-50" style={{ fontSize: '0.7rem' }}>{formatDate(message.createdAt)}</small>
                   </div>
                 ))
               )}
             </div>
 
-            <form className="social-space-thread-form" onSubmit={sendMessage}>
-              <input className="form-control" value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="Ecrire un message prive" />
-              <button type="submit" className="btn btn-primary">Envoyer</button>
-            </form>
+            <div className="p-3 bg-white border-top">
+              <form className="social-space-thread-form d-flex gap-2 align-items-center" onSubmit={sendMessage}>
+                <div className="flex-grow-1 position-relative">
+                  <input 
+                    className="form-control rounded-pill px-4 py-2" 
+                    value={chatDraft} 
+                    onChange={(event) => setChatDraft(event.target.value)} 
+                    placeholder="Ecrire un message..." 
+                  />
+                </div>
+                <button type="submit" className="btn btn-link text-primary fw-bold text-decoration-none" disabled={!chatDraft.trim()}>Envoyer</button>
+              </form>
+            </div>
           </>
         )}
       </section>
@@ -901,16 +946,69 @@ const Communities = () => {
             <h3>Votre identite communautaire</h3>
             <p>Le username est ce qui sera vu par la communaute. La photo reste optionnelle.</p>
           </div>
+          <div className="position-relative">
+            <button 
+              type="button" 
+              className="btn btn-outline-dark btn-sm rounded-circle p-2" 
+              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+              style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <i className="bi bi-three-dots-vertical" />
+            </button>
+            {showOptionsMenu && (
+              <div className="profile-option-menu">
+                <button type="button" className="profile-option-item">
+                  <i className="bi bi-gear" /> <span>Parametres</span>
+                </button>
+                <button type="button" className="profile-option-item">
+                  <i className="bi bi-slash-circle" /> <span>Comptes bloques</span>
+                </button>
+                <button type="button" className="profile-option-item" onClick={() => { setShowArchives(true); setShowOptionsMenu(false); }}>
+                  <i className="bi bi-archive" /> <span>Archives stories</span>
+                </button>
+                <hr className="my-1" />
+                <button type="button" className="profile-option-item text-danger">
+                  <i className="bi bi-box-arrow-right" /> <span>Deconnexion</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <form onSubmit={saveProfile}>
           <div className="social-space-profile-layout">
-            <div className="social-space-profile-preview">
-              {renderAvatar({ profilePhotoUrl: profileForm.profilePhotoUrl, name: profileForm.username || viewer?.displayName, username: profileForm.username })}
-              <label className="social-space-upload-btn">
-                <i className="bi bi-camera" />
-                <span>Choisir une photo</span>
-                <input type="file" accept="image/*" onChange={(event) => handleProfilePhoto(event, "profile")} />
-              </label>
+            <div className="social-space-profile-preview position-relative" style={{ zIndex: 10 }}>
+              <div 
+                className="profile-avatar-interactive rounded-circle overflow-hidden d-flex align-items-center justify-content-center" 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                style={{ width: '120px', height: '120px', margin: '0 auto', border: '3px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              >
+                {profileForm.profilePhotoUrl ? (
+                  <img src={profileForm.profilePhotoUrl} className="w-100 h-100 object-fit-cover" alt="Profile" />
+                ) : (
+                  <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-primary fs-1 fw-bold">
+                    {(profileForm.username || viewer?.displayName || "NC").substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="profile-avatar-overlay">
+                  <i className="bi bi-camera-fill fs-3" />
+                </div>
+              </div>
+
+              {showProfileMenu && (
+                <div className="profile-option-menu" style={{ zIndex: 1000 }}>
+                  <label className="profile-option-item mb-0 cursor-pointer">
+                    <i className="bi bi-image" /> 
+                    <span>Choisir une photo</span>
+                    <input type="file" accept="image/*" className="d-none" onChange={(event) => { handleProfilePhoto(event, "profile"); setShowProfileMenu(false); }} />
+                  </label>
+                  <button type="button" className="profile-option-item" onClick={() => { setActiveSection("feed"); setShowProfileMenu(false); }}>
+                    <i className="bi bi-plus-circle" /> <span>Ajouter une story</span>
+                  </button>
+                  <button type="button" className="profile-option-item text-danger" onClick={() => { setProfileForm(p => ({ ...p, profilePhotoUrl: "" })); setShowProfileMenu(false); }}>
+                    <i className="bi bi-trash" /> <span>Supprimer la photo</span>
+                  </button>
+                </div>
+              )}
             </div>
             <div className="social-space-profile-fields">
               <div className="row g-3">
@@ -927,7 +1025,7 @@ const Communities = () => {
                   <textarea className="form-control" rows="3" value={profileForm.bio} onChange={(event) => setProfileForm((previous) => ({ ...previous, bio: event.target.value }))} placeholder="Quelques mots sur votre parcours ou votre maniere d'aider." />
                 </div>
               </div>
-              <div className="social-space-composer-row">
+              <div className="social-space-composer-row mt-3">
                 <button type="submit" className="btn btn-primary" disabled={savingProfile}>
                   {savingProfile ? "Enregistrement..." : "Enregistrer le profil"}
                 </button>
@@ -937,22 +1035,52 @@ const Communities = () => {
         </form>
       </section>
 
-      <section className="social-space-panel">
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Vos publications</h3>
-            <p>{myPosts.length} post{myPosts.length > 1 ? "s" : ""} deja visibles dans le fil.</p>
+      {showArchives ? (
+        <section className="social-space-panel">
+          <div className="social-space-panel-head d-flex align-items-center gap-3">
+            <button type="button" className="btn btn-link p-0 text-dark" onClick={() => setShowArchives(false)}>
+              <i className="bi bi-arrow-left fs-4" />
+            </button>
+            <div>
+              <h3>Archives des stories</h3>
+              <p>Retrouvez vos moments passes, classes par date.</p>
+            </div>
           </div>
-        </div>
-      </section>
-
-      {myPosts.length === 0 ? (
-        <section className="social-space-empty">
-          <h3>Votre profil est pret.</h3>
-          <p>Le premier post donnera vie a votre espace et aidera les autres a vous reconnaitre.</p>
+          <div className="row g-3 mt-2">
+            {[
+              { date: "12 Mai 2024", time: "14:20", text: "Premier jour sans tabac !", color: "#3b82f6" },
+              { date: "10 Mai 2024", time: "09:15", text: "Petit footing matinal", color: "#8b5cf6" },
+              { date: "05 Mai 2024", time: "22:45", text: "Moment de detente", color: "#10b981" }
+            ].map((arch, idx) => (
+              <div key={idx} className="col-6 col-md-4">
+                <div className="rounded-3 p-3 text-white d-flex flex-column justify-content-between shadow-sm" style={{ height: '160px', background: arch.color }}>
+                  <span className="small opacity-75">{arch.date} · {arch.time}</span>
+                  <strong className="small">{arch.text}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       ) : (
-        myPosts.map(renderPostCard)
+        <>
+          <section className="social-space-panel">
+            <div className="social-space-panel-head">
+              <div>
+                <h3>Vos publications</h3>
+                <p>{myPosts.length} post{myPosts.length > 1 ? "s" : ""} deja visibles dans le fil.</p>
+              </div>
+            </div>
+          </section>
+
+          {myPosts.length === 0 ? (
+            <section className="social-space-empty">
+              <h3>Votre profil est pret.</h3>
+              <p>Le premier post donnera vie a votre espace et aidera les autres a vous reconnaitre.</p>
+            </section>
+          ) : (
+            myPosts.map(renderPostCard)
+          )}
+        </>
       )}
     </div>
   );
@@ -980,11 +1108,17 @@ const Communities = () => {
 
       <section className="social-space-shell">
         <aside className="social-space-sidebar">
-          <div className="social-space-viewer-card">
+          <div className="social-space-viewer-card align-items-center">
             {renderAvatar({ profilePhotoUrl: viewer?.profilePhotoUrl, name: viewer?.displayName, username: viewer?.username })}
-            <div>
-              <strong>{viewer?.displayName || "Votre espace"}</strong>
-              <span>{viewer?.username ? `@${viewer.username}` : "Configurez votre profil"}</span>
+            <div className="d-flex flex-column overflow-hidden text-truncate">
+              {(!viewer?.displayName || viewer.displayName === viewer.username || viewer.displayName === `@${viewer.username}`) ? (
+                <strong className="text-truncate">{viewer?.username ? `@${viewer.username}` : "Votre espace"}</strong>
+              ) : (
+                <>
+                  <strong className="text-truncate">{viewer?.displayName}</strong>
+                  <span className="text-truncate text-muted" style={{ fontSize: '0.85rem' }}>{viewer?.username ? `@${viewer.username}` : "Configurez votre profil"}</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -1176,6 +1310,40 @@ const Communities = () => {
             </button>
           </Modal.Footer>
         </form>
+      </Modal>
+
+      <Modal show={Boolean(activeStory)} onHide={() => setActiveStory(null)} centered size="md" className="story-viewer-modal">
+        <Modal.Body className="p-0 position-relative bg-dark" style={{ height: '70vh', borderRadius: '16px', overflow: 'hidden' }}>
+          {activeStory && (
+            <>
+              <div className="story-progress-bar position-absolute top-0 w-100 p-2 d-flex gap-1" style={{ zIndex: 10 }}>
+                <div className="flex-grow-1 bg-white opacity-50 rounded-pill" style={{ height: '2px' }}>
+                  <div className="bg-white h-100 rounded-pill" style={{ width: '60%' }}></div>
+                </div>
+              </div>
+              <div className="story-header position-absolute top-0 w-100 p-3 d-flex align-items-center gap-2" style={{ zIndex: 10, marginTop: '8px' }}>
+                <img src={activeStory.avatar || "/icons/icon_Neural_Consult_Sevrage.png"} className="rounded-circle border border-white" style={{ width: '32px', height: '32px' }} alt="" />
+                <span className="text-white fw-bold small">{activeStory.name}</span>
+                <span className="text-white-50 small">12h</span>
+                <button type="button" className="btn-close btn-close-white ms-auto" onClick={() => setActiveStory(null)}></button>
+              </div>
+              <div className="story-content w-100 h-100 d-flex align-items-center justify-content-center">
+                {activeStory.avatar ? (
+                  <img src={activeStory.avatar} className="w-100 h-100 object-fit-cover" alt="" />
+                ) : (
+                  <div className="w-100 h-100 d-flex align-items-center justify-content-center text-white fs-1 fw-bold" style={{ background: 'linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6)' }}>
+                    {activeStory.initial}
+                  </div>
+                )}
+              </div>
+              <div className="story-footer position-absolute bottom-0 w-100 p-3 d-flex gap-2" style={{ zIndex: 10 }}>
+                <input className="form-control form-control-sm bg-transparent border-white text-white rounded-pill" placeholder="Repondre a la story..." />
+                <button className="btn btn-link text-white p-0"><i className="bi bi-heart fs-4"></i></button>
+                <button className="btn btn-link text-white p-0"><i className="bi bi-send fs-4"></i></button>
+              </div>
+            </>
+          )}
+        </Modal.Body>
       </Modal>
     </div>
   );

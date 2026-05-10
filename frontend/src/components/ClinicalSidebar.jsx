@@ -79,23 +79,42 @@ const ClinicalSidebar = () => {
       : patientNavItems;
   }, [adminMode, doctorMode, hasAssignedDoctor]);
 
+  const [isCollapsed, setIsCollapsed] = useState(localStorage.getItem("nc_sidebar_collapsed") === "true");
+
+  useEffect(() => {
+    localStorage.setItem("nc_sidebar_collapsed", isCollapsed);
+    // Broadcast change to App.jsx via class on body or custom event
+    document.body.classList.toggle("sidebar-collapsed", isCollapsed);
+  }, [isCollapsed]);
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
   return (
-    <aside className="clinical-sidebar">
-      <div className="sidebar-brand">
-        <div className="brand-mark" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="Logo" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover' }} />
+    <aside className={`clinical-sidebar ${isCollapsed ? "is-collapsed" : ""}`}>
+      <div className="sidebar-brand d-flex align-items-center justify-content-between w-100">
+        <div className="d-flex align-items-center gap-2">
+          <div className="brand-mark" style={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover' }} />
+          </div>
+          {!isCollapsed && (
+            <div>
+              <div className="sidebar-eyebrow">Calm Clinical Care</div>
+              <div className="sidebar-title">NeuralConsult</div>
+            </div>
+          )}
         </div>
-        <div>
-          <div className="sidebar-eyebrow">Calm Clinical Care</div>
-          <div className="sidebar-title">NeuralConsult</div>
-        </div>
+        <button type="button" className="sidebar-toggle-btn m-0 p-1" onClick={toggleSidebar}>
+          <i className={`bi ${isCollapsed ? "bi-text-indent-left" : "bi-text-indent-right"}`} />
+        </button>
       </div>
 
-      <div className="sidebar-patient">
-        <div className="sidebar-patient-label">{doctorMode || adminMode ? "Session en cours" : "Dossier en cours"}</div>
-        <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
-        <div className="sidebar-status-pill">{statusLabel}</div>
-      </div>
+      {!isCollapsed && (
+        <div className="sidebar-patient">
+          <div className="sidebar-patient-label">{doctorMode || adminMode ? "Session en cours" : "Dossier en cours"}</div>
+          <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
+          <div className="sidebar-status-pill">{statusLabel}</div>
+        </div>
+      )}
 
       <nav className="sidebar-nav" data-guide-id="sidebar-nav">
         {navItems.map((item) => (
@@ -104,25 +123,28 @@ const ClinicalSidebar = () => {
             className="sidebar-link"
             to={item.to}
             data-guide-id={item.guideId}
+            title={isCollapsed ? item.label : ""}
           >
             <span className="sidebar-link-icon">
-              <i className={item.icon} />
+              <i className={`${item.icon} fs-5`} />
             </span>
-            <span>{item.label}</span>
+            {!isCollapsed && <span className="sidebar-link-label">{item.label}</span>}
           </NavLink>
         ))}
       </nav>
 
-      <div className="sidebar-footer">
-        <div className="sidebar-footer-label">{isPatient(user) ? "Repere clinique" : "Pilotage clinique"}</div>
-        <div className="sidebar-footer-copy">
-          {adminMode
-            ? "Vue admin: valider les comptes medecins avant leur mise en relation avec les patients."
-            : doctorMode
-            ? "Vue medecin: lire le dossier, comprendre la progression et valider un plan adapte."
-            : "Une interface plus douce pour aider le patient a rester engage sans surcharge."}
+      {!isCollapsed && (
+        <div className="sidebar-footer">
+          <div className="sidebar-footer-label">{isPatient(user) ? "Repere clinique" : "Pilotage clinique"}</div>
+          <div className="sidebar-footer-copy">
+            {adminMode
+              ? "Vue admin: valider les comptes medecins avant leur mise en relation avec les patients."
+              : doctorMode
+              ? "Vue medecin: lire le dossier, comprendre la progression et valider un plan adapte."
+              : "Une interface plus douce pour aider le patient a rester engage sans surcharge."}
+          </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 };

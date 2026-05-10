@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "NeuralConsult Sevrage",
   "short_name": "NeuralConsult",
   "start_url": "/",
@@ -7,12 +7,12 @@
   "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon_Neural_Consult_Sevrage.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon_Neural_Consult_Sevrage.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -142,6 +142,19 @@ const Onboarding = () => {
   const [timelineScrollProgress, setTimelineScrollProgress] = useState(0);
 
   useEffect(() => {
+    // Fail-safe: If a non-patient user (doctor or admin) lands on this page, 
+    // redirect them to the dashboard immediately.
+    const isActuallyPatient = user && !user.roles?.some(r => {
+      const auth = typeof r === 'string' ? r : r.authority;
+      return auth === 'ROLE_DOCTOR' || auth === 'ROLE_ADMIN';
+    });
+
+    if (user && !isActuallyPatient) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
     const load = async () => {
       try {
         const { data } = await api.get("/api/onboarding");

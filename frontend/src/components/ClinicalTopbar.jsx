@@ -106,9 +106,12 @@ const ClinicalTopbar = () => {
 
   return (
     <header className="clinical-topbar">
-      <div>
-        <div className="topbar-eyebrow">{meta.eyebrow}</div>
-        <h1 className="topbar-title">{meta.title}</h1>
+      <div className="d-flex align-items-center gap-3">
+        <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
+        <div>
+          <div className="topbar-eyebrow">{meta.eyebrow}</div>
+          <h1 className="topbar-title">{meta.title}</h1>
+        </div>
       </div>
 
       <div className="topbar-actions">

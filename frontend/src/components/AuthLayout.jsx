@@ -28,10 +28,26 @@ const AuthLayout = () => {
           <Auth3DScene />
           
           <div style={{ position: "relative", zIndex: 2 }}>
-            <div className="d-flex align-items-center gap-2 mb-4">
-              <img src="/icons/icon%20Neural%20Consult%20severage.jpg" alt="Logo" style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }} />
+              <div className="tabac-auth-logo-wrapper">
+                <img 
+                  src="/icons/icon_Neural_Consult_Sevrage.png" 
+                  alt="NeuralConsult" 
+                  className="tabac-auth-logo-img"
+                  onLoad={(e) => {
+                    const fallback = e.target.parentElement.querySelector('.tabac-auth-logo-fallback');
+                    if (fallback) fallback.style.display = 'none';
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const fallback = e.target.parentElement.querySelector('.tabac-auth-logo-fallback');
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+                <div className="tabac-auth-logo-fallback">
+                  <i className="bi bi-brain-fill" />
+                </div>
+              </div>
               <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1e3a8a" }}>NeuralConsult</span>
-            </div>
             <h2>Une expérience clinique réinventée</h2>
             <ul>
               <li><i className="bi bi-graph-up-arrow" /> Suivi personnalisé de vos progrès</li>

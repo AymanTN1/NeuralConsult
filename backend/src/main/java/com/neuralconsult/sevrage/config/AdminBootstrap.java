@@ -13,15 +13,18 @@ public class AdminBootstrap {
 
   @Bean
   ApplicationRunner adminBootstrapRunner(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-    return args -> userRepository.findByEmailIgnoreCase("admin@neuralconsult.ma").orElseGet(() -> {
-      User admin = new User();
-      admin.setEmail("admin@neuralconsult.ma");
-      admin.setFullName("Administrateur NeuralConsult");
-      admin.setPasswordHash(passwordEncoder.encode("Admin123!"));
-      admin.setRoles(Set.of("ROLE_ADMIN"));
-      admin.setStatus(User.UserStatus.ACTIVE);
-      admin.setAccountEnabled(true);
-      return userRepository.save(admin);
-    });
+    return args -> {
+      User admin = userRepository.findByEmailIgnoreCase("admin@neuralconsult.ma").orElseGet(() -> {
+        User u = new User();
+        u.setEmail("admin@neuralconsult.ma");
+        u.setFullName("Administrateur NeuralConsult");
+        u.setStatus(User.UserStatus.ACTIVE);
+        u.setAccountEnabled(true);
+        return u;
+      });
+      admin.setPasswordHash(passwordEncoder.encode("password"));
+      admin.setRoles(Set.of("ROLE_ADMIN", "ROLE_USER"));
+      userRepository.save(admin);
+    };
   }
 }

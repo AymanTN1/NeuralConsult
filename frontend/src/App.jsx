@@ -7,7 +7,7 @@ import ClinicalSidebar from "./components/ClinicalSidebar";
 import ClinicalTopbar from "./components/ClinicalTopbar";
 import PatientGuide from "./components/PatientGuide";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { isAdmin, isPatient } from "./utils/roles";
+import { isAdmin, isDoctor, isPatient } from "./utils/roles";
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -63,7 +63,7 @@ const AppShell = () => {
                 path="/evaluation"
                 element={
                   <ProtectedRoute>
-                    <Onboarding />
+                    {(!isAdmin(user) && !isDoctor(user)) ? <Onboarding /> : <Navigate to="/dashboard" replace />}
                   </ProtectedRoute>
                 }
               />
@@ -169,7 +169,7 @@ const AppShell = () => {
                 path="/evaluation"
                 element={
                   <ProtectedRoute>
-                    <Onboarding />
+                    {(!isAdmin(user) && !isDoctor(user)) ? <Onboarding /> : <Navigate to="/dashboard" replace />}
                   </ProtectedRoute>
                 }
               />

@@ -7641,3 +7641,55 @@ body {
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25) !important;
 }
 
+
+/* Branding & Sidebar Fixes */
+.sidebar-link-label { font-weight: 500; font-size: 0.95rem; }
+.tabac-auth-logo-wrapper { width: 48px; height: 48px; border-radius: 12px; background: var(--nc-panel-border); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 1.5rem; }
+.tabac-auth-logo-img { width: 100%; height: 100%; object-fit: cover; }
+.tabac-auth-logo-fallback { font-size: 1.5rem; color: var(--nc-glow); display: flex; align-items: center; justify-content: center; }
+
+/* Password Toggle & Logo Fixes */
+.auth-pass-toggle { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #6b7280; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 0.5rem; transition: color 0.2s; font-size: 1.1rem; }
+.auth-pass-toggle:hover { color: #3b82f6; }
+.tabac-auth-logo-fallback { font-size: 1.8rem; color: #3b82f6; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.light-input-icon { padding-left: 2.8rem !important; }
+
+/* Collapsible Sidebar & Social Overhaul */
+.clinical-sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+.clinical-sidebar.is-collapsed { width: 80px !important; }
+.clinical-sidebar.is-collapsed .sidebar-link-label,
+.clinical-sidebar.is-collapsed .sidebar-eyebrow,
+.clinical-sidebar.is-collapsed .sidebar-title,
+.clinical-sidebar.is-collapsed .sidebar-patient,
+.clinical-sidebar.is-collapsed .sidebar-footer { display: none; }
+.clinical-sidebar.is-collapsed .sidebar-brand { justify-content: center; padding: 1.5rem 0; }
+.clinical-sidebar.is-collapsed .sidebar-link { justify-content: center; padding: 0.8rem 0; }
+.clinical-sidebar.is-collapsed .sidebar-link-icon { margin-right: 0 !important; }
+
+.sidebar-toggle-btn { background: none; border: none; color: var(--nc-glow); font-size: 1.2rem; cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; transition: transform 0.2s; }
+.sidebar-toggle-btn:hover { transform: scale(1.1); }
+
+/* Instagram Messaging Layout */
+.social-space-messaging { display: flex; height: calc(100vh - 200px); background: #fff; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); overflow: hidden; }
+.social-space-thread-list { width: 350px; border-right: 1px solid rgba(0,0,0,0.05); display: flex; flexDirection: column; }
+.social-space-thread-panel { flex: 1; display: flex; flexDirection: column; background: #fafafa; }
+.social-space-thread-scroll { flex: 1; overflow-y: auto; }
+.social-space-thread-card { width: 100%; display: flex; align-items: center; padding: 1rem; border: none; background: none; text-align: left; transition: background 0.2s; border-bottom: 1px solid rgba(0,0,0,0.02); }
+.social-space-thread-card:hover { background: #f8fafc; }
+.social-space-thread-card.is-active { background: #f0f7ff; }
+.social-space-thread-card div { margin-left: 1rem; flex: 1; overflow: hidden; }
+.social-space-thread-card strong { display: block; font-size: 0.95rem; }
+.social-space-thread-card span { display: block; font-size: 0.85rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Profile Photo Interactions */
+.profile-avatar-interactive { position: relative; cursor: pointer; transition: opacity 0.2s; }
+.profile-avatar-interactive:hover { opacity: 0.9; }
+.profile-avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; opacity: 0; transition: opacity 0.2s; }
+.profile-avatar-interactive:hover .profile-avatar-overlay { opacity: 1; }
+.profile-option-menu { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: #fff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); z-index: 100; min-width: 180px; padding: 0.5rem 0; margin-top: 0.5rem; }
+.profile-option-item { width: 100%; padding: 0.6rem 1rem; border: none; background: none; text-align: left; font-size: 0.9rem; transition: background 0.2s; display: flex; align-items: center; gap: 0.75rem; }
+.profile-option-item:hover { background: #f1f5f9; }
+.profile-option-item i { font-size: 1.1rem; color: #64748b; }
+
+.clinical-workstation { transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+body.sidebar-collapsed .clinical-workstation { grid-template-columns: 80px minmax(0, 1fr); }

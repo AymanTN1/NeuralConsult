@@ -31,9 +31,12 @@ public abstract class AuditableEntity {
   private UUID id;
 
   @CreatedDate
-  @Setter(AccessLevel.NONE)
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
+
+  public void setCreatedAt(Instant createdAt) {
+    this.createdAt = createdAt;
+  }
 
   @LastModifiedDate
   @Setter(AccessLevel.NONE)

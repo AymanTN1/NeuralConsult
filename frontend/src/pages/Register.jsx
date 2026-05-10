@@ -57,6 +57,7 @@ const Register = () => {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [docStep, setDocStep] = useState("idle"); // idle | uploading | done | error
   const [professionalCard, setProfessionalCard] = useState(null);
@@ -363,7 +364,23 @@ const Register = () => {
         )}
 
         <label className="form-label">Mot de passe</label>
-        <input className="form-control light-input" type="password" name="password" value={form.password} onChange={handleChange} required />
+        <div className="position-relative">
+          <input 
+            className="form-control light-input" 
+            type={showPassword ? "text" : "password"} 
+            name="password" 
+            value={form.password} 
+            onChange={handleChange} 
+            required 
+          />
+          <button
+            type="button"
+            className="auth-pass-toggle"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
+          </button>
+        </div>
 
         <IdentityOcrVerifier
           firstName={form.firstName}

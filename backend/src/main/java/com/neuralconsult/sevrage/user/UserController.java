@@ -50,13 +50,11 @@ public class UserController {
   }
 
   private boolean isPatient(User user) {
-    // A user is a patient only if they are NOT a doctor or admin
-    if (user.getRoles().contains("ROLE_DOCTOR") || user.getRoles().contains("ROLE_ADMIN")) {
+    Set<String> roles = user.getRoles();
+    if (roles.contains("ROLE_DOCTOR") || roles.contains("ROLE_ADMIN")) {
       return false;
     }
-    return user.getRoles().isEmpty()
-        || user.getRoles().contains("ROLE_PATIENT")
-        || user.getRoles().contains("ROLE_USER");
+    return roles.contains("ROLE_PATIENT") || roles.contains("PATIENT");
   }
 
   private Set<String> normalizeRoles(User user) {

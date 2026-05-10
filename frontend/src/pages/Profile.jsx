@@ -115,7 +115,33 @@ const Profile = () => {
     }
   };
 
-  const profile = user?.profile;
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleProfilePhoto = async (event) => {
+    try {
+      const file = event.target.files?.[0];
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = String(reader.result || "");
+        if (dataUrl.length > 1_800_000) {
+          setMessage({ type: "error", text: "L'image est trop lourde." });
+          return;
+        }
+        // Update via API
+        await api.put("/api/communities/social/profile", { 
+          ...user.profile, 
+          profilePhotoUrl: dataUrl,
+          username: user.profile.username || user.fullName?.toLowerCase().replace(/\s+/g, ".")
+        });
+        await refetch();
+        setShowProfileMenu(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setMessage({ type: "error", text: "Impossible de charger cette image." });
+    }
+  };
+
   const profileCards = useMemo(
     () => [
       { label: "Prenom legal", value: user?.firstName || "Non renseigne" },
@@ -140,14 +166,56 @@ const Profile = () => {
 
   return (
       <div className="container py-4 app-shell" data-guide-id="profile-main">
-        <div className="profile-page-header" data-guide-id="profile-header">
-        <div>
-          <div className="hero-kicker">Profil personnel</div>
-          <h2 className="fw-bold mb-1">Fiche d'identite patient</h2>
-          <p className="muted-text mb-0">
-            Cette page ne contient que les informations personnelles et demographiques. Les questions
-            cliniques et tabacologiques restent dans l'evaluation obligatoire.
-          </p>
+      <div className="profile-page-header mb-5" data-guide-id="profile-header">
+        <div className="d-flex align-items-center gap-4">
+          <div className="position-relative">
+            <div 
+              className="profile-avatar-interactive" 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              style={{ width: '100px', height: '100px' }}
+            >
+              {user?.profile?.profilePhotoUrl ? (
+                <img 
+                  src={user.profile.profilePhotoUrl} 
+                  alt={user.fullName} 
+                  className="rounded-circle w-100 h-100 object-fit-cover border" 
+                />
+              ) : (
+                <div className="rounded-circle w-100 h-100 bg-light border d-flex align-items-center justify-content-center fs-2 fw-bold text-primary">
+                  {user?.fullName?.charAt(0)}
+                </div>
+              )}
+              <div className="profile-avatar-overlay">
+                <i className="bi bi-camera-fill fs-3" />
+              </div>
+            </div>
+
+            {showProfileMenu && (
+              <div className="profile-option-menu" style={{ left: '0', transform: 'none' }}>
+                <label className="profile-option-item mb-0 cursor-pointer">
+                  <i className="bi bi-image" /> 
+                  <span>Choisir une photo</span>
+                  <input type="file" accept="image/*" className="d-none" onChange={handleProfilePhoto} />
+                </label>
+                <hr className="my-1" />
+                <button type="button" className="profile-option-item text-danger" onClick={async () => {
+                  await api.put("/api/communities/social/profile", { ...user.profile, profilePhotoUrl: "" });
+                  await refetch();
+                  setShowProfileMenu(false);
+                }}>
+                  <i className="bi bi-trash" /> <span>Supprimer</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="hero-kicker">Profil personnel</div>
+            <h2 className="fw-bold mb-1">{user?.fullName || "Patient"}</h2>
+            <p className="muted-text mb-0">
+              {user?.email} · {user?.profile?.onboardingComplete ? "Parcours verifie" : "En cours d'onboarding"}
+            </p>
+          </div>
         </div>
         <div className="profile-header-actions">
           <Link className="btn btn-outline-dark btn-sm" to="/evaluation">
