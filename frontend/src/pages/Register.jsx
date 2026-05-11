@@ -290,7 +290,7 @@ const Register = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (loading || otpSending) return;
-    if (form.phoneNumber && !bypassCin) {
+    if (form.phoneNumber) {
       await triggerSmsAndShowModal();
     } else {
       await completeRegistration();
