@@ -10,6 +10,7 @@ import { isFirebaseConfigured, createRecaptchaVerifier, sendVerificationSMS } fr
 const initialForm = {
   email: "",
   password: "",
+  confirmPassword: "",
   firstName: "",
   lastName: "",
   dateOfBirth: "",
@@ -352,35 +353,53 @@ const Register = () => {
 
         {!doctorMode && (
           <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label">Pseudonyme (Optionnel - Pour chat anonyme)</label>
-              <input className="form-control light-input" type="text" name="pseudonym" value={form.pseudonym} onChange={handleChange} placeholder="Ex: SevreZen" />
-            </div>
-            <div className="col-md-6">
+            <div className="col-md-12">
               <label className="form-label">Contact d'urgence (Optionnel)</label>
               <input className="form-control light-input" type="text" name="emergencyContact" value={form.emergencyContact} onChange={handleChange} placeholder="Ex: Proche +212..." />
             </div>
           </div>
         )}
 
-        <label className="form-label">Mot de passe</label>
-        <div className="position-relative">
-          <input 
-            className="form-control light-input" 
-            type={showPassword ? "text" : "password"} 
-            name="password" 
-            value={form.password} 
-            onChange={handleChange} 
-            required 
-          />
-          <button
-            type="button"
-            className="auth-pass-toggle"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
-          </button>
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label">Mot de passe</label>
+            <div className="position-relative">
+              <input 
+                className="form-control light-input" 
+                type={showPassword ? "text" : "password"} 
+                name="password" 
+                value={form.password} 
+                onChange={handleChange} 
+                required 
+              />
+              <button
+                type="button"
+                className="auth-pass-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`} />
+              </button>
+            </div>
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Confirmer le mot de passe</label>
+            <div className="position-relative">
+              <input 
+                className={`form-control light-input ${form.confirmPassword ? (form.password === form.confirmPassword ? "is-valid" : "is-invalid") : ""}`} 
+                type={showPassword ? "text" : "password"} 
+                name="confirmPassword" 
+                value={form.confirmPassword} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+          </div>
         </div>
+        {form.confirmPassword && form.password !== form.confirmPassword && (
+          <div className="text-danger mt-1" style={{ fontSize: "0.8rem" }}>
+            <i className="bi bi-x-circle me-1"></i> Les mots de passe ne sont pas identiques.
+          </div>
+        )}
 
         <IdentityOcrVerifier
           firstName={form.firstName}
@@ -717,7 +736,7 @@ const Register = () => {
 
         <button
           className="btn tabac-btn-submit w-100"
-          disabled={loading || otpSending || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid}
+          disabled={loading || otpSending || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid || form.password !== form.confirmPassword}
         >
           {loading ? "Création..." : otpSending ? "Envoi du SMS..." : doctorMode ? "Créer le compte médecin" : "Activer mon espace patient"}
         </button>

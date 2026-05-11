@@ -107,6 +107,12 @@ const Communities = () => {
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [activeStory, setActiveStory] = useState(null);
   const [showArchives, setShowArchives] = useState(false);
+  const [selectedServerId, setSelectedServerId] = useState(null);
+  const [showCreateServerModal, setShowCreateServerModal] = useState(false);
+  const [showServerSettings, setShowServerSettings] = useState(false);
+  const [serverForm, setServerForm] = useState({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
+  const [creatingServer, setCreatingServer] = useState(false);
+  const [mockMembers, setMockMembers] = useState({});
 
   const viewer = overview.viewer;
   const myPosts = useMemo(
@@ -599,44 +605,190 @@ const Communities = () => {
     );
   };
 
-  const [activeServerFilter, setActiveServerFilter] = useState("");
+
+  const getActiveServer = () => (overview.circles || []).find(c => c.id === selectedServerId) || null;
+
+  const createServer = async (e) => {
+    e.preventDefault();
+    if (!serverForm.name.trim()) return;
+    setCreatingServer(true);
+    try {
+      const { data } = await api.post("/api/communities/servers", serverForm);
+      setOverview(prev => ({ ...prev, circles: [...(prev.circles || []), { ...data, joined: true, myRole: "OWNER" }] }));
+      setSelectedServerId(data.id);
+      // Seed mock members for new server
+      setMockMembers(prev => ({ ...prev, [data.id]: [
+        { id: "m1", name: viewer?.displayName || viewer?.username || "Vous", username: viewer?.username, role: "OWNER", avatar: viewer?.profilePhotoUrl },
+      ]}));
+      setServerForm({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
+      setShowCreateServerModal(false);
+      setToast("success", `Serveur "${data.name}" cree avec succes !`);
+    } catch {
+      // Create a local mock server if API fails (demo mode)
+      const mockId = `local-${Date.now()}`;
+      const mockServer = { id: mockId, name: serverForm.name, description: serverForm.description, visibility: serverForm.visibility, joined: true, myRole: "OWNER", memberCount: 1, createdAt: new Date().toISOString() };
+      setOverview(prev => ({ ...prev, circles: [...(prev.circles || []), mockServer] }));
+      setSelectedServerId(mockId);
+      setMockMembers(prev => ({ ...prev, [mockId]: [
+        { id: "m1", name: viewer?.displayName || viewer?.username || "Vous", username: viewer?.username, role: "OWNER", avatar: viewer?.profilePhotoUrl },
+      ]}));
+      setServerForm({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
+      setShowCreateServerModal(false);
+      setToast("success", `Serveur "${serverForm.name}" cree (mode demo) !`);
+    } finally {
+      setCreatingServer(false);
+    }
+  };
+
+  const changeMemberRole = (serverId, memberId, newRole) => {
+    setMockMembers(prev => ({
+      ...prev,
+      [serverId]: (prev[serverId] || []).map(m => m.id === memberId ? { ...m, role: newRole } : m)
+    }));
+  };
+
+  const kickMember = (serverId, memberId) => {
+    setMockMembers(prev => ({
+      ...prev,
+      [serverId]: (prev[serverId] || []).filter(m => m.id !== memberId)
+    }));
+  };
+
+  const renderServerMemberPanel = () => {
+    const server = getActiveServer();
+    if (!server) return null;
+    const members = mockMembers[server.id] || (overview.people || []).slice(0, 8).map((p, i) => ({
+      id: p.id || i,
+      name: p.name,
+      username: p.username,
+      avatar: p.profilePhotoUrl,
+      role: i === 0 ? "OWNER" : i < 2 ? "ADMIN" : i < 4 ? "MODERATOR" : "MEMBER"
+    }));
+
+    const roleOrder = ["OWNER", "ADMIN", "MODERATOR", "MEMBER"];
+    const roleLabel = { OWNER: "👑 Propriétaire", ADMIN: "🛡️ Administrateurs", MODERATOR: "🔨 Modérateurs", MEMBER: "👤 Membres" };
+    const roleColor = { OWNER: "#f59e0b", ADMIN: "#3b82f6", MODERATOR: "#8b5cf6", MEMBER: "#6b7280" };
+    const grouped = roleOrder.reduce((acc, r) => { acc[r] = members.filter(m => m.role === r); return acc; }, {});
+    const isAdmin = server.myRole === "OWNER" || server.myRole === "ADMIN";
+
+    return (
+      <aside className="social-space-sidepane">
+        <section className="social-space-panel" style={{ position: "sticky", top: "100px" }}>
+          <div className="social-space-panel-head">
+            <div>
+              <h3 style={{ fontSize: "1rem" }}>Membres</h3>
+              <p>{server.memberCount || members.length} dans ce serveur</p>
+            </div>
+            {isAdmin && (
+              <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setShowServerSettings(true)}>
+                <i className="bi bi-gear" />
+              </button>
+            )}
+          </div>
+          <div style={{ maxHeight: "calc(100vh - 260px)", overflowY: "auto" }}>
+            {roleOrder.map(role => grouped[role].length > 0 && (
+              <div key={role}>
+                <div className="discord-member-role-header" style={{ color: roleColor[role] }}>{roleLabel[role]} — {grouped[role].length}</div>
+                {grouped[role].map(member => (
+                  <button key={member.id} type="button" className="discord-member-item" onClick={() => isAdmin && member.role !== "OWNER" && setShowServerSettings(true)}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {member.avatar
+                        ? <img src={member.avatar} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#374151" }}>{avatarFallback(member.name)}</span>
+                      }
+                    </div>
+                    <div className="discord-member-item-info">
+                      <strong>{member.name}</strong>
+                      <span>{member.username ? `@${member.username}` : role}</span>
+                    </div>
+                    <span className="ms-auto" style={{ fontSize: "0.65rem", background: roleColor[role] + "22", color: roleColor[role], padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>
+                      {role === "OWNER" ? "Owner" : role === "ADMIN" ? "Admin" : role === "MODERATOR" ? "Mod" : ""}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      </aside>
+    );
+  };
+
+  const renderDiscordServerSidebar = () => {
+    const myCircles = (overview.circles || []).filter(c => c.joined);
+    return (
+      <div className="discord-server-sidebar">
+        <button type="button" className={`discord-server-btn ${!selectedServerId ? "is-active" : ""}`} title="Fil global" onClick={() => setSelectedServerId(null)}>
+          <i className="bi bi-house-heart-fill" />
+        </button>
+        {myCircles.length > 0 && <div className="discord-server-divider" />}
+        {myCircles.map(circle => (
+          <button key={circle.id} type="button" className={`discord-server-btn ${selectedServerId === circle.id ? "is-active" : ""}`} title={circle.name} onClick={() => setSelectedServerId(circle.id)}>
+            {circle.iconUrl
+              ? <img src={circle.iconUrl} alt={circle.name} />
+              : <span>{avatarFallback(circle.name)}</span>
+            }
+          </button>
+        ))}
+        <div className="discord-server-divider" />
+        <button type="button" className="discord-server-btn" title="Creer un serveur" onClick={() => setShowCreateServerModal(true)} style={{ background: "#f0fdf4", color: "#16a34a", fontSize: "1.4rem" }}>
+          <i className="bi bi-plus-lg" />
+        </button>
+      </div>
+    );
+  };
 
   const renderFeed = () => {
-    const feedPosts = activeServerFilter ? (overview.posts || []).filter(p => p.serverId === activeServerFilter) : (overview.posts || []);
-    const activeCircle = (overview.circles || []).find(c => c.id === activeServerFilter);
+    const activeCircle = getActiveServer();
+    const feedPosts = activeCircle ? (overview.posts || []).filter(p => p.serverId === activeCircle.id) : (overview.posts || []);
 
     return (
       <div className="social-space-column">
-        {renderStories()}
+        {!activeCircle && renderStories()}
+        {activeCircle && (
+          <section className="social-space-panel" style={{ background: "linear-gradient(135deg, #667eea22, #764ba222)", border: "1px solid rgba(102,126,234,0.2)" }}>
+            <div className="d-flex align-items-center gap-3">
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "#764ba2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 700, color: "white", flexShrink: 0 }}>
+                {activeCircle.iconUrl ? <img src={activeCircle.iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} /> : avatarFallback(activeCircle.name)}
+              </div>
+              <div className="flex-grow-1">
+                <h3 className="mb-0 fw-bold"># {activeCircle.name}</h3>
+                <p className="mb-1 text-muted small">{activeCircle.description || "Espace d'entraide communautaire."}</p>
+                <div className="d-flex gap-2 flex-wrap">
+                  <span className="badge" style={{ background: "#764ba222", color: "#764ba2" }}><i className="bi bi-people-fill me-1" />{activeCircle.memberCount || 1} membres</span>
+                  {activeCircle.myRole === "OWNER" && <span className="badge" style={{ background: "#fef3c722", color: "#f59e0b" }}>👑 Propriétaire</span>}
+                  {activeCircle.myRole === "ADMIN" && <span className="badge" style={{ background: "#dbeafe", color: "#3b82f6" }}>🛡️ Admin</span>}
+                  <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}>🔓 {activeCircle.visibility === "PRIVATE" ? "Privé" : "Public"}</span>
+                </div>
+              </div>
+              {(activeCircle.myRole === "OWNER" || activeCircle.myRole === "ADMIN") && (
+                <button type="button" className="btn btn-light btn-sm rounded-circle" onClick={() => setShowServerSettings(true)}>
+                  <i className="bi bi-gear-fill" />
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
         <section className="social-space-panel social-space-composer">
           <div className="social-space-panel-head">
             <div>
               <h3>Publier dans le fil</h3>
-              <p>Une victoire, une photo, une pensee ou une difficulte du jour.</p>
-            </div>
-            <div className="social-space-circle-picker">
-              <select className="form-select" value={composer.serverId} onChange={(event) => setComposer((previous) => ({ ...previous, serverId: event.target.value }))}>
-                <option value="">Pour vous</option>
-                {(overview.circles || []).filter((circle) => circle.joined).map((circle) => (
-                  <option key={circle.id} value={circle.id}>{circle.name}</option>
-                ))}
-              </select>
+              <p>{activeCircle ? `Dans #${activeCircle.name}` : "Une victoire, une photo, une pensee ou une difficulte du jour."}</p>
             </div>
           </div>
           <form onSubmit={publishPost}>
             <textarea
               className="form-control social-space-textarea"
-              rows="4"
-              placeholder="Qu'est-ce qui merite d'etre partage aujourd'hui ?"
+              rows="3"
+              placeholder={activeCircle ? `Ecrire dans #${activeCircle.name}...` : "Qu'est-ce qui merite d'etre partage aujourd'hui ?"}
               value={composer.content}
-              onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value }))}
+              onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value, serverId: activeCircle?.id || "" }))}
             />
             {composer.imageUrl && (
               <div className="social-space-upload-preview">
                 <img src={composer.imageUrl} alt="Apercu du post" />
-                <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))}>
-                  Retirer
-                </button>
+                <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))}>Retirer</button>
               </div>
             )}
             <div className="social-space-composer-row">
@@ -652,35 +804,12 @@ const Communities = () => {
           </form>
         </section>
 
-        <section className="social-space-panel social-space-feed-header">
-          <div className="d-flex justify-content-between align-items-center w-100 flex-wrap gap-3">
-            <div>
-              <h3>{activeCircle ? activeCircle.name : "Pour vous"}</h3>
-              <p className="mb-0">
-                {activeCircle ? (activeCircle.description || "Espace d'entraide communautaire.") : "Les publications des profils suivis montent naturellement en premier."}
-              </p>
-              {activeCircle && (
-                <div className="mt-2 d-flex gap-2">
-                  <span className="badge bg-light text-dark border"><i className="bi bi-people-fill me-1" /> {activeCircle.memberCount || 0} membres</span>
-                  <span className="badge bg-light text-dark border"><i className="bi bi-shield-check me-1" /> Espace modere</span>
-                </div>
-              )}
-            </div>
-            <select className="form-select w-auto shadow-sm" value={activeServerFilter} onChange={(e) => setActiveServerFilter(e.target.value)} style={{ minWidth: '200px', borderRadius: '12px' }}>
-              <option value="">🚀 Pour vous (Global)</option>
-              {(overview.circles || []).filter((circle) => circle.joined).map((circle) => (
-                <option key={circle.id} value={circle.id}># {circle.name}</option>
-              ))}
-            </select>
-          </div>
-        </section>
-
         {loading ? (
           <section className="social-space-panel"><p className="muted-text mb-0">Chargement du fil...</p></section>
         ) : feedPosts.length === 0 ? (
           <section className="social-space-empty p-5 text-center">
-            <div className="mb-3"><i className="bi bi-inbox fs-1 text-muted"></i></div>
-            <h3>{activeCircle ? "Ce cercle est encore calme." : "Le fil attend votre premiere histoire."}</h3>
+            <div className="mb-3"><i className={`bi ${activeCircle ? "bi-hash" : "bi-inbox"} fs-1 text-muted`} /></div>
+            <h3>{activeCircle ? `#${activeCircle.name} est encore calme.` : "Le fil attend votre premiere histoire."}</h3>
             <p>{activeCircle ? "Soyez le premier à partager quelque chose avec ce groupe." : "Publiez une photo, un petit progres ou un moment difficile pour demarrer les echanges."}</p>
           </section>
         ) : (
@@ -689,6 +818,7 @@ const Communities = () => {
       </div>
     );
   };
+
 
   const renderExplore = () => (
     <div className="social-space-column">
@@ -1107,6 +1237,8 @@ const Communities = () => {
       )}
 
       <section className="social-space-shell">
+        {renderDiscordServerSidebar()}
+
         <aside className="social-space-sidebar">
           <div className="social-space-viewer-card align-items-center">
             {renderAvatar({ profilePhotoUrl: viewer?.profilePhotoUrl, name: viewer?.displayName, username: viewer?.username })}
@@ -1161,49 +1293,157 @@ const Communities = () => {
           {activeSection === "profile" && renderProfile()}
         </main>
 
-        <aside className="social-space-sidepane">
-          <section className="social-space-panel">
-            <div className="social-space-panel-head">
-              <div>
-                <h3>A la une</h3>
-                <p>Un regard rapide sur votre espace relationnel.</p>
+        {activeSection === "feed" && selectedServerId ? renderServerMemberPanel() : (
+          <aside className="social-space-sidepane">
+            <section className="social-space-panel">
+              <div className="social-space-panel-head">
+                <div>
+                  <h3>A la une</h3>
+                  <p>Un regard rapide sur votre espace relationnel.</p>
+                </div>
               </div>
-            </div>
-            <div className="social-space-compact-list">
-              {friends.slice(0, 5).map((friend) => (
-                <button key={friend.id} type="button" className="social-space-compact-item" onClick={() => openConversation(friend)}>
-                  {renderAvatar(friend, "social-space-avatar social-space-avatar-sm")}
-                  <div>
-                    <strong>{friend.name}</strong>
-                    <span>{friend.username ? `@${friend.username}` : friend.role}</span>
-                  </div>
-                </button>
-              ))}
-              {friends.length === 0 && <p className="muted-text mb-0">Les amis acceptes apparaitront ici.</p>}
-            </div>
-          </section>
+              <div className="social-space-compact-list">
+                {friends.slice(0, 5).map((friend) => (
+                  <button key={friend.id} type="button" className="social-space-compact-item" onClick={() => openConversation(friend)}>
+                    {renderAvatar(friend, "social-space-avatar social-space-avatar-sm")}
+                    <div>
+                      <strong>{friend.name}</strong>
+                      <span>{friend.username ? `@${friend.username}` : friend.role}</span>
+                    </div>
+                  </button>
+                ))}
+                {friends.length === 0 && <p className="muted-text mb-0">Les amis acceptes apparaitront ici.</p>}
+              </div>
+            </section>
 
-          <section className="social-space-panel">
-            <div className="social-space-panel-head">
-              <div>
-                <h3>Profils a voir</h3>
-                <p>Une selection courte pour ne pas surcharger l'ecran.</p>
+            <section className="social-space-panel">
+              <div className="social-space-panel-head">
+                <div>
+                  <h3>Profils a voir</h3>
+                  <p>Une selection courte pour ne pas surcharger l'ecran.</p>
+                </div>
               </div>
-            </div>
-            <div className="social-space-compact-list">
-              {(overview.people || []).slice(0, 4).map((person) => (
-                <button key={person.id} type="button" className="social-space-compact-item" onClick={() => openProfile(person.id)}>
-                  {renderAvatar(person, "social-space-avatar social-space-avatar-sm")}
-                  <div>
-                    <strong>{person.name}</strong>
-                    <span>{person.username ? `@${person.username}` : person.role}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-        </aside>
+              <div className="social-space-compact-list">
+                {(overview.people || []).slice(0, 4).map((person) => (
+                  <button key={person.id} type="button" className="social-space-compact-item" onClick={() => openProfile(person.id)}>
+                    {renderAvatar(person, "social-space-avatar social-space-avatar-sm")}
+                    <div>
+                      <strong>{person.name}</strong>
+                      <span>{person.username ? `@${person.username}` : person.role}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </aside>
+        )}
       </section>
+
+      {/* ── Create Server Modal ── */}
+      <Modal show={showCreateServerModal} onHide={() => setShowCreateServerModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>✨ Créer un nouveau serveur</Modal.Title>
+        </Modal.Header>
+        <form onSubmit={createServer}>
+          <Modal.Body>
+            <p className="text-muted small mb-4">Un serveur est un espace privé pour votre groupe. Donnez-lui un nom, une description et une image.</p>
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Nom du serveur *</label>
+              <input className="form-control" placeholder="ex: Équipe Cardiologie, Support sevrage..." value={serverForm.name} onChange={e => setServerForm(p => ({ ...p, name: e.target.value }))} required />
+            </div>
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Description</label>
+              <textarea className="form-control" rows="2" placeholder="Décrivez l'objectif de ce serveur..." value={serverForm.description} onChange={e => setServerForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Visibilité</label>
+              <select className="form-select" value={serverForm.visibility} onChange={e => setServerForm(p => ({ ...p, visibility: e.target.value }))}>
+                <option value="PUBLIC">🔓 Public — Tout le monde peut rejoindre</option>
+                <option value="PRIVATE">🔐 Privé — Sur invitation uniquement</option>
+              </select>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateServerModal(false)}>Annuler</button>
+            <button type="submit" className="btn btn-primary" disabled={creatingServer || !serverForm.name.trim()}>
+              {creatingServer ? "Création..." : "Créer le serveur"}
+            </button>
+          </Modal.Footer>
+        </form>
+      </Modal>
+
+      {/* ── Server Settings Modal ── */}
+      <Modal show={showServerSettings} onHide={() => setShowServerSettings(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>⚙️ Gérer le serveur — {getActiveServer()?.name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {(() => {
+            const server = getActiveServer();
+            if (!server) return null;
+            const members = mockMembers[server.id] || (overview.people || []).slice(0, 8).map((p, i) => ({ id: p.id || i, name: p.name, username: p.username, avatar: p.profilePhotoUrl, role: i === 0 ? "OWNER" : i < 2 ? "ADMIN" : "MEMBER" }));
+            const roleColor = { OWNER: "#f59e0b", ADMIN: "#3b82f6", MODERATOR: "#8b5cf6", MEMBER: "#6b7280" };
+            return (
+              <div>
+                <h6 className="fw-bold mb-3">Membres du serveur ({members.length})</h6>
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Membre</th>
+                        <th>Rôle actuel</th>
+                        <th>Changer le rôle</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map(member => (
+                        <tr key={member.id}>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                                {member.avatar ? <img src={member.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>{avatarFallback(member.name)}</span>}
+                              </div>
+                              <div>
+                                <div className="fw-semibold">{member.name}</div>
+                                {member.username && <div className="text-muted small">@{member.username}</div>}
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="badge rounded-pill" style={{ background: roleColor[member.role] + "22", color: roleColor[member.role], fontWeight: 700 }}>
+                              {member.role === "OWNER" ? "👑 Owner" : member.role === "ADMIN" ? "🛡️ Admin" : member.role === "MODERATOR" ? "🔨 Mod" : "👤 Membre"}
+                            </span>
+                          </td>
+                          <td>
+                            {member.role !== "OWNER" ? (
+                              <select className="form-select form-select-sm" style={{ width: "auto" }} value={member.role} onChange={e => changeMemberRole(server.id, member.id, e.target.value)}>
+                                <option value="ADMIN">🛡️ Admin</option>
+                                <option value="MODERATOR">🔨 Modérateur</option>
+                                <option value="MEMBER">👤 Membre</option>
+                              </select>
+                            ) : <span className="text-muted small">—</span>}
+                          </td>
+                          <td>
+                            {member.role !== "OWNER" ? (
+                              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => kickMember(server.id, member.id)}>
+                                <i className="bi bi-person-dash" /> Retirer
+                              </button>
+                            ) : <span className="text-muted small">—</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" className="btn btn-outline-secondary" onClick={() => setShowServerSettings(false)}>Fermer</button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal show={showShareModal} onHide={() => setShowShareModal(false)} centered>
         <Modal.Header closeButton>

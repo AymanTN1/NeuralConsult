@@ -534,10 +534,6 @@ const CinematicLandingScene = ({ progress, scrollVelocity, copyVisibility = 1 })
           <br />
           Reouvrir la possibilite d'arreter.
         </h1>
-        <p className="landing-lead cinematic-lead">
-          Le repere visuel montre l'impact progressif du tabac, puis laisse les poumons en arriere-plan pour rappeler
-          qu'un sevrage stable repose sur le temps, le suivi et l'alliance therapeutique.
-        </p>
       </div>
 
       <div className="sticky-cigarette-shell">

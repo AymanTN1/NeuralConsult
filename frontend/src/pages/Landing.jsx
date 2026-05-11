@@ -1,8 +1,9 @@
-import React, { Suspense, lazy, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import PhaseSpotlightModal from "../components/landing/PhaseSpotlightModal";
+import CursorFollower from "../components/landing/CursorFollower";
 import { CLINICAL_PHASES, CO2_PER_CIGARETTE_KG, LANDING_MILESTONES } from "../data/clinicalJourney";
 
 const CinematicLandingScene = lazy(() => import("../components/landing/CinematicLandingScene"));
@@ -65,6 +66,31 @@ const Landing = () => {
   const [selectedPhase, setSelectedPhase] = useState(null);
   const [hoveredPhase, setHoveredPhase] = useState(DEFAULT_PHASE);
   const [calculator, setCalculator] = useState(defaultCalculator);
+  const [roadmapScrollProgress, setRoadmapScrollProgress] = useState(0);
+  const roadmapContainerRef = useRef(null);
+
+  useEffect(() => {
+    const computeProgress = () => {
+      if (!roadmapContainerRef.current) return;
+      const rect = roadmapContainerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const startLine = viewportHeight * 0.85;
+      const endLine = viewportHeight * 0.2;
+      const totalDistance = Math.max(rect.height + startLine - endLine, 1);
+      const traveled = startLine - rect.top;
+      const ratio = Math.min(1, Math.max(0, traveled / totalDistance));
+      setRoadmapScrollProgress(Math.round(ratio * 100));
+    };
+
+    window.addEventListener("scroll", computeProgress, { passive: true });
+    window.addEventListener("resize", computeProgress);
+    computeProgress();
+
+    return () => {
+      window.removeEventListener("scroll", computeProgress);
+      window.removeEventListener("resize", computeProgress);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -130,6 +156,7 @@ const Landing = () => {
 
   return (
     <div className="landing-cinematic" ref={pageRef}>
+      <CursorFollower />
       <div className="landing-persistent-scene" aria-hidden="true">
         <Suspense fallback={<div className="landing-scene-fallback">Preparation de la visualisation clinique...</div>}>
           <CinematicLandingScene
@@ -254,10 +281,10 @@ const Landing = () => {
               </div>
 
               <div className="landing-auth-module">
-                <h3>Premier acces patient, medecin et administrateur</h3>
+                <h3>Premier acces patient et medecin</h3>
                 <p>
                   Le patient commence par son profil personnel puis son evaluation initiale. Le medecin renseigne son
-                  profil des l'inscription et devient visible seulement apres validation administrateur.
+                  profil des l'inscription et devient visible seulement apres validation.
                 </p>
 
                 <div className="landing-auth-actions">
@@ -298,71 +325,36 @@ const Landing = () => {
         </div>
       </section>
 
-      <section className="landing-roadmap-centered">
+      <section className="landing-roadmap-centered" ref={roadmapContainerRef} style={{ "--roadmap-progress": `${roadmapScrollProgress}%` }}>
         <div className="container roadmap-centered-inner">
-          <div className="roadmap-centered-head">
-            <div className="hero-kicker">Parcours de consultation</div>
-            <h2 className="section-title">
-              Une timeline plus lisible.
+          <div className="landing-roadmap-header">
+            <span className="roadmap-stylized-kicker">Parcours Clinique</span>
+            <h2 className="roadmap-stylized-title">
+              TIMELINE DES PHASES
               <br />
-              Des phases qui s'expliquent d'elles-memes.
+              <span>D'ÉVALUATION</span>
             </h2>
-            <p className="muted-text">
-              Chaque phase du protocole s'ouvre comme un repere clinique. Le patient comprend la logique du parcours,
-              le medecin retrouve immediatement l'objectif de chaque bloc d'information.
-            </p>
           </div>
-
           <div className="landing-roadmap-vertical">
             {CLINICAL_PHASES.map((phase) => (
               <button
                 key={phase.id}
+                className="landing-roadmap-row"
                 type="button"
-                className={`landing-roadmap-row ${selectedPhase?.id === phase.id ? "is-selected" : ""}`}
                 onClick={() => setSelectedPhase(phase)}
-                onMouseEnter={() => setHoveredPhase(phase)}
-                onFocus={() => setHoveredPhase(phase)}
-                onMouseLeave={() => setHoveredPhase(selectedPhase || DEFAULT_PHASE)}
-                aria-label={`${phase.label} ${phase.title}`}
               >
-                <div className="landing-roadmap-row-phase">{phase.label}</div>
+                <div className="landing-roadmap-row-info">
+                  <span className="landing-roadmap-row-phase">{phase.label}</span>
+                  <strong>{phase.title}</strong>
+                </div>
                 <div className="landing-roadmap-row-line">
                   <span className="landing-roadmap-row-node" />
                 </div>
-                <div className="landing-roadmap-row-card">
-                  <span className="landing-roadmap-row-kicker">Etape clinique</span>
-                  <strong>{phase.title}</strong>
+                <div className="landing-roadmap-row-description">
                   <p>{phase.summary}</p>
-                  <div className="landing-roadmap-row-preview">
-                    {phase.goals.slice(0, 2).map((goal) => (
-                      <span key={goal} className="landing-roadmap-row-chip">
-                        <i className="bi bi-check2-circle" />
-                        {goal}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </button>
             ))}
-          </div>
-
-          <div className="landing-roadmap-hover-console" aria-live="polite">
-            <div className="landing-roadmap-hover-head">
-              <div>
-                <span className="landing-roadmap-hover-kicker">{roadmapPhase.label}</span>
-                <h3>{roadmapPhase.title}</h3>
-              </div>
-              <span className="landing-roadmap-hover-range">Objectifs cliniques</span>
-            </div>
-            <p className="landing-roadmap-hover-summary">{roadmapPhase.summary}</p>
-            <div className="landing-roadmap-hover-goals">
-              {roadmapPhase.goals.map((goal) => (
-                <div key={goal} className="landing-roadmap-hover-goal">
-                  <i className="bi bi-activity" />
-                  <span>{goal}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
@@ -389,6 +381,47 @@ const Landing = () => {
             <Link to="/login" className="btn btn-outline-dark btn-lg">
               Revenir a mon espace
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-footer-contacts">
+        <div className="container landing-footer-inner">
+          <div className="footer-contact-info">
+            <div className="hero-kicker">Reseau et Contact</div>
+            <h2 className="mb-4">Nos contacts</h2>
+            <div className="footer-social-grid">
+              <a href="https://www.instagram.com/neuralconsult.sevrage" target="_blank" rel="noopener noreferrer" className="footer-social-link">
+                <img src="/icons/Instagram_icon.png" alt="Instagram" />
+                <span>Instagram</span>
+              </a>
+              <a href="https://www.facebook.com/profile.php?id=61589395475281" target="_blank" rel="noopener noreferrer" className="footer-social-link">
+                <img src="/icons/Facebook_Logo_2023.png" alt="Facebook" />
+                <span>Facebook</span>
+              </a>
+              <a href="https://open.spotify.com/show/033dJ0geCQa9xL5L1CBRw3?si=98d0e9846a704c8e" target="_blank" rel="noopener noreferrer" className="footer-social-link">
+                <img src="/icons/images-removebg-preview.png" alt="Spotify" />
+                <span>Spotify</span>
+              </a>
+              <a href="https://www.tiktok.com/@neuralconsultsevrage" target="_blank" rel="noopener noreferrer" className="footer-social-link">
+                <img src="/icons/Tiktok_icon.svg.png" alt="TikTok" />
+                <span>TikTok</span>
+              </a>
+              <a href="https://x.com/Neural_Consult" target="_blank" rel="noopener noreferrer" className="footer-social-link">
+                <img src="/icons/x-twitter-logo-top697n5ef8g4ua0vz2lu.jpg" alt="X" />
+                <span>X (Twitter)</span>
+              </a>
+              <a href="mailto:neuralconsult.sevrage@gmail.com" className="footer-social-link">
+                <i className="bi bi-envelope-at-fill" />
+                <span>neuralconsult.sevrage@gmail.com</span>
+              </a>
+            </div>
+          </div>
+          <div className="footer-qr-container">
+            <div className="qr-card">
+              <img src="/icons/QR_ALL_Links.png" alt="QR Code Links" className="qr-image" />
+              <p>QR Code de tous nos liens</p>
+            </div>
           </div>
         </div>
       </section>

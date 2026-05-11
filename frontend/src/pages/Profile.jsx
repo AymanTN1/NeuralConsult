@@ -47,6 +47,7 @@ const calculateAge = (dateOfBirth) => {
 
 const Profile = () => {
   const { user, refetch } = useAuth();
+  const profile = user?.profile;
   const [assessment, setAssessment] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [isEditing, setIsEditing] = useState(false);
@@ -279,9 +280,11 @@ const Profile = () => {
               </div>
             </div>
           </div>
-          <Link className="btn btn-outline-dark w-100" to="/evaluation">
-            Continuer la timeline clinique
-          </Link>
+          <div className="profile-cta-container">
+            <Link className="btn btn-dark profile-cta-btn" to="/evaluation">
+              Continuer la timeline clinique
+            </Link>
+          </div>
         </aside>
       </div>
 

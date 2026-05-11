@@ -80,35 +80,52 @@ const ClinicalSidebar = () => {
   }, [adminMode, doctorMode, hasAssignedDoctor]);
 
   const [isCollapsed, setIsCollapsed] = useState(localStorage.getItem("nc_sidebar_collapsed") === "true");
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("nc_sidebar_collapsed", isCollapsed);
-    // Broadcast change to App.jsx via class on body or custom event
     document.body.classList.toggle("sidebar-collapsed", isCollapsed);
   }, [isCollapsed]);
 
-  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  const toggleSidebar = (e) => {
+    e.stopPropagation();
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const isExpanded = !isCollapsed || isHovered;
 
   return (
-    <aside className={`clinical-sidebar ${isCollapsed ? "is-collapsed" : ""}`}>
-      <div className="sidebar-brand d-flex align-items-center justify-content-between w-100">
-        <div className="d-flex align-items-center gap-2">
-          <div className="brand-mark" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover' }} />
-          </div>
-          {!isCollapsed && (
-            <div>
-              <div className="sidebar-eyebrow">Calm Clinical Care</div>
-              <div className="sidebar-title">NeuralConsult</div>
+    <aside 
+      className={`clinical-sidebar ${isCollapsed ? "is-collapsed" : ""} ${isHovered ? "is-hovered" : ""}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="sidebar-brand-wrapper">
+        <div className="sidebar-brand">
+          <div className="brand-main">
+            <div className="brand-mark">
+              <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" />
             </div>
-          )}
+            {isExpanded && (
+              <div className="brand-text">
+                <div className="sidebar-eyebrow">Calm Clinical Care</div>
+                <div className="sidebar-title">NeuralConsult</div>
+              </div>
+            )}
+          </div>
+          
+          <button 
+            type="button" 
+            className={`sidebar-master-toggle ${isCollapsed ? "is-mini" : ""}`} 
+            onClick={toggleSidebar}
+            title={isCollapsed ? "Deplier" : "Replier"}
+          >
+            <i className={`bi ${isCollapsed ? "bi-list" : "bi-text-indent-right"}`} />
+          </button>
         </div>
-        <button type="button" className="sidebar-toggle-btn m-0 p-1" onClick={toggleSidebar}>
-          <i className={`bi ${isCollapsed ? "bi-text-indent-left" : "bi-text-indent-right"}`} />
-        </button>
       </div>
 
-      {!isCollapsed && (
+      {isExpanded && (
         <div className="sidebar-patient">
           <div className="sidebar-patient-label">{doctorMode || adminMode ? "Session en cours" : "Dossier en cours"}</div>
           <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
@@ -116,24 +133,23 @@ const ClinicalSidebar = () => {
         </div>
       )}
 
-      <nav className="sidebar-nav" data-guide-id="sidebar-nav">
+      <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             className="sidebar-link"
             to={item.to}
-            data-guide-id={item.guideId}
-            title={isCollapsed ? item.label : ""}
+            title={!isExpanded ? item.label : ""}
           >
             <span className="sidebar-link-icon">
               <i className={`${item.icon} fs-5`} />
             </span>
-            {!isCollapsed && <span className="sidebar-link-label">{item.label}</span>}
+            {isExpanded && <span className="sidebar-link-label">{item.label}</span>}
           </NavLink>
         ))}
       </nav>
 
-      {!isCollapsed && (
+      {isExpanded && (
         <div className="sidebar-footer">
           <div className="sidebar-footer-label">{isPatient(user) ? "Repere clinique" : "Pilotage clinique"}</div>
           <div className="sidebar-footer-copy">
