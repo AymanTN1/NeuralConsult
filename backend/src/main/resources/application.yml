@@ -48,7 +48,7 @@ security:
     issuer: "neuralconsult"
     accessTokenMinutes: 60
     refreshTokenDays: 14
-    cookieSecure: false
+    cookieSecure: true
 
 app:
   mail:

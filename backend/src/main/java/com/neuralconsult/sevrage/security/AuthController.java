@@ -91,7 +91,7 @@ public class AuthController {
     ResponseCookie cookie = ResponseCookie.from("NC_ACCESS", token)
         .httpOnly(true)
         .secure(jwtProperties.cookieSecure())
-        .sameSite("Strict")
+        .sameSite("None")
         .path("/")
         .maxAge(jwtProperties.accessTokenMinutes() * 60)
         .build();
@@ -112,7 +112,7 @@ public class AuthController {
     ResponseCookie cookie = ResponseCookie.from("NC_ACCESS", token)
         .httpOnly(true)
         .secure(jwtProperties.cookieSecure())
-        .sameSite("Strict")
+        .sameSite("None")
         .path("/")
         .maxAge(jwtProperties.accessTokenMinutes() * 60)
         .build();
@@ -156,7 +156,7 @@ public class AuthController {
     ResponseCookie cookie = ResponseCookie.from("NC_ACCESS", "")
         .httpOnly(true)
         .secure(jwtProperties.cookieSecure())
-        .sameSite("Strict")
+        .sameSite("None")
         .path("/")
         .maxAge(0)
         .build();
