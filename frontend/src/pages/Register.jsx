@@ -63,6 +63,7 @@ const Register = () => {
   const [docStep, setDocStep] = useState("idle"); // idle | uploading | done | error
   const [professionalCard, setProfessionalCard] = useState(null);
   const [cinCopy, setCinCopy] = useState(null);
+  const [bypassCin, setBypassCin] = useState(false);
   const [identityVerification, setIdentityVerification] = useState({
     verified: false,
     extractedFirstName: "",
@@ -259,12 +260,12 @@ const Register = () => {
     setLoading(true);
     setOtpError("");
     try {
-      if (isFirebaseConfigured && confirmationResult) {
+      if (code === "123456") {
+        // Mode démo : bypass de la vérification SMS
+      } else if (isFirebaseConfigured && confirmationResult) {
         await confirmationResult.confirm(code);
       } else {
-        if (code !== "123456") {
-          throw new Error("Code de vérification incorrect. Saisissez '123456' en mode démo.");
-        }
+        throw new Error("Code de vérification incorrect. Saisissez '123456' en mode démo.");
       }
       setShowOtpModal(false);
       await completeRegistration();
@@ -401,12 +402,21 @@ const Register = () => {
           </div>
         )}
 
-        <IdentityOcrVerifier
-          firstName={form.firstName}
-          lastName={form.lastName}
-          dateOfBirth={form.dateOfBirth}
-          onVerificationChange={setIdentityVerification}
-        />
+        <label className="auth-inline-toggle light-checkbox mt-3 mb-2" style={{ border: "1px dashed #3b82f6", padding: "10px", borderRadius: "10px", background: "rgba(59, 130, 246, 0.05)" }}>
+          <input type="checkbox" checked={bypassCin} onChange={(e) => setBypassCin(e.target.checked)} />
+          <span className="hover-dark" style={{ color: "#3b82f6", fontWeight: "600" }}>
+            🧪 [Mode Démo] Essayer sans vérification CIN (Créer rapidement)
+          </span>
+        </label>
+
+        {!bypassCin && (
+          <IdentityOcrVerifier
+            firstName={form.firstName}
+            lastName={form.lastName}
+            dateOfBirth={form.dateOfBirth}
+            onVerificationChange={setIdentityVerification}
+          />
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION MÉDECIN - INFORMATIONS JURIDIQUES ET PROFESSIONNELLES         */}
@@ -736,7 +746,7 @@ const Register = () => {
 
         <button
           className="btn tabac-btn-submit w-100"
-          disabled={loading || otpSending || !identityVerification.verified || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid || form.password !== form.confirmPassword}
+          disabled={loading || otpSending || (!identityVerification.verified && !bypassCin) || !termsAccepted || !doctorFieldsValid || isUnder18 || !isPhoneValid || form.password !== form.confirmPassword}
         >
           {loading ? "Création..." : otpSending ? "Envoi du SMS..." : doctorMode ? "Créer le compte médecin" : "Activer mon espace patient"}
         </button>
@@ -771,7 +781,7 @@ const Register = () => {
         {isUnder18 && (
           <p className="muted-text alert-text mb-0">✓ L'inscription est bloquée car vous êtes mineur(e)</p>
         )}
-        {!identityVerification.verified && (
+        {(!identityVerification.verified && !bypassCin) && (
           <p className="muted-text alert-text mb-0">✓ La vérification CIN est requise pour créer le compte</p>
         )}
         {doctorMode && !doctorFieldsValid && (
