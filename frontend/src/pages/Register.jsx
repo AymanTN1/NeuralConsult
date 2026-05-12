@@ -161,14 +161,14 @@ const Register = () => {
       yearsExperience: form.yearsExperience === "" ? null : Number(form.yearsExperience),
       identityVerification: {
         documentType: identityVerification.documentType || "CIN",
-        extractedFirstName: identityVerification.extractedFirstName,
-        extractedLastName: identityVerification.extractedLastName,
-        extractedDateOfBirth: identityVerification.extractedDateOfBirth || null,
-        rawText: identityVerification.rawText,
-        confidence: identityVerification.confidence
+        extractedFirstName: bypassCin ? form.firstName : identityVerification.extractedFirstName,
+        extractedLastName: bypassCin ? form.lastName : identityVerification.extractedLastName,
+        extractedDateOfBirth: bypassCin ? form.dateOfBirth : (identityVerification.extractedDateOfBirth || null),
+        rawText: bypassCin ? "BYPASS_DEMO_MODE_DATA" : identityVerification.rawText,
+        confidence: bypassCin ? 100 : identityVerification.confidence
       }
     }),
-    [form, identityVerification]
+    [form, identityVerification, bypassCin]
   );
 
   const completeRegistration = async () => {
