@@ -8653,13 +8653,13 @@ body {
   width: 350px;
   border-right: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
-  flexDirection: column;
+  flex-direction: column;
 }
 
 .social-space-thread-panel {
   flex: 1;
   display: flex;
-  flexDirection: column;
+  flex-direction: column;
   background: #fafafa;
 }
 
