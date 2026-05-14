@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import ClinicalGuidelinesSearch from "../components/ClinicalGuidelinesSearch";
 import ConsultationReportForm from "../components/ConsultationReportForm";
 import LungLoader from "../components/LungLoader";
 import Modal from "react-bootstrap/Modal";
@@ -41,7 +40,6 @@ const patientWorkspaceViews = [
   { key: "dashboard", label: "Suivi Quotidien", icon: "bi bi-activity" },
   { key: "ai", label: "Plan de Sevrage IA (Groq)", icon: "bi bi-cpu-fill" },
   { key: "medical-reports", label: "Système de Rapports", icon: "bi bi-clipboard2-pulse-fill" },
-  { key: "medical-guidance", label: "Centre de Ressources Cliniques", icon: "bi bi-book-half" },
   { key: "appointments", label: "Agenda & Visio", icon: "bi bi-calendar2-week-fill" }
 ];
 

@@ -22,6 +22,7 @@ const doctorNavItems = [
   { to: "/appointments", icon: "bi bi-calendar2-week", label: "Rendez-vous" },
   { to: "/support", icon: "bi bi-chat-square-heart", label: "Conversations IA" },
   { to: "/communities", icon: "bi bi-people", label: "Communautes" },
+  { to: "/clinical-guidance", icon: "bi bi-book-half", label: "Ressources Cliniques" },
   { to: "/profile", icon: "bi bi-person-badge", label: "Profil medecin" }
 ];
 

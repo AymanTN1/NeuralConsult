@@ -26,6 +26,7 @@ const Appointments = lazy(() => import("./pages/Appointments"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Support = lazy(() => import("./pages/Support"));
 const Communities = lazy(() => import("./pages/Communities"));
+const ClinicalGuidancePage = lazy(() => import("./pages/ClinicalGuidancePage"));
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/verify-email", "/forgot-password"]);
 
@@ -147,6 +148,14 @@ const AppShell = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/clinical-guidance"
+                element={
+                  <ProtectedRoute>
+                    <ClinicalGuidancePage />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </Suspense>
         </main>
@@ -250,6 +259,14 @@ const AppShell = () => {
                 element={
                   <ProtectedRoute>
                     <Communities />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/clinical-guidance"
+                element={
+                  <ProtectedRoute>
+                    <ClinicalGuidancePage />
                   </ProtectedRoute>
                 }
               />
