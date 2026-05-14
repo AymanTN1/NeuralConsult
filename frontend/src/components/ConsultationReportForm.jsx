@@ -178,6 +178,12 @@ const ConsultationReportForm = ({ appointmentId, onSave }) => {
                      <label className="form-check-label small" htmlFor="eCigInc">Usage plus fréquent ?</label>
                    </div>
                  </div>
+                 <div className="col-12 mt-2">
+                   <div className="form-check">
+                     <input className="form-check-input" type="checkbox" checked={!!report.usesNicotineCartridges} onChange={e => handleChange('usesNicotineCartridges', e.target.checked)} id="nicCart" />
+                     <label className="form-check-label small fw-bold" htmlFor="nicCart">Utilise des cartouches de nicotine prêtes à l'emploi</label>
+                   </div>
+                 </div>
                </div>
              )}
           </div>
@@ -252,6 +258,11 @@ const ConsultationReportForm = ({ appointmentId, onSave }) => {
           <div className="col-md-4"><div className="form-check"><input className="form-check-input" type="checkbox" checked={!!report.behavioralTechniques} onChange={e => handleChange('behavioralTechniques', e.target.checked)} id="bt" /><label className="form-check-label small" htmlFor="bt">Techniques comportementales</label></div></div>
           <div className="col-md-4"><div className="form-check"><input className="form-check-input" type="checkbox" checked={!!report.psychologicalReferral} onChange={e => handleChange('psychologicalReferral', e.target.checked)} id="psy" /><label className="form-check-label small" htmlFor="psy">Orientation Psy</label></div></div>
           <div className="col-md-4"><div className="form-check"><input className="form-check-input" type="checkbox" checked={!!report.dieteticCare} onChange={e => handleChange('dieteticCare', e.target.checked)} id="diet" /><label className="form-check-label small" htmlFor="diet">Prise en charge diététique</label></div></div>
+        </div>
+
+        <div className="mb-2">
+          <label className="form-label small fw-bold">Autre traitement</label>
+          <input type="text" className="form-control form-control-sm" placeholder="Préciser tout autre traitement..." value={report.otherTreatment || ''} onChange={e => handleChange('otherTreatment', e.target.value)} />
         </div>
       </div>
 
