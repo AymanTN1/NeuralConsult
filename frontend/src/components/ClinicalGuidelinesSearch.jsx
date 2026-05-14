@@ -7,14 +7,14 @@ const ClinicalGuidelinesSearch = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e, searchQuery = query) => {
     if (e) e.preventDefault();
-    if (!query.trim()) return;
+    if (!searchQuery.trim()) return;
 
     setLoading(true);
     setSearched(true);
     try {
-      const { data } = await api.get(`/api/clinical-guidance/search?q=${encodeURIComponent(query)}`);
+      const { data } = await api.get(`/api/clinical-guidance/search?q=${encodeURIComponent(searchQuery)}`);
       setResults(data.results || []);
     } catch (error) {
       console.error("Erreur lors de la recherche dans les guides", error);
@@ -63,7 +63,7 @@ const ClinicalGuidelinesSearch = () => {
             <button 
               key={q} 
               className="btn btn-sm btn-outline-light text-dark border shadow-sm" 
-              onClick={() => { setQuery(q); handleSearch(); }}
+              onClick={() => { setQuery(q); handleSearch(null, q); }}
               style={{ fontSize: '0.75rem' }}
             >
               {q}

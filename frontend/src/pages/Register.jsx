@@ -108,7 +108,16 @@ const Register = () => {
       };
       // Give the DOM a tiny fraction of a second to render the container div
       const t = setTimeout(initRecaptcha, 100);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(t);
+        // CRITICAL FIX: Clear the verifier on unmount so it recreates correctly if user returns
+        if (window.recaptchaVerifier) {
+          try {
+            window.recaptchaVerifier.clear();
+          } catch (e) {}
+          window.recaptchaVerifier = null;
+        }
+      };
     }
   }, []);
 
