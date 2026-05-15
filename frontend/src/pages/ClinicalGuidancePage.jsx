@@ -1,41 +1,96 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api from '../services/api';
 
-/* ─── helpers ─────────────────────────────────────────── */
+/* ─── Source icon mapping ──────────────────────────────── */
+const SOURCES_ICONS = {
+  'PDF local':            'bi-file-earmark-text-fill',
+  'Article scientifique': 'bi-journal-medical',
+  'Base scientifique':    'bi-database-fill',
+  default:                'bi-link-45deg',
+};
+const sourceIcon = (type) => SOURCES_ICONS[type] || SOURCES_ICONS.default;
+
+/* ─── WELCOME message ──────────────────────────────────── */
 const WELCOME = {
   role: 'ai',
   content:
-    "Bonjour Docteur 👋\n\nJe suis votre assistant clinique RAG spécialisé en tabacologie.\n\nPosez-moi n'importe quelle question clinique — protocoles, dosages, contre-indications, populations spéciales — et je rechercherai dans les **guides officiels marocains**, les **guidelines OMS** et **PubMed** pour vous apporter une réponse sourcée.\n\nComment puis-je vous aider ?",
+    "Bonjour Docteur 👋\n\nJe suis votre assistant clinique RAG spécialisé en tabacologie.\n\nPosez-moi n'importe quelle question clinique — protocoles, dosages, contre-indications, populations spéciales — et je rechercherai dans les **guides officiels marocains**, les **guidelines OMS** et **PubMed** pour vous apporter une réponse toujours sourcée.\n\nChaque réponse sera accompagnée de ses sources (guides PDF officiels ou articles PubMed) afin que vous puissiez vérifier les recommandations.",
   status: 'DONE',
   results: [],
 };
 
-const SOURCES_ICONS = {
-  'PDF local': 'bi-file-earmark-text-fill',
-  'Article scientifique': 'bi-journal-medical',
-  default: 'bi-link-45deg',
-};
-
-const sourceIcon = (type) => SOURCES_ICONS[type] || SOURCES_ICONS.default;
-
-const SourceCard = ({ result }) => (
-  <div className="rag-source-card">
+/* ─── Source card ──────────────────────────────────────── */
+const SourceCard = ({ result, isClarifying }) => (
+  <div className={`rag-source-card ${isClarifying ? 'rag-source-card--preview' : ''}`}>
     <div className="rag-source-header">
-      <i className={`bi ${sourceIcon(result.source_type)} me-2`} />
-      <span className="rag-source-type">{result.source_type}</span>
-      <span className="rag-source-name">{result.source}</span>
+      <i className={`bi ${sourceIcon(result.source_type || result.type)} me-2`} />
+      <span className="rag-source-type">{result.source_type || result.type || 'Source'}</span>
+      <span className="rag-source-name">{result.source || result.name}</span>
+      {result.url && (
+        <a href={result.url} target="_blank" rel="noreferrer" className="rag-source-link ms-auto">
+          <i className="bi bi-box-arrow-up-right me-1" />Voir
+        </a>
+      )}
     </div>
-    <p className="rag-source-content">{result.content.slice(0, 280)}{result.content.length > 280 ? '…' : ''}</p>
-    {result.url && (
-      <a href={result.url} target="_blank" rel="noreferrer" className="rag-source-link">
-        <i className="bi bi-box-arrow-up-right me-1" />Voir la source
-      </a>
+    {result.content && (
+      <p className="rag-source-content">
+        {result.content.slice(0, 300)}{result.content.length > 300 ? '…' : ''}
+      </p>
+    )}
+    {isClarifying && !result.content && (
+      <p className="rag-source-content rag-source-content--preview">
+        <i className="bi bi-hourglass-split me-1" />Sera interrogée après votre réponse…
+      </p>
     )}
   </div>
 );
 
+/* ─── Sources section ──────────────────────────────────── */
+const SourcesSection = ({ results, status, isSearching }) => {
+  if (isSearching) {
+    return (
+      <div className="rag-sources">
+        <div className="rag-sources-title">
+          <span className="rag-dot" /><span className="rag-dot" /><span className="rag-dot" />
+          &nbsp;Recherche en cours dans les guides et PubMed…
+        </div>
+      </div>
+    );
+  }
+
+  if (!results || results.length === 0) return null;
+
+  const isClarifying = status === 'CLARIFYING';
+  const hasContent   = results.some(r => r.content);
+
+  return (
+    <div className="rag-sources">
+      <div className="rag-sources-title">
+        {isClarifying ? (
+          <>
+            <i className="bi bi-database me-2 text-primary" />
+            Sources qui seront interrogées ({results.length})
+          </>
+        ) : (
+          <>
+            <i className="bi bi-database-fill-check me-2 text-success" />
+            {hasContent
+              ? `${results.length} source${results.length > 1 ? 's' : ''} trouvée${results.length > 1 ? 's' : ''}`
+              : `Sources consultées (${results.length})`
+            }
+          </>
+        )}
+      </div>
+      {results.map((r, i) => (
+        <SourceCard key={i} result={r} isClarifying={isClarifying && !r.content} />
+      ))}
+    </div>
+  );
+};
+
+/* ─── Single message bubble ────────────────────────────── */
 const Message = ({ msg }) => {
-  const isDoctor = msg.role === 'doctor';
+  const isDoctor    = msg.role === 'doctor';
   const isSearching = msg.status === 'SEARCHING';
 
   return (
@@ -45,36 +100,37 @@ const Message = ({ msg }) => {
           <i className="bi bi-cpu-fill" />
         </div>
       )}
+
       <div className="rag-bubble-wrap">
+        {/* Text bubble */}
         <div className={`rag-bubble ${isDoctor ? 'rag-bubble--doctor' : 'rag-bubble--ai'}`}>
           {isSearching ? (
             <span className="rag-searching">
               <span className="rag-dot" /><span className="rag-dot" /><span className="rag-dot" />
-              Recherche en cours dans les guides médicaux et PubMed…
+              Recherche dans les guides officiels et PubMed…
             </span>
           ) : (
             <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
           )}
         </div>
 
-        {!isDoctor && msg.results && msg.results.length > 0 && (
-          <div className="rag-sources">
-            <div className="rag-sources-title">
-              <i className="bi bi-database-fill-check me-2 text-success" />
-              {msg.results.length} source{msg.results.length > 1 ? 's' : ''} trouvée{msg.results.length > 1 ? 's' : ''}
-            </div>
-            {msg.results.map((r, i) => (
-              <SourceCard key={i} result={r} />
-            ))}
-          </div>
+        {/* Sources — always shown for AI messages (not doctor, not the searching placeholder) */}
+        {!isDoctor && !isSearching && (
+          <SourcesSection
+            results={msg.results}
+            status={msg.status}
+            isSearching={false}
+          />
         )}
 
-        {!isDoctor && msg.model && (
+        {/* Model badge */}
+        {!isDoctor && !isSearching && msg.model && (
           <div className="rag-model-badge">
             <i className="bi bi-stars me-1" />{msg.model}
           </div>
         )}
       </div>
+
       {isDoctor && (
         <div className="rag-avatar rag-avatar--doctor">
           <i className="bi bi-person-badge-fill" />
@@ -84,12 +140,12 @@ const Message = ({ msg }) => {
   );
 };
 
-/* ─── Main Page ─────────────────────────────────────────── */
+/* ─── Main Page ────────────────────────────────────────── */
 const ClinicalGuidancePage = () => {
-  const [messages, setMessages] = useState([WELCOME]);
-  const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef(null);
+  const [messages, setMessages]   = useState([WELCOME]);
+  const [draft, setDraft]         = useState('');
+  const [loading, setLoading]     = useState(false);
+  const bottomRef  = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -98,8 +154,8 @@ const ClinicalGuidancePage = () => {
 
   const getHistory = () =>
     messages
-      .filter((m) => m.role !== 'searching')
-      .map((m) => ({
+      .filter(m => m.role !== 'searching' && m.status !== 'SEARCHING')
+      .map(m => ({
         role: m.role === 'doctor' ? 'user' : 'assistant',
         content: m.content,
       }));
@@ -107,12 +163,11 @@ const ClinicalGuidancePage = () => {
   const send = async () => {
     const text = draft.trim();
     if (!text || loading) return;
-
     setDraft('');
 
-    const doctorMsg = { role: 'doctor', content: text, results: [] };
+    const doctorMsg    = { role: 'doctor',    content: text,  results: [], status: 'DONE' };
     const searchingMsg = { role: 'ai', content: '', status: 'SEARCHING', results: [] };
-    setMessages((prev) => [...prev, doctorMsg, searchingMsg]);
+    setMessages(prev => [...prev, doctorMsg, searchingMsg]);
     setLoading(true);
 
     try {
@@ -122,28 +177,27 @@ const ClinicalGuidancePage = () => {
       });
 
       const aiMsg = {
-        role: 'ai',
+        role:    'ai',
         content: data.reply || 'Aucune réponse générée.',
-        status: data.status || 'DONE',
+        status:  data.status || 'DONE',
         results: data.results || [],
-        model: data.model_name,
+        model:   data.model_name,
       };
 
-      setMessages((prev) => {
-        // Replace the "searching" placeholder with the real response
+      setMessages(prev => {
         const updated = [...prev];
-        const idx = updated.findLastIndex((m) => m.status === 'SEARCHING');
+        const idx = updated.findLastIndex(m => m.status === 'SEARCHING');
         if (idx !== -1) updated[idx] = aiMsg;
         else updated.push(aiMsg);
         return updated;
       });
-    } catch (err) {
-      setMessages((prev) => {
+    } catch {
+      setMessages(prev => {
         const updated = [...prev];
-        const idx = updated.findLastIndex((m) => m.status === 'SEARCHING');
+        const idx = updated.findLastIndex(m => m.status === 'SEARCHING');
         const errMsg = {
           role: 'ai',
-          content: "Je suis désolé, une erreur s'est produite lors de la recherche. Vérifiez que le service IA est démarré.",
+          content: "⚠️ Erreur de connexion au service IA. Vérifiez que le service est démarré.",
           status: 'DONE',
           results: [],
         };
@@ -157,35 +211,30 @@ const ClinicalGuidancePage = () => {
     }
   };
 
-  const handleKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
+  const handleKey = e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  const reset = () => {
-    setMessages([WELCOME]);
-    setDraft('');
-  };
+  const reset = () => { setMessages([WELCOME]); setDraft(''); };
 
   const QUICK = [
     'Protocole NRT femme enceinte',
     'Contre-indications Champix / Varenicline',
-    'Dosage patch nicotine Fagerstrom score élevé',
+    'Dosage patch nicotine Fagerstrom élevé',
     'Sevrage tabac patient BPCO',
     'Gestion rechute post-arrêt tabac',
   ];
 
   return (
     <div className="rag-page">
-      {/* Header */}
+
+      {/* ── Header ─────────────────────────────────────── */}
       <div className="rag-header">
-        <div className="rag-header-left">
-          <div className="hero-kicker">Intelligence Médicale</div>
+        <div>
+          <div className="hero-kicker">Intelligence Médicale Sourcée</div>
           <h2>Assistant Clinique RAG</h2>
-          <p className="muted-text">
-            Dialogue avec l'IA pour obtenir des recommandations sourcées depuis les guides officiels et PubMed.
+          <p className="muted-text mb-0">
+            Chaque réponse est <strong>toujours accompagnée de ses sources</strong> — guides officiels (PDF) ou articles PubMed.
           </p>
         </div>
         <button className="btn btn-outline-secondary btn-sm" onClick={reset}>
@@ -193,17 +242,14 @@ const ClinicalGuidancePage = () => {
         </button>
       </div>
 
-      {/* Quick queries (only shown at start) */}
+      {/* ── Quick suggestions ───────────────────────────── */}
       {messages.length <= 1 && (
         <div className="rag-quick-wrap">
           <p className="rag-quick-label">Suggestions rapides :</p>
           <div className="rag-quick-list">
-            {QUICK.map((q) => (
-              <button
-                key={q}
-                className="rag-quick-btn"
-                onClick={() => { setDraft(q); textareaRef.current?.focus(); }}
-              >
+            {QUICK.map(q => (
+              <button key={q} className="rag-quick-btn"
+                onClick={() => { setDraft(q); textareaRef.current?.focus(); }}>
                 <i className="bi bi-lightning-charge-fill me-1" />{q}
               </button>
             ))}
@@ -211,36 +257,29 @@ const ClinicalGuidancePage = () => {
         </div>
       )}
 
-      {/* Chat thread */}
+      {/* ── Chat thread ─────────────────────────────────── */}
       <div className="rag-thread">
-        {messages.map((msg, i) => (
-          <Message key={i} msg={msg} />
-        ))}
+        {messages.map((msg, i) => <Message key={i} msg={msg} />)}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* ── Input bar ───────────────────────────────────── */}
       <div className="rag-input-bar">
         <textarea
           ref={textareaRef}
           className="rag-input"
           rows={2}
-          placeholder="Posez votre question clinique… (Entrée pour envoyer, Shift+Entrée pour sauter une ligne)"
+          placeholder="Posez votre question clinique… (Entrée pour envoyer)"
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={e => setDraft(e.target.value)}
           onKeyDown={handleKey}
           disabled={loading}
         />
-        <button
-          className="rag-send-btn"
-          onClick={send}
-          disabled={loading || !draft.trim()}
-        >
-          {loading ? (
-            <span className="spinner-border spinner-border-sm" />
-          ) : (
-            <i className="bi bi-send-fill" />
-          )}
+        <button className="rag-send-btn" onClick={send} disabled={loading || !draft.trim()}>
+          {loading
+            ? <span className="spinner-border spinner-border-sm" />
+            : <i className="bi bi-send-fill" />
+          }
         </button>
       </div>
     </div>
