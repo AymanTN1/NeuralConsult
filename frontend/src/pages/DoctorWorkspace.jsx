@@ -167,6 +167,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [selectedPatientView, setSelectedPatientView] = useState("overview");
+  const [isPatientPanelOpen, setIsPatientPanelOpen] = useState(false);
   const [dossier, setDossier] = useState(null);
   const [dossierError, setDossierError] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -406,6 +407,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   const openPatientView = async (patientProfileId, view = "overview") => {
     setSelectedPatientView(view);
+    setIsPatientPanelOpen(true);
     if (selectedPatientId !== patientProfileId) {
       setSelectedPatientId(patientProfileId);
       return;
@@ -858,8 +860,8 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
           ) : renderProfileForm()}
         </div>
       ) : (
-        <div className="doctor-workspace-grid mt-4">
-          <div className="doctor-workspace-main">
+        <div className="doctor-workspace-container mt-4">
+          <div className="doctor-workspace-main-full">
             <section className="card form-card doctor-summary-strip">
               <div className="doctor-summary-card"><span className="profile-data-label">Demandes en attente</span><strong>{pendingRequests.length}</strong></div>
               <div className="doctor-summary-card"><span className="profile-data-label">Patients associes</span><strong>{patients.length}</strong></div>
@@ -883,7 +885,25 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 </td><td><span className="doctor-status-chip status-info">{displayValue(patient.dependenceLevel || "A evaluer")}</span></td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-outline-dark btn-sm" onClick={() => openPatientView(patient.patientProfileId, "overview")}>Ouvrir</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`patient-actions-${patient.patientProfileId}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu">{patientWorkspaceViews.map((view) => <Dropdown.Item key={view.key} onClick={() => openPatientView(patient.patientProfileId, view.key)}>{view.label}</Dropdown.Item>)}</Dropdown.Menu></Dropdown></div></td></tr>)}</tbody></table></div>}
             </section>
           </div>
-          <aside className="doctor-dossier-panel"><section className="card form-card"><div className="section-title-sm">Espace patient selectionne</div>{renderPatientHeader()}{renderPatientTabs()}<div className="doctor-dossier-stack">{renderSelectedPatientContent()}</div></section></aside>
+
+          {isPatientPanelOpen && selectedPatientId && (
+            <div className="doctor-overlay-panel">
+              <div className="doctor-overlay-panel-backdrop" onClick={() => setIsPatientPanelOpen(false)}></div>
+              <aside className="doctor-overlay-panel-content">
+                <div className="doctor-overlay-panel-header">
+                  <div className="section-title-sm">Espace patient selectionne</div>
+                  <button type="button" className="btn-close" onClick={() => setIsPatientPanelOpen(false)} aria-label="Close"></button>
+                </div>
+                <div className="doctor-overlay-panel-body">
+                  {renderPatientHeader()}
+                  {renderPatientTabs()}
+                  <div className="doctor-dossier-stack">
+                    {renderSelectedPatientContent()}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          )}
         </div>
       )}
     </div>
