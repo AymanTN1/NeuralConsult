@@ -172,6 +172,20 @@ class ClinicalRagChatService:
                 user_prompt=_build_synthesis_prompt(combined_query_fr, raw_results),
                 temperature=0.15,
             )
+            
+            import re
+            # Extract cited IDs, e.g. [1], [2], [1, 3]
+            cited_ids_str = re.findall(r'\[\s*([\d\s,]+)\s*\]', synthesis)
+            cited_ids = set()
+            for group in cited_ids_str:
+                for match in re.findall(r'\d+', group):
+                    cited_ids.add(int(match))
+            
+            if cited_ids:
+                final_results = [r for r in raw_results if r.get("id") in cited_ids]
+            else:
+                final_results = raw_results[:8]
+                
         except Exception:
             # Fallback: build manual reply listing sources
             source_names = list({r.get("source", "?") for r in raw_results})
@@ -180,11 +194,12 @@ class ClinicalRagChatService:
                 + ", ".join(f"[{s}]" for s in source_names)
                 + ".\nConsultez les extraits ci-dessous pour les détails."
             )
+            final_results = raw_results[:8]
 
         return {
             "reply": synthesis,
             "status": "DONE",
-            "results": raw_results[:8],   # always return results
+            "results": final_results,
             "model_name": f"{self.llm.provider}:{self.llm.model}",
         }
 
