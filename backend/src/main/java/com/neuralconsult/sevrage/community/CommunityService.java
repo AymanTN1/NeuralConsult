@@ -539,7 +539,7 @@ public class CommunityService {
         reactionCounts,
         myReaction,
         comments,
-        post.getPostType().name(),
+        post.getPostType() != null ? post.getPostType().name() : "USER_POST",
         post.getSourceUrl(),
         post.getSourceLabel()
     );
