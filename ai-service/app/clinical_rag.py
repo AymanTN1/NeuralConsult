@@ -16,10 +16,13 @@ class RagChatRequest(BaseModel):
 
 
 class RagResult(BaseModel):
-    content: str
-    source: str
-    source_type: str
+    content: str | None = None
+    source: str | None = None
+    source_type: str | None = None
+    name: str | None = None
+    type: str | None = None
     url: str | None = None
+    id: int | None = None
 
 
 class RagChatResponse(BaseModel):
