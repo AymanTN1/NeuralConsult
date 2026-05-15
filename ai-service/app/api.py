@@ -7,6 +7,7 @@ from app.clinical_notes import router as clinical_notes_router
 from app.question_assistant import router as question_assistant_router
 from app.support_chat import router as support_chat_router
 from app.clinical_guidance import router as clinical_guidance_router
+from app.clinical_rag import router as clinical_rag_router
 
 router = APIRouter()
 
@@ -24,6 +25,7 @@ router.include_router(clinical_intelligence_router)
 router.include_router(question_assistant_router)
 router.include_router(support_chat_router)
 router.include_router(clinical_guidance_router)
+router.include_router(clinical_rag_router)
 
 @router.post("/news/trigger", tags=["news"])
 async def trigger_news():
