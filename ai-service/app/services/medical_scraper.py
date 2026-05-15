@@ -2,9 +2,9 @@
 Medical data scraper for clinical RAG assistant.
 
 Sources:
-  1. Local PDF files (PyMuPDF, keyword search)
+  1. Local PDF files (PyMuPDF, keyword search with accent normalization)
   2. PubMed via NCBI E-utilities (free, no API key)
-  3. WHO FCTC / INPES web pages (BeautifulSoup)
+  3. Combined logic with unique source IDs for citations
 """
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import re
 import os
 import fitz  # PyMuPDF
 import requests
+import unicodedata
 from typing import List, Dict, Any
 from xml.etree import ElementTree
 
@@ -29,20 +30,35 @@ def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _normalize(text: str) -> str:
+    """Normalize text by removing accents and making it lowercase."""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", text.lower())
+        if unicodedata.category(c) != "Mn"
+    )
+
+
 # ─────────────────────────────────────────────
 # 1. LOCAL PDF SEARCH
 # ─────────────────────────────────────────────
 
 def _score_chunk(chunk: str, query_words: List[str]) -> int:
-    """Simple keyword-based relevance score."""
-    chunk_lower = chunk.lower()
-    return sum(1 for w in query_words if w in chunk_lower)
+    """Keyword-based relevance score with normalization."""
+    chunk_norm = _normalize(chunk)
+    score = 0
+    for word in query_words:
+        if word in chunk_norm:
+            score += 2  # Full word match
+        elif len(word) > 4 and word[:len(word)-1] in chunk_norm:
+            score += 1  # Partial match (prefix)
+    return score
 
 
 def search_local_pdfs(query: str, max_results: int = 4) -> List[Dict[str, Any]]:
-    """Search local medical PDFs using keyword matching on 500-char chunks."""
+    """Search local medical PDFs using keyword matching on 600-char chunks."""
     results = []
-    query_words = [w.lower() for w in query.split() if len(w) > 3]
+    norm_query = _normalize(query)
+    query_words = [w for w in norm_query.split() if len(w) > 2]
 
     if not os.path.exists(DOCS_PATH):
         return []
@@ -53,31 +69,27 @@ def search_local_pdfs(query: str, max_results: int = 4) -> List[Dict[str, Any]]:
         path = os.path.join(DOCS_PATH, filename)
         try:
             doc = fitz.open(path)
-            full_text = " ".join(page.get_text() for page in doc)
-            # Split into 500-char chunks with 100-char overlap
-            chunks = []
-            step = 400
-            size = 500
-            for i in range(0, len(full_text), step):
-                chunk = full_text[i:i + size]
-                if len(chunk) > 80:
-                    chunks.append(chunk)
-
-            scored = [(chunk, _score_chunk(chunk, query_words)) for chunk in chunks]
-            scored.sort(key=lambda x: x[1], reverse=True)
-
-            for chunk, score in scored[:2]:
-                if score > 0:
-                    results.append({
-                        "content": _clean(chunk),
-                        "source": filename,
-                        "source_type": "PDF local",
-                        "score": score,
-                        "url": None,
-                    })
+            # Process page by page to keep it memory efficient
+            for page_num in range(len(doc)):
+                page_text = doc[page_num].get_text()
+                # Simple chunking within the page
+                chunks = [page_text[i:i+600] for i in range(0, len(page_text), 450)]
+                
+                for chunk in chunks:
+                    if len(chunk) < 100: continue
+                    score = _score_chunk(chunk, query_words)
+                    if score > 0:
+                        results.append({
+                            "content": _clean(chunk),
+                            "source": filename,
+                            "source_type": "PDF local",
+                            "score": score,
+                            "url": None,
+                        })
         except Exception as e:
             print(f"[scraper] PDF error {filename}: {e}")
 
+    # Sort by score and keep best per document if many
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:max_results]
 
@@ -86,7 +98,7 @@ def search_local_pdfs(query: str, max_results: int = 4) -> List[Dict[str, Any]]:
 # 2. PUBMED SEARCH
 # ─────────────────────────────────────────────
 
-def search_pubmed(query: str, max_results: int = 3) -> List[Dict[str, Any]]:
+def search_pubmed(query: str, max_results: int = 4) -> List[Dict[str, Any]]:
     """Search PubMed via NCBI E-utilities (no API key needed)."""
     try:
         search_resp = requests.get(
@@ -152,9 +164,9 @@ def search_pubmed(query: str, max_results: int = 3) -> List[Dict[str, Any]]:
 # ─────────────────────────────────────────────
 
 def scrape_all(query: str) -> List[Dict[str, Any]]:
-    """Run all scrapers and merge results."""
-    pdf_results    = search_local_pdfs(query, max_results=4)
-    pubmed_results = search_pubmed(query, max_results=3)
+    """Run all scrapers and merge results with unique IDs."""
+    pdf_results    = search_local_pdfs(query, max_results=5)
+    pubmed_results = search_pubmed(query, max_results=4)
 
     all_results = pdf_results + pubmed_results
     # Deduplicate by content prefix
@@ -166,4 +178,8 @@ def scrape_all(query: str) -> List[Dict[str, Any]]:
             seen.add(key)
             unique.append(r)
 
-    return unique[:7]
+    # Assign IDs for easy citation [1], [2], etc.
+    for i, res in enumerate(unique):
+        res["id"] = i + 1
+
+    return unique[:10]

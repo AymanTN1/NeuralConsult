@@ -9212,6 +9212,15 @@ body.sidebar-collapsed .clinical-workstation {
   border-radius: 999px;
 }
 
+.rag-source-id {
+  font-family: "Sora", sans-serif;
+  font-weight: 800;
+  color: #2563eb;
+  margin-right: 0.5rem;
+  font-size: 0.85rem;
+}
+
+
 .rag-source-name {
   font-size: 0.78rem;
   color: var(--nc-copy-soft);

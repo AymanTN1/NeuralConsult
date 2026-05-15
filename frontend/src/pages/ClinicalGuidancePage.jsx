@@ -23,6 +23,7 @@ const WELCOME = {
 const SourceCard = ({ result, isClarifying }) => (
   <div className={`rag-source-card ${isClarifying ? 'rag-source-card--preview' : ''}`}>
     <div className="rag-source-header">
+      {result.id && <span className="rag-source-id">[{result.id}]</span>}
       <i className={`bi ${sourceIcon(result.source_type || result.type)} me-2`} />
       <span className="rag-source-type">{result.source_type || result.type || 'Source'}</span>
       <span className="rag-source-name">{result.source || result.name}</span>

@@ -49,11 +49,11 @@ SYNTHESIS_SYSTEM = """\
 Tu es un expert clinique en tabacologie qui rédige des réponses médicales sourcées pour des médecins.
 
 RÈGLE ABSOLUE : Ta synthèse doit TOUJOURS :
-1. Citer explicitement les sources utilisées (nom du document ou "PubMed").
-2. Indiquer s'il s'agit d'une recommandation officielle ou d'un article de recherche.
-3. Être structurée : d'abord la recommandation principale, puis les nuances.
+1. Utiliser des appels de citations numériques entre crochets, par exemple [1], [2], correspondant aux sources fournies.
+2. Citer TOUTES les sources pertinentes qui ont permis de construire la réponse.
+3. Être structurée et professionnelle.
 
-Format de citation : [Source: Guide Marocain] ou [Source: PubMed - Auteur 2024]
+Chaque numéro [x] doit correspondre à l'ID de la source dans la liste fournie.
 """
 
 
@@ -73,27 +73,22 @@ def _build_user_prompt(doctor_message: str, conversation_history: List[Dict[str,
 
 
 def _build_synthesis_prompt(query: str, results: List[Dict[str, Any]]) -> str:
-    """Build synthesis prompt that forces source citations."""
-    sources_summary = []
-    for r in results[:8]:
-        src = r.get("source", "Source inconnue")
-        url = r.get("url", "")
-        stype = r.get("source_type", "")
-        sources_summary.append(f"[{stype}] {src}{' — ' + url if url else ''}")
+    """Build synthesis prompt that forces numeric [ID] citations."""
+    sources_text = ""
+    for r in results:
+        sources_text += f"ID: [{r.get('id')}]\nSource: {r.get('source')}\nType: {r.get('source_type')}\nContenu: {r.get('content')}\n---\n"
 
     return (
         f"Question du médecin : {query}\n\n"
-        "Résultats bruts extraits des sources médicales :\n"
-        + json.dumps(results[:8], ensure_ascii=False, indent=2)
-        + "\n\n"
-        "Sources disponibles dans ces résultats :\n"
-        + "\n".join(f"  • {s}" for s in sources_summary)
-        + "\n\n"
-        "Rédige une synthèse clinique précise (4-6 lignes) qui :\n"
-        "1. Répond directement à la question\n"
-        "2. Cite OBLIGATOIREMENT les sources entre crochets ex: [Guide Marocain], [PubMed]\n"
-        "3. Distingue recommandations officielles (guides) et données de recherche (PubMed)\n"
-        "Réponds en français uniquement."
+        "Voici les sources médicales extraites (PDF locaux et Web/PubMed) :\n"
+        + sources_text
+        + "\n"
+        "Instructions :\n"
+        "1. Rédige une réponse clinique concise en français.\n"
+        "2. Accompagne chaque affirmation par son numéro de source entre crochets, ex: [1].\n"
+        "3. Si une information vient de plusieurs sources, mets plusieurs crochets, ex: [1][3].\n"
+        "4. N'invente AUCUNE information non présente dans les sources.\n"
+        "5. La réponse DOIT être accompagnée de ses sources, c'est impératif."
     )
 
 
