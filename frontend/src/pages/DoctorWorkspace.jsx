@@ -886,24 +886,27 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
             </section>
           </div>
 
-          {isPatientPanelOpen && selectedPatientId && (
-            <div className="doctor-overlay-panel">
-              <div className="doctor-overlay-panel-backdrop" onClick={() => setIsPatientPanelOpen(false)}></div>
-              <aside className="doctor-overlay-panel-content">
-                <div className="doctor-overlay-panel-header">
-                  <div className="section-title-sm">Espace patient selectionne</div>
-                  <button type="button" className="btn-close" onClick={() => setIsPatientPanelOpen(false)} aria-label="Close"></button>
+          <Modal
+            show={isPatientPanelOpen && !!selectedPatientId}
+            onHide={() => setIsPatientPanelOpen(false)}
+            size="xl"
+            centered
+            scrollable
+            contentClassName="doctor-patient-modal-content"
+          >
+            <Modal.Header closeButton className="border-bottom pb-3">
+              <Modal.Title className="section-title-sm mb-0">Espace patient sélectionné</Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="p-4 bg-light">
+              <div className="doctor-overlay-panel-body p-0">
+                {renderPatientHeader()}
+                {renderPatientTabs()}
+                <div className="doctor-dossier-stack mt-4">
+                  {renderSelectedPatientContent()}
                 </div>
-                <div className="doctor-overlay-panel-body">
-                  {renderPatientHeader()}
-                  {renderPatientTabs()}
-                  <div className="doctor-dossier-stack">
-                    {renderSelectedPatientContent()}
-                  </div>
-                </div>
-              </aside>
-            </div>
-          )}
+              </div>
+            </Modal.Body>
+          </Modal>
         </div>
       )}
     </div>
