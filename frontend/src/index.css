@@ -6156,66 +6156,6 @@ textarea.form-control:focus {
   z-index: 9999;
 }
 
-.lung-container {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.lung-left,
-.lung-right {
-  width: 45px;
-  height: 80px;
-  background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
-  border-radius: 50% 50% 20% 80% / 40% 40% 60% 60%;
-  position: absolute;
-  animation: breathe 3s ease-in-out infinite;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-}
-
-.lung-left {
-  left: 10px;
-  transform-origin: right bottom;
-}
-
-.lung-right {
-  right: 10px;
-  transform-origin: left bottom;
-  transform: scaleX(-1);
-  animation: breathe-right 3s ease-in-out infinite;
-}
-
-@keyframes breathe {
-
-  0%,
-  100% {
-    transform: scale(0.8) rotate(-5deg);
-    opacity: 0.6;
-  }
-
-  50% {
-    transform: scale(1.1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
-@keyframes breathe-right {
-
-  0%,
-  100% {
-    transform: scaleX(-1) scale(0.8) rotate(-5deg);
-    opacity: 0.6;
-  }
-
-  50% {
-    transform: scaleX(-1) scale(1.1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
 .loading-text {
   margin-top: 2rem;
   font-weight: 700;
