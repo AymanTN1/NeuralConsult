@@ -507,12 +507,38 @@ a {
 }
 
 .clinical-loader-ring {
-  width: 4rem;
-  height: 4rem;
+  width: 6rem;
+  height: 6rem;
   border-radius: 50%;
-  border: 3px solid rgba(59, 130, 246, 0.1);
-  border-top-color: rgba(59, 130, 246, 0.1);
-  animation: rotate-ring 1s linear infinite;
+  position: relative;
+  background-image: url('/icons/loaderSpinner.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  animation: pulse-icon 2s ease-in-out infinite alternate;
+}
+
+.clinical-loader-ring::before {
+  content: '';
+  position: absolute;
+  top: -5px; left: -5px; right: -5px; bottom: -5px;
+  border-radius: 50%;
+  z-index: -1;
+  box-shadow: 
+    15px 0 25px rgba(59, 130, 246, 0.7),
+    -15px 0 25px rgba(16, 185, 129, 0.7);
+  animation: rotate-shadow 1.5s linear infinite;
+}
+
+@keyframes rotate-shadow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-icon {
+  0% { transform: scale(0.95); }
+  100% { transform: scale(1.05); }
 }
 
 .clinical-loader-copy {
