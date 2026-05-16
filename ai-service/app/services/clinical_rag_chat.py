@@ -147,8 +147,12 @@ class ClinicalRagChatService:
                 raw_results.append(r)
                 existing_urls.add(r.get("url"))
 
-        # Ensure every result has a proper source label
+        # Ensure every result has a proper source label and an ID
+        max_id = max((r.get("id") or 0) for r in raw_results) if raw_results else 0
         for r in raw_results:
+            if r.get("id") is None:
+                max_id += 1
+                r["id"] = max_id
             if not r.get("source"):
                 r["source"] = "Source médicale"
             if not r.get("source_type"):

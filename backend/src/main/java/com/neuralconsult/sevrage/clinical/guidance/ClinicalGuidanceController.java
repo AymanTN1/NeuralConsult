@@ -49,6 +49,11 @@ public class ClinicalGuidanceController {
                 Object.class
             );
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            return ResponseEntity.status(503).body(Map.of(
+                "error", "Le service IA n'est pas accessible. (AI service unreachable from backend)",
+                "details", e.getMessage()
+            ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
