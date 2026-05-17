@@ -467,7 +467,7 @@ public class CommunityService {
       ));
     }
     return items.stream()
-        .sorted(Comparator.comparing(CommunityActivityItemResponse::createdAt, Comparator.reverseOrder()))
+        .sorted(Comparator.comparing(item -> item.createdAt() != null ? item.createdAt() : Instant.MIN, Comparator.reverseOrder()))
         .limit(80)
         .toList();
   }
@@ -495,8 +495,8 @@ public class CommunityService {
         server.getId(),
         server.getName(),
         server.getDescription(),
-        server.getVisibility().name(),
-        server.getCreatedByUser().getFullName(),
+        server.getVisibility() != null ? server.getVisibility().name() : "PUBLIC",
+        server.getCreatedByUser() != null ? server.getCreatedByUser().getFullName() : "Admin",
         memberRepository.findAllByServerAndActiveTrue(server).size(),
         member != null,
         member != null ? member.getRole().name() : null,
@@ -521,7 +521,7 @@ public class CommunityService {
       reactionCounts.put(type.name(), reactions.stream().filter(reaction -> reaction.getType() == type).count());
     }
     String myReaction = reactions.stream()
-        .filter(reaction -> reaction.getUser().getId().equals(viewer.getId()))
+        .filter(reaction -> reaction.getUser() != null && reaction.getUser().getId().equals(viewer.getId()))
         .map(reaction -> reaction.getType().name())
         .findFirst()
         .orElse(null);
@@ -548,17 +548,33 @@ public class CommunityService {
   private CommunityCommentResponse toCommentResponse(CommunityPostComment comment) {
     return new CommunityCommentResponse(
         comment.getId(),
-        comment.getAuthor().getId(),
-        safeName(comment.getAuthor()),
-        comment.getAuthor().getCommunityUsername(),
-        comment.getAuthor().getCommunityAvatarUrl(),
-        roleLabel(comment.getAuthor()),
+        comment.getAuthor() != null ? comment.getAuthor().getId() : null,
+        comment.getAuthor() != null ? safeName(comment.getAuthor()) : "Utilisateur anonyme",
+        comment.getAuthor() != null ? comment.getAuthor().getCommunityUsername() : null,
+        comment.getAuthor() != null ? comment.getAuthor().getCommunityAvatarUrl() : null,
+        comment.getAuthor() != null ? roleLabel(comment.getAuthor()) : "Patient",
         comment.getContent(),
         comment.getCreatedAt()
     );
   }
 
   private CommunityUserSummaryResponse toUserSummary(User target, User viewer) {
+    if (target == null) {
+      return new CommunityUserSummaryResponse(
+          null,
+          "Utilisateur anonyme",
+          null,
+          null,
+          "Patient",
+          null,
+          null,
+          false,
+          "NONE",
+          0L,
+          0L,
+          false
+      );
+    }
     return new CommunityUserSummaryResponse(
         target.getId(),
         safeName(target),
@@ -567,7 +583,7 @@ public class CommunityService {
         roleLabel(target),
         target.getCommunityAvatarUrl(),
         trimToLength(target.getCommunityBio(), 120),
-        followRepository.existsByFollowerAndFollowedAndActiveTrue(viewer, target),
+        viewer != null && followRepository.existsByFollowerAndFollowedAndActiveTrue(viewer, target),
         connectionStatus(viewer, target),
         followRepository.countByFollowedAndActiveTrue(target),
         postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).size(),
@@ -646,6 +662,9 @@ public class CommunityService {
   }
 
   private String connectionStatus(User viewer, User target) {
+    if (viewer == null || target == null) {
+      return "NONE";
+    }
     if (viewer.getId().equals(target.getId())) {
       return "SELF";
     }
@@ -725,7 +744,7 @@ public class CommunityService {
         .comparing((CommunityPostResponse post) -> "OFFICIAL_NEWS".equals(post.postType())).reversed()
         .thenComparing((CommunityPostResponse post) -> post.author().following()).reversed()
         .thenComparingLong(this::engagementScore).reversed()
-        .thenComparing(CommunityPostResponse::createdAt, Comparator.reverseOrder());
+        .thenComparing(post -> post.createdAt() != null ? post.createdAt() : Instant.MIN, Comparator.reverseOrder());
   }
 
   private long engagementScore(CommunityPostResponse post) {

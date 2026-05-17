@@ -1,12 +1,13 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Modal from "react-bootstrap/Modal";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const emptyOverview = {
   viewer: null,
   posts: [],
-  circles: [],
+  servers: [],
   people: [],
   pendingInvitations: [],
   friends: [],
@@ -80,6 +81,8 @@ const avatarFallback = (value) => {
 
 const Communities = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [overview, setOverview] = useState(emptyOverview);
   const [activeSection, setActiveSection] = useState("feed");
   const [loading, setLoading] = useState(true);
@@ -113,10 +116,11 @@ const Communities = () => {
   const [serverForm, setServerForm] = useState({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
   const [creatingServer, setCreatingServer] = useState(false);
   const [mockMembers, setMockMembers] = useState({});
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
 
   const viewer = overview.viewer;
   const myPosts = useMemo(
-    () => (overview.posts || []).filter((post) => post.author?.id === viewer?.userId),
+    () => (overview.posts || []).filter((post) => post.author?.id === viewer?.id),
     [overview.posts, viewer]
   );
 
@@ -490,7 +494,7 @@ const Communities = () => {
 
   const renderStories = () => {
     const storyList = [
-      { id: "story-1", name: "Dr. Amrani", avatar: "/icons/icon Neural Consult severage.jpg", active: true, isDr: true },
+      { id: "story-1", name: "Dr. Amrani", avatar: "", active: true, isDr: true, initial: "DA" },
       { id: "story-2", name: "Samy_Zen", avatar: "", active: true, initial: "SZ" },
       { id: "story-3", name: "PneumoCare", avatar: "", active: false, initial: "PC" },
       { id: "story-4", name: "Yasmine_M", avatar: "", active: true, initial: "YM" },
@@ -606,7 +610,7 @@ const Communities = () => {
   };
 
 
-  const getActiveServer = () => (overview.circles || []).find(c => c.id === selectedServerId) || null;
+  const getActiveServer = () => (overview.servers || []).find(c => c.id === selectedServerId) || null;
 
   const createServer = async (e) => {
     e.preventDefault();
@@ -715,7 +719,7 @@ const Communities = () => {
   };
 
   const renderDiscordServerSidebar = () => {
-    const myCircles = (overview.circles || []).filter(c => c.joined);
+    const myCircles = (overview.servers || []).filter(c => c.joined);
     return (
       <div className="discord-server-sidebar">
         <button type="button" className={`discord-server-btn ${!selectedServerId ? "is-active" : ""}`} title="Fil global" onClick={() => setSelectedServerId(null)}>
@@ -882,7 +886,7 @@ const Communities = () => {
           </div>
         </div>
         <div className="social-space-circle-grid">
-          {(overview.circles || []).map((circle) => (
+          {(overview.servers || []).map((circle) => (
             <article key={circle.id} className="social-space-circle-card">
               <div>
                 <strong>{circle.name}</strong>
@@ -1070,7 +1074,7 @@ const Communities = () => {
 
   const renderProfile = () => (
     <div className="social-space-column">
-      <section className="social-space-panel social-space-profile-editor">
+      <section className="social-space-panel social-space-profile-editor" style={{ position: 'relative', zIndex: 100 }}>
         <div className="social-space-panel-head">
           <div>
             <h3>Votre identite communautaire</h3>
@@ -1087,17 +1091,17 @@ const Communities = () => {
             </button>
             {showOptionsMenu && (
               <div className="profile-option-menu">
-                <button type="button" className="profile-option-item">
+                <button type="button" className="profile-option-item" onClick={() => { navigate("/profile"); setShowOptionsMenu(false); }}>
                   <i className="bi bi-gear" /> <span>Parametres</span>
                 </button>
-                <button type="button" className="profile-option-item">
+                <button type="button" className="profile-option-item" onClick={() => { setShowBlockedModal(true); setShowOptionsMenu(false); }}>
                   <i className="bi bi-slash-circle" /> <span>Comptes bloques</span>
                 </button>
                 <button type="button" className="profile-option-item" onClick={() => { setShowArchives(true); setShowOptionsMenu(false); }}>
                   <i className="bi bi-archive" /> <span>Archives stories</span>
                 </button>
                 <hr className="my-1" />
-                <button type="button" className="profile-option-item text-danger">
+                <button type="button" className="profile-option-item text-danger" onClick={async () => { setShowOptionsMenu(false); await logout(); navigate("/login"); }}>
                   <i className="bi bi-box-arrow-right" /> <span>Deconnexion</span>
                 </button>
               </div>
@@ -1583,6 +1587,18 @@ const Communities = () => {
               </div>
             </>
           )}
+        </Modal.Body>
+      </Modal>
+
+      <Modal show={showBlockedModal} onHide={() => setShowBlockedModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Comptes bloqués</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="text-center text-muted p-4">
+            <i className="bi bi-shield-check fs-1 mb-2"></i>
+            <p>Vous n'avez bloqué aucun compte pour le moment.</p>
+          </div>
         </Modal.Body>
       </Modal>
     </div>
