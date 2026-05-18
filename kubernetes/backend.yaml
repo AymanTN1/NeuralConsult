@@ -1,0 +1,87 @@
+# =====================================================================
+# 🐳 KUBERNETES MANIFESTS - JAVA SPRING BOOT API SERVICE
+# =====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: neuralconsult
+data:
+  SPRING_PROFILES_ACTIVE: prod
+  AI_SERVICE_BASE_URL: "http://ai-service-service.neuralconsult.svc.cluster.local:8000"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: neuralconsult
+  labels:
+    app: backend
+spec:
+  replicas: 2 # High Availability - 2 Pods across different nodes
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: docker.io/aymantantani/neuralconsult-backend:latest # Overwritten by ArgoCD
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: database-secrets
+                  key: database-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: database-secrets
+                  key: database-username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-secrets
+                  key: database-password
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: neuralconsult
+spec:
+  type: ClusterIP # Internal cluster communication
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: backend
