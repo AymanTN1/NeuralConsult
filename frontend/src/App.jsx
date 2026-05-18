@@ -7,6 +7,7 @@ import ClinicalSidebar from "./components/ClinicalSidebar";
 import ClinicalTopbar from "./components/ClinicalTopbar";
 import PatientGuide from "./components/PatientGuide";
 import ProtectedRoute from "./components/ProtectedRoute";
+import MobileBottomNav from "./components/MobileBottomNav";
 import { isAdmin, isDoctor, isPatient } from "./utils/roles";
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
@@ -283,6 +284,7 @@ const AppShell = () => {
         </main>
       </div>
       <PatientGuide />
+      <MobileBottomNav />
     </div>
   );
 };

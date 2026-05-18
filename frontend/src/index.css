@@ -9311,3 +9311,133 @@ body.sidebar-collapsed .clinical-workstation {
   display: flex;
   flex-direction: column;
 }
+
+/* =====================================================================
+   📱 ENTERPRISE MOBILE & TABLET RESPONSIVE SYSTEM (PWA TAB BAR)
+   ===================================================================== */
+
+@media (max-width: 1024px) {
+  .clinical-sidebar {
+    display: none !important;
+  }
+  .clinical-workstation {
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .clinical-content {
+    width: 100% !important;
+  }
+  .clinical-topbar {
+    padding: 1rem 1.5rem !important;
+  }
+  .clinical-main {
+    padding: 1rem 1.5rem !important;
+    padding-bottom: 6rem !important; /* Safety padding for bottom nav */
+  }
+}
+
+@media (max-width: 768px) {
+  .clinical-topbar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.85rem !important;
+    padding: 1rem !important;
+  }
+  .clinical-topbar > div:first-child {
+    width: 100% !important;
+  }
+  .topbar-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .clinical-score-chip {
+    min-width: calc(50% - 0.25rem) !important;
+    flex: 1 !important;
+    padding: 0.5rem 0.8rem !important;
+  }
+  .topbar-user {
+    display: none !important; /* Hide user email details on mobile to save critical space */
+  }
+  .topbar-notifications, .topbar-logout {
+    padding: 0.5rem 1rem !important;
+  }
+  .clinical-main {
+    padding: 1rem !important;
+    padding-bottom: 5.5rem !important;
+  }
+  .landing-grid, .auth-stage-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .interruption-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .doctor-table-shell {
+    overflow-x: auto !important; /* Enable table scrolling on mobile */
+  }
+}
+
+/* =====================================================================
+   🔔 GLASSY MOBILE BOTTOM NAVIGATION BAR
+   ===================================================================== */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4.4rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(59, 130, 246, 0.15);
+  z-index: 999;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.06);
+  padding-bottom: env(safe-area-inset-bottom); /* iOS Notch support */
+}
+
+@media (max-width: 1024px) {
+  .mobile-bottom-nav {
+    display: block;
+  }
+}
+
+.mobile-bottom-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-inline: 1rem;
+}
+
+.mobile-bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  flex: 1;
+  height: 100%;
+  transition: color 0.2s ease, transform 0.2s ease;
+  gap: 0.2rem;
+}
+
+.mobile-bottom-icon {
+  font-size: 1.35rem;
+  transition: transform 0.2s ease;
+}
+
+.mobile-bottom-nav-link.active {
+  color: #2563eb;
+}
+
+.mobile-bottom-nav-link.active .mobile-bottom-icon {
+  transform: translateY(-2px);
+}
