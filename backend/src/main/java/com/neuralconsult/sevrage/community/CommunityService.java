@@ -428,6 +428,7 @@ public class CommunityService {
     User actor = requireManagedUser(user);
     List<User> friends = connectionRepository.findAllForUserByStatus(actor, CommunityConnection.Status.ACCEPTED).stream()
         .map(connection -> counterpart(connection, actor))
+        .filter(friend -> friend != null)
         .toList();
     List<CommunityDirectMessage> recentMessages = directMessageRepository.findRecentForUser(actor);
     return friends.stream()
@@ -522,7 +523,7 @@ public class CommunityService {
     }
     String myReaction = reactions.stream()
         .filter(reaction -> reaction.getUser() != null && reaction.getUser().getId().equals(viewer.getId()))
-        .map(reaction -> reaction.getType().name())
+        .map(reaction -> reaction.getType() != null ? reaction.getType().name() : "LOVE")
         .findFirst()
         .orElse(null);
     List<CommunityCommentResponse> comments = commentRepository.findAllByPostOrderByCreatedAtAsc(post).stream()
@@ -607,21 +608,36 @@ public class CommunityService {
   private CommunityConnectionResponse toConnectionResponse(CommunityConnection connection, User viewer) {
     return new CommunityConnectionResponse(
         connection.getId(),
-        toUserSummary(connection.getRequester(), viewer),
-        toUserSummary(connection.getReceiver(), viewer),
-        connection.getStatus().name(),
+        connection.getRequester() != null ? toUserSummary(connection.getRequester(), viewer) : null,
+        connection.getReceiver() != null ? toUserSummary(connection.getReceiver(), viewer) : null,
+        connection.getStatus() != null ? connection.getStatus().name() : "PENDING",
         connection.getCreatedAt()
     );
   }
 
   private CommunityConversationResponse toConversationResponse(User viewer, User friend, List<CommunityDirectMessage> recentMessages) {
+    if (friend == null) {
+      return new CommunityConversationResponse(
+          null,
+          "Utilisateur inconnu",
+          null,
+          null,
+          "Patient",
+          "Aucun message pour le moment.",
+          null,
+          false,
+          "NOUVEAU",
+          0L
+      );
+    }
     CommunityDirectMessage last = recentMessages.stream()
+        .filter(message -> message.getSender() != null && message.getRecipient() != null)
         .filter(message -> message.getSender().getId().equals(friend.getId()) || message.getRecipient().getId().equals(friend.getId()))
         .findFirst()
         .orElse(null);
     long unreadCount = recentMessages.stream()
-        .filter(message -> message.getSender().getId().equals(friend.getId()))
-        .filter(message -> message.getRecipient().getId().equals(viewer.getId()))
+        .filter(message -> message.getSender() != null && message.getSender().getId().equals(friend.getId()))
+        .filter(message -> message.getRecipient() != null && message.getRecipient().getId().equals(viewer.getId()))
         .filter(message -> message.getReadAt() == null)
         .count();
     return new CommunityConversationResponse(
@@ -632,7 +648,7 @@ public class CommunityService {
         roleLabel(friend),
         last != null ? conversationPreview(last) : "Aucun message pour le moment.",
         last != null ? last.getCreatedAt() : null,
-        last != null && last.getSender().getId().equals(viewer.getId()),
+        last != null && last.getSender() != null && last.getSender().getId().equals(viewer.getId()),
         last != null ? messageStatus(last, viewer) : "NOUVEAU",
         unreadCount
     );
@@ -640,24 +656,31 @@ public class CommunityService {
 
   private CommunityDirectMessageResponse toDirectMessageResponse(CommunityDirectMessage message, User viewer) {
     CommunityPost sharedPost = message.getSharedPost();
+    User sender = message.getSender();
     return new CommunityDirectMessageResponse(
         message.getId(),
-        message.getSender().getId(),
-        safeName(message.getSender()),
-        message.getSender().getCommunityUsername(),
-        message.getSender().getCommunityAvatarUrl(),
+        sender != null ? sender.getId() : null,
+        sender != null ? safeName(sender) : "Utilisateur anonyme",
+        sender != null ? sender.getCommunityUsername() : null,
+        sender != null ? sender.getCommunityAvatarUrl() : null,
         message.getContent(),
         sharedPost != null ? sharedPost.getId() : null,
         sharedPost != null ? previewOf(sharedPost.getContent()) : null,
         sharedPost != null ? sharedPost.getImageUrl() : null,
         sharedPost != null ? safeName(sharedPost.getAuthor()) : null,
         message.getCreatedAt(),
-        message.getSender().getId().equals(viewer.getId()),
+        sender != null && sender.getId().equals(viewer.getId()),
         messageStatus(message, viewer)
     );
   }
 
   private User counterpart(CommunityConnection connection, User user) {
+    if (connection.getRequester() == null) {
+      return connection.getReceiver();
+    }
+    if (connection.getReceiver() == null) {
+      return connection.getRequester();
+    }
     return connection.getRequester().getId().equals(user.getId()) ? connection.getReceiver() : connection.getRequester();
   }
 
@@ -674,7 +697,7 @@ public class CommunityService {
             return "FRIEND";
           }
           if (connection.getStatus() == CommunityConnection.Status.PENDING) {
-            return connection.getRequester().getId().equals(viewer.getId()) ? "PENDING_SENT" : "PENDING_RECEIVED";
+            return connection.getRequester() != null && connection.getRequester().getId().equals(viewer.getId()) ? "PENDING_SENT" : "PENDING_RECEIVED";
           }
           return "NONE";
         })
@@ -682,7 +705,8 @@ public class CommunityService {
   }
 
   private String messageStatus(CommunityDirectMessage message, User viewer) {
-    if (!message.getSender().getId().equals(viewer.getId())) {
+    User sender = message.getSender();
+    if (sender == null || !sender.getId().equals(viewer.getId())) {
       return "RECU";
     }
     return message.getReadAt() != null ? "VU" : "ENVOYE";
