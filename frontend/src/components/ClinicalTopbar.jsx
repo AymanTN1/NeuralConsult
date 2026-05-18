@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import { isAdmin, isDoctor, isPatient } from "../utils/roles";
+import { requestNotificationPermission, processIncomingNotificationsForNativeAlerts } from "../services/desktopNotifications";
 
 const pageMeta = {
   "/dashboard": {
@@ -82,11 +83,23 @@ const ClinicalTopbar = () => {
 
   useEffect(() => {
     let ignore = false;
-    const loadSummary = async () => {
+
+    if (user) {
+      requestNotificationPermission();
+    }
+
+    const loadSummaryAndCheckNative = async () => {
       try {
-        const { data } = await api.get("/api/notifications/summary");
+        const summaryRes = await api.get("/api/notifications/summary");
         if (!ignore) {
-          setUnreadCount(data?.unreadCount || 0);
+          setUnreadCount(summaryRes.data?.unreadCount || 0);
+        }
+
+        if (summaryRes.data?.unreadCount > 0) {
+          const listRes = await api.get("/api/notifications");
+          if (!ignore) {
+            processIncomingNotificationsForNativeAlerts(listRes.data, navigate);
+          }
         }
       } catch (error) {
         if (!ignore) {
@@ -96,13 +109,14 @@ const ClinicalTopbar = () => {
     };
 
     if (user) {
-      loadSummary();
+      loadSummaryAndCheckNative();
+      const interval = setInterval(loadSummaryAndCheckNative, 20000);
+      return () => {
+        ignore = true;
+        clearInterval(interval);
+      };
     }
-
-    return () => {
-      ignore = true;
-    };
-  }, [user, location.pathname]);
+  }, [user, location.pathname, navigate]);
 
   return (
     <header className="clinical-topbar">
