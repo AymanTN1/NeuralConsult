@@ -139,7 +139,7 @@ trigger-gitops-deploy:
     # Update the tag inside the Helm values.yaml file using sed
     - sed -i "s/tag:.*/tag:\ \"$CI_COMMIT_SHORT_SHA\"/g" values.yaml
     - git add values.yaml
-    - git commit -m "chore(deploy): release version $CI_COMMIT_SHORT_SHA [skip ci]"
+    - 'git commit -m "chore(deploy): release version $CI_COMMIT_SHORT_SHA [skip ci]"'
     - git push origin main
   only:
     - main
