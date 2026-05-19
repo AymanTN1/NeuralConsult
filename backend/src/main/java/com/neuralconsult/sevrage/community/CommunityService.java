@@ -545,69 +545,206 @@ public class CommunityService {
   }
 
   private CommunityServerResponse toServerResponse(CommunityServer server, User user) {
-    CommunityMember member = memberRepository.findByServerAndUser(server, user).orElse(null);
-    return new CommunityServerResponse(
-        server.getId(),
-        server.getName(),
-        server.getDescription(),
-        server.getVisibility() != null ? server.getVisibility().name() : "PUBLIC",
-        server.getCreatedByUser() != null ? server.getCreatedByUser().getFullName() : "Admin",
-        memberRepository.findAllByServerAndActiveTrue(server).size(),
-        member != null,
-        member != null ? member.getRole().name() : null,
-        server.getCreatedAt()
-    );
+    try {
+      CommunityMember member = null;
+      try {
+        member = memberRepository.findByServerAndUser(server, user).orElse(null);
+      } catch (Exception e) {
+        // ignore member lookup errors
+      }
+
+      String creatorName = "Admin";
+      try {
+        if (server.getCreatedByUser() != null) {
+          creatorName = server.getCreatedByUser().getFullName();
+        }
+      } catch (Exception e) {
+        // creator is deleted
+      }
+
+      int memberCount = 0;
+      try {
+        memberCount = memberRepository.findAllByServerAndActiveTrue(server).size();
+      } catch (Exception e) {
+        // ignore member count errors
+      }
+
+      return new CommunityServerResponse(
+          server.getId(),
+          server.getName(),
+          server.getDescription(),
+          server.getVisibility() != null ? server.getVisibility().name() : "PUBLIC",
+          creatorName,
+          memberCount,
+          member != null,
+          member != null ? member.getRole().name() : null,
+          server.getCreatedAt()
+      );
+    } catch (Exception e) {
+      return new CommunityServerResponse(
+          server.getId(),
+          server.getName(),
+          server.getDescription(),
+          "PUBLIC",
+          "Admin",
+          0,
+          false,
+          null,
+          server.getCreatedAt()
+      );
+    }
   }
 
   private CommunityMessageResponse toMessageResponse(CommunityMessage message) {
-    return new CommunityMessageResponse(
-        message.getId(),
-        message.getChannel().getId(),
-        safeName(message.getAuthor()),
-        message.getContent(),
-        message.getCreatedAt()
-    );
+    try {
+      return new CommunityMessageResponse(
+          message.getId(),
+          message.getChannel().getId(),
+          safeName(message.getAuthor()),
+          message.getContent(),
+          message.getCreatedAt()
+      );
+    } catch (Exception e) {
+      return new CommunityMessageResponse(
+          message.getId(),
+          null,
+          "Membre NeuralConsult",
+          message.getContent(),
+          message.getCreatedAt()
+      );
+    }
   }
 
   private CommunityPostResponse toPostResponse(CommunityPost post, User viewer) {
-    List<CommunityPostReaction> reactions = reactionRepository.findAllByPost(post);
-    Map<String, Long> reactionCounts = new LinkedHashMap<>();
-    for (CommunityPostReaction.ReactionType type : CommunityPostReaction.ReactionType.values()) {
-      reactionCounts.put(type.name(), reactions.stream().filter(reaction -> reaction.getType() == type).count());
+    try {
+      List<CommunityPostReaction> reactions = new ArrayList<>();
+      try {
+        reactions = reactionRepository.findAllByPost(post);
+      } catch (Exception e) {
+        // ignore reaction loading errors
+      }
+
+      Map<String, Long> reactionCounts = new LinkedHashMap<>();
+      for (CommunityPostReaction.ReactionType type : CommunityPostReaction.ReactionType.values()) {
+        final List<CommunityPostReaction> finalReactions = reactions;
+        reactionCounts.put(type.name(), finalReactions.stream().filter(reaction -> {
+          try {
+            return reaction.getType() == type;
+          } catch (Exception e) {
+            return false;
+          }
+        }).count());
+      }
+
+      String myReaction = null;
+      try {
+        myReaction = reactions.stream()
+            .filter(reaction -> {
+              try {
+                return reaction.getUser() != null && reaction.getUser().getId().equals(viewer.getId());
+              } catch (Exception e) {
+                return false;
+              }
+            })
+            .map(reaction -> {
+              try {
+                return reaction.getType() != null ? reaction.getType().name() : "LOVE";
+              } catch (Exception e) {
+                return "LOVE";
+              }
+            })
+            .findFirst()
+            .orElse(null);
+      } catch (Exception e) {
+        // ignore my reaction errors
+      }
+
+      List<CommunityCommentResponse> comments = new ArrayList<>();
+      try {
+        comments = commentRepository.findAllByPostOrderByCreatedAtAsc(post).stream()
+            .map(this::toCommentResponse)
+            .toList();
+      } catch (Exception e) {
+        // ignore comments loading errors
+      }
+
+      UUID serverId = null;
+      String serverName = "Pour vous";
+      try {
+        if (post.getServer() != null) {
+          serverId = post.getServer().getId();
+          serverName = post.getServer().getName();
+        }
+      } catch (Exception e) {
+        // server was deleted
+      }
+
+      return new CommunityPostResponse(
+          post.getId(),
+          toUserSummary(post.getAuthor(), viewer),
+          serverId,
+          serverName,
+          post.getContent(),
+          post.getImageUrl(),
+          post.getCreatedAt(),
+          reactionCounts,
+          myReaction,
+          comments,
+          post.getPostType() != null ? post.getPostType().name() : "USER_POST",
+          post.getSourceUrl(),
+          post.getSourceLabel()
+      );
+    } catch (Exception e) {
+      // Return a minimal post response if mapping fails entirely
+      return new CommunityPostResponse(
+          post.getId(),
+          anonymousUserSummary(),
+          null,
+          "Pour vous",
+          "Contenu indisponible",
+          null,
+          post.getCreatedAt(),
+          new LinkedHashMap<>(),
+          null,
+          new ArrayList<>(),
+          "USER_POST",
+          null,
+          null
+      );
     }
-    String myReaction = reactions.stream()
-        .filter(reaction -> reaction.getUser() != null && reaction.getUser().getId().equals(viewer.getId()))
-        .map(reaction -> reaction.getType() != null ? reaction.getType().name() : "LOVE")
-        .findFirst()
-        .orElse(null);
-    List<CommunityCommentResponse> comments = commentRepository.findAllByPostOrderByCreatedAtAsc(post).stream()
-        .map(this::toCommentResponse)
-        .toList();
-    return new CommunityPostResponse(
-        post.getId(),
-        toUserSummary(post.getAuthor(), viewer),
-        post.getServer() != null ? post.getServer().getId() : null,
-        post.getServer() != null ? post.getServer().getName() : "Pour vous",
-        post.getContent(),
-        post.getImageUrl(),
-        post.getCreatedAt(),
-        reactionCounts,
-        myReaction,
-        comments,
-        post.getPostType() != null ? post.getPostType().name() : "USER_POST",
-        post.getSourceUrl(),
-        post.getSourceLabel()
-    );
   }
 
   private CommunityCommentResponse toCommentResponse(CommunityPostComment comment) {
+    try {
+      User author = comment.getAuthor();
+      if (author == null) {
+        return anonymousCommentResponse(comment);
+      }
+      UUID authorId = author.getId();
+      String username = author.getCommunityUsername();
+      return new CommunityCommentResponse(
+          comment.getId(),
+          authorId,
+          safeName(author),
+          username,
+          author.getCommunityAvatarUrl(),
+          roleLabel(author),
+          comment.getContent(),
+          comment.getCreatedAt()
+      );
+    } catch (Exception e) {
+      return anonymousCommentResponse(comment);
+    }
+  }
+
+  private CommunityCommentResponse anonymousCommentResponse(CommunityPostComment comment) {
     return new CommunityCommentResponse(
         comment.getId(),
-        comment.getAuthor() != null ? comment.getAuthor().getId() : null,
-        comment.getAuthor() != null ? safeName(comment.getAuthor()) : "Utilisateur anonyme",
-        comment.getAuthor() != null ? comment.getAuthor().getCommunityUsername() : null,
-        comment.getAuthor() != null ? comment.getAuthor().getCommunityAvatarUrl() : null,
-        comment.getAuthor() != null ? roleLabel(comment.getAuthor()) : "Patient",
+        null,
+        "Utilisateur anonyme",
+        null,
+        null,
+        "Patient",
         comment.getContent(),
         comment.getCreatedAt()
     );
@@ -615,34 +752,43 @@ public class CommunityService {
 
   private CommunityUserSummaryResponse toUserSummary(User target, User viewer) {
     if (target == null) {
-      return new CommunityUserSummaryResponse(
-          null,
-          "Utilisateur anonyme",
-          null,
-          null,
-          "Patient",
-          null,
-          null,
-          false,
-          "NONE",
-          0L,
-          0L,
-          false
-      );
+      return anonymousUserSummary();
     }
+    try {
+      String email = target.getEmail();
+      return new CommunityUserSummaryResponse(
+          target.getId(),
+          safeName(target),
+          target.getCommunityUsername(),
+          email,
+          roleLabel(target),
+          target.getCommunityAvatarUrl(),
+          trimToLength(target.getCommunityBio(), 120),
+          viewer != null && followRepository.existsByFollowerAndFollowedAndActiveTrue(viewer, target),
+          connectionStatus(viewer, target),
+          followRepository.countByFollowedAndActiveTrue(target),
+          postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).size(),
+          target.isVerifiedBadge()
+      );
+    } catch (Exception e) {
+      return anonymousUserSummary();
+    }
+  }
+
+  private CommunityUserSummaryResponse anonymousUserSummary() {
     return new CommunityUserSummaryResponse(
-        target.getId(),
-        safeName(target),
-        target.getCommunityUsername(),
-        target.getEmail(),
-        roleLabel(target),
-        target.getCommunityAvatarUrl(),
-        trimToLength(target.getCommunityBio(), 120),
-        viewer != null && followRepository.existsByFollowerAndFollowedAndActiveTrue(viewer, target),
-        connectionStatus(viewer, target),
-        followRepository.countByFollowedAndActiveTrue(target),
-        postRepository.findAllByAuthorAndDeletedAtIsNullOrderByCreatedAtDesc(target).size(),
-        target.isVerifiedBadge()
+        null,
+        "Utilisateur anonyme",
+        null,
+        null,
+        "Patient",
+        null,
+        null,
+        false,
+        "NONE",
+        0L,
+        0L,
+        false
     );
   }
 
@@ -686,12 +832,32 @@ public class CommunityService {
     }
     CommunityDirectMessage last = recentMessages.stream()
         .filter(message -> message.getSender() != null && message.getRecipient() != null)
-        .filter(message -> message.getSender().getId().equals(friend.getId()) || message.getRecipient().getId().equals(friend.getId()))
+        .filter(message -> {
+          try {
+            return message.getSender().getId().equals(friend.getId()) || message.getRecipient().getId().equals(friend.getId());
+          } catch (Exception e) {
+            return false;
+          }
+        })
         .findFirst()
         .orElse(null);
     long unreadCount = recentMessages.stream()
-        .filter(message -> message.getSender() != null && message.getSender().getId().equals(friend.getId()))
-        .filter(message -> message.getRecipient() != null && message.getRecipient().getId().equals(viewer.getId()))
+        .filter(message -> message.getSender() != null)
+        .filter(message -> {
+          try {
+            return message.getSender().getId().equals(friend.getId());
+          } catch (Exception e) {
+            return false;
+          }
+        })
+        .filter(message -> message.getRecipient() != null)
+        .filter(message -> {
+          try {
+            return message.getRecipient().getId().equals(viewer.getId());
+          } catch (Exception e) {
+            return false;
+          }
+        })
         .filter(message -> message.getReadAt() == null)
         .count();
     return new CommunityConversationResponse(
@@ -709,23 +875,73 @@ public class CommunityService {
   }
 
   private CommunityDirectMessageResponse toDirectMessageResponse(CommunityDirectMessage message, User viewer) {
-    CommunityPost sharedPost = message.getSharedPost();
-    User sender = message.getSender();
-    return new CommunityDirectMessageResponse(
-        message.getId(),
-        sender != null ? sender.getId() : null,
-        sender != null ? safeName(sender) : "Utilisateur anonyme",
-        sender != null ? sender.getCommunityUsername() : null,
-        sender != null ? sender.getCommunityAvatarUrl() : null,
-        message.getContent(),
-        sharedPost != null ? sharedPost.getId() : null,
-        sharedPost != null ? previewOf(sharedPost.getContent()) : null,
-        sharedPost != null ? sharedPost.getImageUrl() : null,
-        sharedPost != null ? safeName(sharedPost.getAuthor()) : null,
-        message.getCreatedAt(),
-        sender != null && sender.getId().equals(viewer.getId()),
-        messageStatus(message, viewer)
-    );
+    try {
+      CommunityPost sharedPost = message.getSharedPost();
+      User sender = message.getSender();
+      UUID senderId = null;
+      String senderName = "Utilisateur anonyme";
+      String senderUsername = null;
+      String senderAvatar = null;
+      
+      if (sender != null) {
+        try {
+          senderId = sender.getId();
+          senderName = safeName(sender);
+          senderUsername = sender.getCommunityUsername();
+          senderAvatar = sender.getCommunityAvatarUrl();
+        } catch (Exception e) {
+          // sender is deleted
+        }
+      }
+
+      UUID sharedPostId = null;
+      String sharedPostPreview = null;
+      String sharedPostImage = null;
+      String sharedPostAuthorName = null;
+
+      if (sharedPost != null) {
+        try {
+          sharedPostId = sharedPost.getId();
+          sharedPostPreview = previewOf(sharedPost.getContent());
+          sharedPostImage = sharedPost.getImageUrl();
+          sharedPostAuthorName = safeName(sharedPost.getAuthor());
+        } catch (Exception e) {
+          // shared post or author is deleted
+        }
+      }
+
+      return new CommunityDirectMessageResponse(
+          message.getId(),
+          senderId,
+          senderName,
+          senderUsername,
+          senderAvatar,
+          message.getContent(),
+          sharedPostId,
+          sharedPostPreview,
+          sharedPostImage,
+          sharedPostAuthorName,
+          message.getCreatedAt(),
+          senderId != null && senderId.equals(viewer.getId()),
+          messageStatus(message, viewer)
+      );
+    } catch (Exception e) {
+      return new CommunityDirectMessageResponse(
+          message.getId(),
+          null,
+          "Utilisateur anonyme",
+          null,
+          null,
+          message.getContent(),
+          null,
+          null,
+          null,
+          null,
+          message.getCreatedAt(),
+          false,
+          "RECU"
+      );
+    }
   }
 
   private User counterpart(CommunityConnection connection, User user) {
