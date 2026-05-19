@@ -117,6 +117,7 @@ const Communities = () => {
   const [creatingServer, setCreatingServer] = useState(false);
   const [mockMembers, setMockMembers] = useState({});
   const [showBlockedModal, setShowBlockedModal] = useState(false);
+  const [showComposerModal, setShowComposerModal] = useState(false);
 
   const viewer = overview.viewer;
   const myPosts = useMemo(
@@ -774,7 +775,7 @@ const Communities = () => {
           </section>
         )}
 
-        <section className="social-space-panel social-space-composer">
+        <section className="social-space-panel social-space-composer d-none d-md-block">
           <div className="social-space-panel-head">
             <div>
               <h3>Publier dans le fil</h3>
@@ -807,6 +808,16 @@ const Communities = () => {
             </div>
           </form>
         </section>
+
+        {/* Floating action button (FAB) for posting on mobile */}
+        <button 
+          type="button" 
+          className="btn btn-primary rounded-circle d-md-none position-fixed" 
+          style={{ bottom: '90px', right: '20px', width: '56px', height: '56px', zIndex: 990, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)' }}
+          onClick={() => setShowComposerModal(true)}
+        >
+          <i className="bi bi-pencil-fill fs-4" />
+        </button>
 
         {loading ? (
           <section className="social-space-panel"><p className="muted-text mb-0">Chargement du fil...</p></section>
@@ -967,7 +978,7 @@ const Communities = () => {
   );
 
   const renderMessages = () => (
-    <div className="social-space-messaging">
+    <div className={`social-space-messaging ${activeChat ? "chat-open" : ""}`}>
       <aside className="social-space-thread-list">
         <div className="social-space-thread-head p-3 border-bottom d-flex align-items-center justify-content-between">
           <h3 className="mb-0 fs-5 fw-bold">Discussions</h3>
@@ -1014,7 +1025,15 @@ const Communities = () => {
           </div>
         ) : (
           <>
-            <div className="social-space-thread-head p-3 border-bottom bg-white d-flex align-items-center gap-3">
+            <div className="social-space-thread-head p-3 border-bottom bg-white d-flex align-items-center gap-2">
+              <button 
+                type="button" 
+                className="btn btn-link p-0 text-dark d-md-none me-2" 
+                onClick={() => setActiveChat(null)}
+                style={{ display: 'flex', alignItems: 'center' }}
+              >
+                <i className="bi bi-arrow-left fs-4" />
+              </button>
               <button type="button" className="social-space-user-head is-inline" onClick={() => openProfile(activeChat.counterpartId || activeChat.id)}>
                 {renderAvatar(
                   {
@@ -1600,6 +1619,46 @@ const Communities = () => {
             <p>Vous n'avez bloqué aucun compte pour le moment.</p>
           </div>
         </Modal.Body>
+      </Modal>
+
+      {/* Mobile Post Composer Modal */}
+      <Modal show={showComposerModal} onHide={() => setShowComposerModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>✨ Créer une publication</Modal.Title>
+        </Modal.Header>
+        <form onSubmit={(e) => { publishPost(e); setShowComposerModal(false); }}>
+          <Modal.Body>
+            <p className="text-muted small mb-3">Partagez vos victoires, vos progrès ou posez une question au groupe.</p>
+            <textarea
+              className="form-control mb-3"
+              rows="4"
+              placeholder={getActiveServer() ? `Écrire dans #${getActiveServer()?.name}...` : "Qu'est-ce qui mérite d'être partagé aujourd'hui ?"}
+              value={composer.content}
+              onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value, serverId: getActiveServer()?.id || "" }))}
+              style={{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', padding: '12px', resize: 'none' }}
+              required
+            />
+            {composer.imageUrl && (
+              <div className="position-relative mb-3 rounded overflow-hidden" style={{ maxHeight: '200px' }}>
+                <img src={composer.imageUrl} alt="Aperçu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button type="button" className="btn btn-danger btn-sm position-absolute top-2 right-2 rounded-circle" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))} style={{ width: '30px', height: '30px', padding: 0 }}>
+                  <i className="bi bi-trash" />
+                </button>
+              </div>
+            )}
+            <label className="d-flex align-items-center gap-2 justify-content-center p-3 rounded-3 w-100" style={{ border: '1px dashed rgba(37, 99, 235, 0.3)', cursor: 'pointer', background: 'rgba(37, 99, 235, 0.03)' }}>
+              <i className="bi bi-image text-primary fs-5" />
+              <span className="text-primary fw-semibold small">Ajouter une photo</span>
+              <input type="file" accept="image/*" className="d-none" onChange={(event) => handleProfilePhoto(event, "composer")} />
+            </label>
+          </Modal.Body>
+          <Modal.Footer>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowComposerModal(false)}>Fermer</button>
+            <button type="submit" className="btn btn-primary" disabled={publishing || !composer.content.trim()}>
+              {publishing ? "Publication..." : "Publier"}
+            </button>
+          </Modal.Footer>
+        </form>
       </Modal>
     </div>
   );
