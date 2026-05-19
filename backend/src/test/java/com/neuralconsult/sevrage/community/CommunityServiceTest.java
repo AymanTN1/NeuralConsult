@@ -65,10 +65,10 @@ class CommunityServiceTest {
 
     // Then
     assertThat(response).isNotNull();
-    assertThat(response.id()).isEqualTo(mockUser.getId());
-    assertThat(response.name()).isEqualTo("@ayman_tantani");
-    assertThat(response.communityUsername()).isEqualTo("ayman_tantani");
-    assertThat(response.roleLabel()).isEqualTo("Medecin");
+    assertThat(response.userId()).isEqualTo(mockUser.getId());
+    assertThat(response.displayName()).isEqualTo("@ayman_tantani");
+    assertThat(response.username()).isEqualTo("ayman_tantani");
+    assertThat(response.role()).isEqualTo("Medecin");
     assertThat(response.bio()).isEqualTo(mockUser.getCommunityBio());
     assertThat(response.profileCompleted()).isTrue();
 
@@ -81,9 +81,7 @@ class CommunityServiceTest {
     // Given
     CommunityServerCreateRequest request = new CommunityServerCreateRequest(
         "Groupe de Sevrage Tabac",
-        "Soutien pour l'arrêt de la cigarette.",
-        "PUBLIC",
-        ""
+        "Soutien pour l'arrêt de la cigarette."
     );
 
     UUID generatedServerId = UUID.randomUUID();
@@ -104,7 +102,7 @@ class CommunityServiceTest {
     assertThat(response.id()).isEqualTo(generatedServerId);
     assertThat(response.name()).isEqualTo(request.name());
     assertThat(response.description()).isEqualTo(request.description());
-    assertThat(response.creatorName()).isEqualTo("Dr. Ayman Tantani");
+    assertThat(response.createdBy()).isEqualTo("Dr. Ayman Tantani");
     assertThat(response.joined()).isTrue();
 
     verify(serverRepository, times(1)).save(any(CommunityServer.class));
