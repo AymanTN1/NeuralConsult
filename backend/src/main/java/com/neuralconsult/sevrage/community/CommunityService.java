@@ -426,47 +426,101 @@ public class CommunityService {
   @Transactional
   public List<CommunityConversationResponse> listConversations(User user) {
     User actor = requireManagedUser(user);
-    List<User> friends = connectionRepository.findAllForUserByStatus(actor, CommunityConnection.Status.ACCEPTED).stream()
-        .map(connection -> counterpart(connection, actor))
-        .filter(friend -> friend != null)
-        .toList();
-    List<CommunityDirectMessage> recentMessages = directMessageRepository.findRecentForUser(actor);
-    return friends.stream()
-        .map(friend -> toConversationResponse(actor, friend, recentMessages))
+    List<User> friends = new ArrayList<>();
+    try {
+      List<CommunityConnection> connections = connectionRepository.findAllForUserByStatus(actor, CommunityConnection.Status.ACCEPTED);
+      for (CommunityConnection conn : connections) {
+        try {
+          User f = counterpart(conn, actor);
+          if (f != null) {
+            friends.add(f);
+          }
+        } catch (Exception e) {
+          // ignore bad connection reference
+        }
+      }
+    } catch (Exception e) {
+      // ignore connection list errors
+    }
+
+    List<CommunityDirectMessage> recentMessages = new ArrayList<>();
+    try {
+      recentMessages = directMessageRepository.findRecentForUser(actor);
+    } catch (Exception e) {
+      // ignore direct messages errors
+    }
+
+    List<CommunityConversationResponse> conversations = new ArrayList<>();
+    for (User friend : friends) {
+      try {
+        conversations.add(toConversationResponse(actor, friend, recentMessages));
+      } catch (Exception e) {
+        // ignore bad conversations
+      }
+    }
+
+    return conversations.stream()
         .sorted(Comparator.comparing(CommunityConversationResponse::lastMessageAt, Comparator.nullsLast(Comparator.reverseOrder())))
         .toList();
   }
 
   private List<CommunityActivityItemResponse> listActivity(User user) {
     List<CommunityActivityItemResponse> items = new ArrayList<>();
-    for (CommunityPostComment comment : commentRepository.findAllByPostAuthorOrderByCreatedAtDesc(user)) {
-      if (comment.getAuthor().getId().equals(user.getId())) {
-        continue;
+    
+    try {
+      List<CommunityPostComment> comments = commentRepository.findAllByPostAuthorOrderByCreatedAtDesc(user);
+      for (CommunityPostComment comment : comments) {
+        try {
+          if (comment == null || comment.getAuthor() == null || comment.getPost() == null) {
+            continue;
+          }
+          if (comment.getAuthor().getId().equals(user.getId())) {
+            continue;
+          }
+          items.add(new CommunityActivityItemResponse(
+              comment.getId(),
+              "COMMENT",
+              toUserSummary(comment.getAuthor(), user),
+              comment.getPost().getId(),
+              previewOf(comment.getPost().getContent()),
+              comment.getContent(),
+              comment.getCreatedAt()
+          ));
+        } catch (Exception e) {
+          // ignore comment mapping failure
+        }
       }
-      items.add(new CommunityActivityItemResponse(
-          comment.getId(),
-          "COMMENT",
-          toUserSummary(comment.getAuthor(), user),
-          comment.getPost().getId(),
-          previewOf(comment.getPost().getContent()),
-          comment.getContent(),
-          comment.getCreatedAt()
-      ));
+    } catch (Exception e) {
+      // ignore comments list failure
     }
-    for (CommunityPostReaction reaction : reactionRepository.findAllByPostAuthorOrderByCreatedAtDesc(user)) {
-      if (reaction.getUser().getId().equals(user.getId())) {
-        continue;
+
+    try {
+      List<CommunityPostReaction> reactions = reactionRepository.findAllByPostAuthorOrderByCreatedAtDesc(user);
+      for (CommunityPostReaction reaction : reactions) {
+        try {
+          if (reaction == null || reaction.getUser() == null || reaction.getPost() == null) {
+            continue;
+          }
+          if (reaction.getUser().getId().equals(user.getId())) {
+            continue;
+          }
+          items.add(new CommunityActivityItemResponse(
+              reaction.getId(),
+              "LOVE",
+              toUserSummary(reaction.getUser(), user),
+              reaction.getPost().getId(),
+              previewOf(reaction.getPost().getContent()),
+              reaction.getType() != null ? reaction.getType().name() : "LOVE",
+              reaction.getCreatedAt()
+          ));
+        } catch (Exception e) {
+          // ignore reaction mapping failure
+        }
       }
-      items.add(new CommunityActivityItemResponse(
-          reaction.getId(),
-          "LOVE",
-          toUserSummary(reaction.getUser(), user),
-          reaction.getPost().getId(),
-          previewOf(reaction.getPost().getContent()),
-          reaction.getType().name(),
-          reaction.getCreatedAt()
-      ));
+    } catch (Exception e) {
+      // ignore reactions list failure
     }
+
     return items.stream()
         .sorted(Comparator.comparing(item -> item.createdAt() != null ? item.createdAt() : Instant.MIN, Comparator.reverseOrder()))
         .limit(80)
@@ -675,13 +729,22 @@ public class CommunityService {
   }
 
   private User counterpart(CommunityConnection connection, User user) {
-    if (connection.getRequester() == null) {
-      return connection.getReceiver();
+    if (connection == null) {
+      return null;
     }
-    if (connection.getReceiver() == null) {
-      return connection.getRequester();
+    try {
+      User req = connection.getRequester();
+      User rec = connection.getReceiver();
+      if (req == null) {
+        return rec;
+      }
+      if (rec == null) {
+        return req;
+      }
+      return req.getId().equals(user.getId()) ? rec : req;
+    } catch (Exception e) {
+      return null;
     }
-    return connection.getRequester().getId().equals(user.getId()) ? connection.getReceiver() : connection.getRequester();
   }
 
   private String connectionStatus(User viewer, User target) {
@@ -720,6 +783,9 @@ public class CommunityService {
   }
 
   private boolean isCommunityVisibleUser(User user) {
+    if (user == null || user.getRoles() == null) {
+      return false;
+    }
     return user.getRoles().contains("ROLE_PATIENT") 
         || user.getRoles().contains("ROLE_USER") 
         || user.getRoles().contains("ROLE_DOCTOR")
@@ -727,6 +793,9 @@ public class CommunityService {
   }
 
   private String roleLabel(User user) {
+    if (user == null || user.getRoles() == null) {
+      return "Patient";
+    }
     if (user.getRoles().contains("ROLE_DOCTOR")) {
       return "Medecin";
     }
@@ -737,6 +806,9 @@ public class CommunityService {
   }
 
   private String safeName(User user) {
+    if (user == null) {
+      return "Membre NeuralConsult";
+    }
     if (user.getCommunityUsername() != null && !user.getCommunityUsername().isBlank()) {
       return "@" + user.getCommunityUsername();
     }
