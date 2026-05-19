@@ -43,8 +43,9 @@ class CommunityServiceTest {
     mockUser.setId(UUID.randomUUID());
     mockUser.setFirstName("Ayman");
     mockUser.setLastName("Tantani");
+    mockUser.setFullName("Dr. Ayman Tantani");
     mockUser.setCommunityUsername("ayman_tantani");
-    mockUser.setRole(User.Role.DOCTOR);
+    mockUser.getRoles().add("ROLE_DOCTOR");
     mockUser.setCommunityBio("Développeur Senior & Architecte DevOps.");
   }
 
@@ -60,9 +61,9 @@ class CommunityServiceTest {
     // Then
     assertThat(response).isNotNull();
     assertThat(response.id()).isEqualTo(mockUser.getId());
-    assertThat(response.name()).isEqualTo("Dr. Ayman Tantani");
+    assertThat(response.name()).isEqualTo("@ayman_tantani");
     assertThat(response.communityUsername()).isEqualTo("ayman_tantani");
-    assertThat(response.roleLabel()).isEqualTo("Médecin");
+    assertThat(response.roleLabel()).isEqualTo("Medecin");
     assertThat(response.bio()).isEqualTo(mockUser.getCommunityBio());
     assertThat(response.profileCompleted()).isTrue();
 
