@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("🛡️ Unit Tests - CommunityService (JUnit 5 + Mockito)")
@@ -37,10 +38,14 @@ class CommunityServiceTest {
 
   private User mockUser;
 
+  private void setId(Object entity, UUID id) {
+    ReflectionTestUtils.setField(entity, "id", id);
+  }
+
   @BeforeEach
   void setUp() {
     mockUser = new User();
-    mockUser.setId(UUID.randomUUID());
+    setId(mockUser, UUID.randomUUID());
     mockUser.setFirstName("Ayman");
     mockUser.setLastName("Tantani");
     mockUser.setFullName("Dr. Ayman Tantani");
@@ -83,7 +88,7 @@ class CommunityServiceTest {
 
     UUID generatedServerId = UUID.randomUUID();
     CommunityServer mockServer = new CommunityServer();
-    mockServer.setId(generatedServerId);
+    setId(mockServer, generatedServerId);
     mockServer.setName(request.name());
     mockServer.setDescription(request.description());
     mockServer.setCreatedByUser(mockUser);
