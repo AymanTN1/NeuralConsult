@@ -844,20 +844,27 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         <div>
           <div className="hero-kicker">Espace medecin</div>
           <h2 className="fw-bold mb-1">{mode === "profile" ? "Profil medecin et positionnement" : "Demandes, dossiers et validation de plans"}</h2>
-          <p className="muted-text mb-0">{mode === "profile" ? "Les informations du medecin sont affichees en lecture. Le formulaire ne revient que si tu choisis de modifier le profil." : "On passe sur un vrai workspace medecin: demandes a trier, liste claire des patients et acces direct au bon module du dossier."}</p>
+          <p className="muted-text mb-0">{mode === "profile" ? "Les informations du medecin sont affichees en lecture seule." : "On passe sur un vrai workspace medecin: demandes a trier, liste claire des patients et acces direct au bon module du dossier."}</p>
         </div>
       </div>
       {message && <div className={`alert mt-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`}>{message.text}</div>}
-      {profile && !profile.active && <div className="alert alert-warning mt-3">Votre compte medecin est en attente de validation administrateur. Le profil reste modifiable, mais le compte n'est pas encore visible pour les patients.</div>}
+      {profile && !profile.active && <div className="alert alert-warning mt-3">Votre compte medecin est en attente de validation administrateur. Le compte n'est pas encore visible pour les patients.</div>}
       {loading ? <div className="muted-text mt-4">Chargement de l'espace medecin...</div> : mode === "profile" ? (
         <div className="mt-4">
-          {profile && !isEditingProfile ? (
+          {profile ? (
             <section className="card form-card">
-              <div className="profile-summary-header"><div><div className="section-title-sm">Profil medecin</div><p className="muted-text mb-0">Vue lecture du profil praticien.</p></div><button className="btn btn-dark btn-sm" onClick={() => setIsEditingProfile(true)}>Editer le profil</button></div>
+              <div className="profile-summary-header">
+                <div>
+                  <div className="section-title-sm">Profil medecin</div>
+                  <p className="muted-text mb-0">Les informations personnelles et professionnelles ont été validées et sont affichées en lecture seule.</p>
+                </div>
+              </div>
               <div className="profile-card-grid mt-3">{doctorProfileCards.map(([label, value]) => <div key={label} className="profile-data-card"><span className="profile-data-label">{label}</span><strong>{displayValue(value)}</strong></div>)}</div>
               <div className="doctor-bio-card mt-4"><span className="profile-data-label">Bio / approche clinique</span><p className="mb-0">{displayValue(profile?.bio)}</p></div>
             </section>
-          ) : renderProfileForm()}
+          ) : (
+            <div className="text-center text-muted p-4">Aucun profil médecin disponible.</div>
+          )}
         </div>
       ) : (
         <div className="doctor-workspace-container mt-4">

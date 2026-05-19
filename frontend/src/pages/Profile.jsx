@@ -309,13 +309,11 @@ const Profile = () => {
                 name="dateOfBirth"
                 value={form.dateOfBirth}
                 onChange={handleChange}
-                disabled={!!user?.legalDateOfBirth}
+                disabled
               />
-              {user?.legalDateOfBirth && (
-                <small className="muted-text">
-                  La date de naissance a ete verrouillee apres verification OCR de la CIN.
-                </small>
-              )}
+              <small className="muted-text">
+                La date de naissance a été validée à l'inscription et ne peut pas être modifiée.
+              </small>
             </div>
             <div className="col-12 col-md-6">
               <label className="form-label">Sexe</label>
