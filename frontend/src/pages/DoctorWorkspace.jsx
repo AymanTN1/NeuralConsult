@@ -415,10 +415,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         <div class="section-title">Stratégie Thérapeutique & Plan de Sevrage Validé</div>
         ${planStepsHtml}
 
-        ${clinicalNote?.medicalSummary ? `
+        ${dossier.clinicalNote?.medicalSummary ? `
           <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px; margin-top: 15px; margin-bottom: 20px;">
             <h4 style="margin-top: 0; color: #15803d; font-weight: 700; font-size: 13.5px;"><i class="bi bi-journal-check me-2"></i>Synthèse Médicale Clinique RAG</h4>
-            <p style="margin: 0; font-size: 12px; color: #166534; line-height: 1.6; font-style: italic;">"${clinicalNote.medicalSummary}"</p>
+            <p style="margin: 0; font-size: 12px; color: #166534; line-height: 1.6; font-style: italic;">"${dossier.clinicalNote.medicalSummary}"</p>
           </div>
         ` : ""}
 
