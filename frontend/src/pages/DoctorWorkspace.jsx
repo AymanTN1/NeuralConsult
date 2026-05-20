@@ -180,6 +180,302 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   const [dossierLoading, setDossierLoading] = useState(false);
   const [decisionLoadingId, setDecisionLoadingId] = useState(null);
 
+  const exportClinicalReportPDF = () => {
+    if (!dossier) return;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+
+    const assessmentRows = assessmentEntries.map(([key, val]) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; font-weight: 600; width: 45%; color: #374151; font-size: 12px;">${humanize(key)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 12px;">${displayValue(val)}</td>
+      </tr>
+    `).join("");
+
+    const reportsSummary = safeList(dossier.dailyReports).slice(0, 15).map((rep) => `
+      <tr>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; color: #374151;">${formatDate(rep.reportDate)}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; text-align: center; color: #111827;">${rep.cigarettesSmoked ?? 0}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; text-align: center; color: #ef4444; font-weight: 600;">${rep.cravingsIntensity ?? 0}/10</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; text-align: center; color: #f59e0b; font-weight: 600;">${rep.stressScore ?? 0}/10</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px; color: #4b5563;">${rep.moodScore ?? 0}/10</td>
+      </tr>
+    `).join("");
+
+    const activePlan = dossier.validatedPlan || safeList(dossier.sevragePlans).find(p => p.active) || null;
+    const planStepsHtml = activePlan ? `
+      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+        <h4 style="margin-top: 0; color: #2563eb; font-weight: 700; font-size: 14px; margin-bottom: 6px;">${activePlan.title}</h4>
+        <p style="margin-bottom: 14px; font-size: 12.5px; color: #4b5563; line-height: 1.5;">${activePlan.summary}</p>
+        <strong style="font-size: 11.5px; display: block; margin-bottom: 8px; color: #111827; text-transform: uppercase; letter-spacing: 0.02em;">Phases d'actions prescrites :</strong>
+        <ol style="margin: 0; padding-left: 20px; font-size: 12px; color: #374151;">
+          ${safeList(activePlan.steps).map(step => `<li style="margin-bottom: 6px; line-height: 1.4;">${step}</li>`).join("")}
+        </ol>
+      </div>
+    ` : `<p style="color: #9ca3af; font-style: italic; font-size: 12.5px;">Aucun plan de sevrage thérapeutique n'a encore été validé par le médecin.</p>`;
+
+    const fScore = dossier.latestFagerstrom?.totalScore;
+    const aScore = dossier.latestHad?.anxietyScore;
+    const dScore = dossier.latestHad?.depressionScore;
+    const currentRass = calculateRassScore(fScore, aScore, dScore);
+    const rassColor = getRassColor(currentRass);
+    const rassInterpretation = getRassInterpretation(currentRass);
+
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Bilan Clinique de Sevrage Tabagique - ${dossier.patientName}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap');
+          body {
+            font-family: 'Inter', sans-serif;
+            color: #111827;
+            line-height: 1.5;
+            margin: 40px;
+            font-size: 12.5px;
+          }
+          h1, h2, h3, h4, h5 {
+            font-family: 'Outfit', sans-serif;
+            color: #111827;
+            margin-top: 0;
+          }
+          .header-table {
+            width: 100%;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+          }
+          .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 4px;
+          }
+          .header-subtitle {
+            font-size: 11px;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+          }
+          .meta-table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+          }
+          .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e3a8a;
+            border-bottom: 1.5px solid #2563eb;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+          .score-card-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+          }
+          .score-card-cell {
+            display: table-cell;
+            width: 25%;
+            padding-right: 12px;
+          }
+          .score-card {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 8px;
+            text-align: center;
+          }
+          .score-label {
+            font-size: 9.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            display: block;
+          }
+          .score-val {
+            font-size: 22px;
+            font-weight: 700;
+            color: #111827;
+            margin: 3px 0;
+            display: block;
+          }
+          .score-desc {
+            font-size: 9.5px;
+            color: #4b5563;
+          }
+          .clinical-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .clinical-table th {
+            background-color: #f3f4f6;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+          }
+          .page-break {
+            page-break-before: always;
+          }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td>
+              <div class="header-title">NeuralConsult • Bilan Clinique</div>
+              <div class="header-subtitle">Dossier Médical de Sevrage Tabagique</div>
+            </td>
+            <td style="text-align: right; font-size: 11px; color: #4b5563; line-height: 1.4;">
+              <strong>Rapport Généré le :</strong> ${new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}<br>
+              <strong>Médecin Traitant :</strong> Dr. ${profile?.fullName || "Spécialiste Tabacologue"}
+            </td>
+          </tr>
+        </table>
+
+        <table class="meta-table">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+              <h3 style="color: #2563eb; margin-bottom: 8px; font-weight: 700; font-size: 13px;">Identité du Patient</h3>
+              <table style="width: 100%; font-size: 11.5px;">
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280; width: 40%;">Nom complet :</td><td style="padding: 3px 0; color: #111827;">${dossier.patientName}</td></tr>
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280;">Adresse Email :</td><td style="padding: 3px 0; color: #111827;">${dossier.patientEmail}</td></tr>
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280;">Âge / Sexe :</td><td style="padding: 3px 0; color: #111827;">${calculateAge(dossier.profile?.dateOfBirth)} / ${dossier.profile?.sex || "Non spécifié"}</td></tr>
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280;">Ville de Résidence :</td><td style="padding: 3px 0; color: #111827;">${dossier.profile?.city || "Non spécifiée"}</td></tr>
+              </table>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding-left: 15px; border-left: 1px solid #e5e7eb;">
+              <h3 style="color: #2563eb; margin-bottom: 8px; font-weight: 700; font-size: 13px;">Profil Tabacologique</h3>
+              <table style="width: 100%; font-size: 11.5px;">
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280; width: 45%;">Consommation Initiale :</td><td style="padding: 3px 0; color: #111827;">${dossier.profile?.cigarettesPerDay || 0} cig / jour</td></tr>
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280;">Âge de Début :</td><td style="padding: 3px 0; color: #111827;">${dossier.profile?.smokingStartAge || "Non spécifié"} ans</td></tr>
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280;">Dépendance Physique :</td><td style="padding: 3px 0; color: #111827;"><strong>${dossier.profile?.dependenceLevel || "Non évaluée"}</strong></td></tr>
+                <tr><td style="padding: 3px 0; font-weight: 600; color: #6b7280;">Notes Médicales :</td><td style="padding: 3px 0; color: #4b5563; font-style: italic;">${dossier.profile?.medicalHistoryNotes || "Aucune note saisie."}</td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <div class="section-title">Indicateurs Cliniques Clés & Relapse Risk</div>
+        <div class="score-card-grid">
+          <div class="score-card-cell">
+            <div class="score-card">
+              <span class="score-label">Fagerström</span>
+              <span class="score-val">${displayValue(fScore)}</span>
+              <span class="score-desc">${displayValue(dossier.latestFagerstrom?.dependenceLevel || "Non mesuré")}</span>
+            </div>
+          </div>
+          <div class="score-card-cell">
+            <div class="score-card">
+              <span class="score-label">HAD Anxiété</span>
+              <span class="score-val">${displayValue(aScore)}</span>
+              <span class="score-desc">${displayValue(dossier.latestHad?.anxietyInterpretation || "Non mesuré")}</span>
+            </div>
+          </div>
+          <div class="score-card-cell">
+            <div class="score-card">
+              <span class="score-label">HAD Dépression</span>
+              <span class="score-val">${displayValue(dScore)}</span>
+              <span class="score-desc">${displayValue(dossier.latestHad?.depressionInterpretation || "Non mesuré")}</span>
+            </div>
+          </div>
+          <div class="score-card-cell" style="padding-right: 0;">
+            <div class="score-card" style="border-left: 4px solid ${rassColor};">
+              <span class="score-label" style="color: ${rassColor}; font-weight: 700;">RASS Relapse Risk</span>
+              <span class="score-val" style="color: ${rassColor};">${currentRass !== null ? `${currentRass}/10` : "-"}</span>
+              <span class="score-desc" style="font-weight: 600; color: ${rassColor};">${rassInterpretation}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Stratégie Thérapeutique & Plan de Sevrage Validé</div>
+        ${planStepsHtml}
+
+        ${clinicalNote?.medicalSummary ? `
+          <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px; margin-top: 15px; margin-bottom: 20px;">
+            <h4 style="margin-top: 0; color: #15803d; font-weight: 700; font-size: 13.5px;"><i class="bi bi-journal-check me-2"></i>Synthèse Médicale Clinique RAG</h4>
+            <p style="margin: 0; font-size: 12px; color: #166534; line-height: 1.6; font-style: italic;">"${clinicalNote.medicalSummary}"</p>
+          </div>
+        ` : ""}
+
+        <div class="page-break"></div>
+
+        <div class="section-title">Dossier Médical Initial (5 Phases d'Évaluation)</div>
+        <table class="clinical-table">
+          <thead>
+            <tr>
+              <th style="width: 45%;">Paramètre Clinique Évalué</th>
+              <th>Réponse / Valeur Déclarée</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${assessmentRows || '<tr><td colspan="2" style="text-align: center; color: #9ca3af; padding: 10px;">Aucune donnée d\'évaluation trouvée.</td></tr>'}
+          </tbody>
+        </table>
+
+        ${reportsSummary ? `
+          <div class="page-break"></div>
+          <div class="section-title">Suivi Quotidien & Observance (Dernières Entrées)</div>
+          <table class="clinical-table">
+            <thead>
+              <tr>
+                <th>Date du Journal</th>
+                <th style="text-align: center;">Cigarettes Fumées</th>
+                <th style="text-align: center;">Intensité Cravings</th>
+                <th style="text-align: center;">Intensité Stress</th>
+                <th>Humeur / État Émotionnel</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportsSummary}
+            </tbody>
+          </table>
+        ` : ""}
+
+        <div style="margin-top: 50px; border-top: 1px solid #e5e7eb; padding-top: 20px; font-size: 10px; color: #9ca3af; text-align: center; font-weight: 500;">
+          NeuralConsult Clinical Report — Document confidentiel strictement destiné à l'usage des professionnels de santé autorisés.
+        </div>
+      </body>
+      </html>
+    `;
+
+    doc.open();
+    doc.write(reportHtml);
+    doc.close();
+
+    iframe.contentWindow.focus();
+    setTimeout(() => {
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
+  };
+
   const loadDossierFor = async (patientId) => {
     if (!patientId) {
       setDossier(null);
@@ -509,6 +805,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
           <p className="muted-text mb-0">{dossier.patientEmail}</p>
         </div>
         <div className="doctor-selection-meta">
+          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2 px-3 rounded-pill fw-semibold border border-danger border-opacity-25 bg-danger bg-opacity-10 text-danger hover-bg-danger-solid" onClick={exportClinicalReportPDF}>
+            <i className="bi bi-file-earmark-pdf-fill fs-6" />
+            <span>Exporter le Bilan Clinique</span>
+          </button>
           <span className={`doctor-status-chip ${selectedPendingRequest ? "status-pending" : "status-accepted"}`}>{selectedPendingRequest ? "Demande a traiter" : "Patient associe"}</span>
           <span className="doctor-status-chip status-info">{displayValue(selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel || "A evaluer")}</span>
         </div>
@@ -771,8 +1071,16 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   );
   const renderMedicalReportsSection = () => (
     <div className="doctor-dossier-section">
-      <strong>Historique des consultations médicales</strong>
-      <p className="muted-text mb-0">Retrouvez ici tous les bilans et suivis effectués pour ce patient.</p>
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+        <div>
+          <strong style={{ fontSize: "1.05rem", display: "block" }}>Historique des consultations médicales</strong>
+          <p className="muted-text mb-0">Retrouvez ici tous les bilans et suivis effectués pour ce patient.</p>
+        </div>
+        <button type="button" className="btn btn-danger d-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold shadow-sm" onClick={exportClinicalReportPDF}>
+          <i className="bi bi-file-earmark-pdf-fill fs-5" />
+          <span>Exporter le Bilan Global Clinique (PDF)</span>
+        </button>
+      </div>
       {medicalReports.length === 0 ? (
         <p className="muted-text mt-3 mb-0">Aucun rapport médical enregistré pour ce patient.</p>
       ) : (
