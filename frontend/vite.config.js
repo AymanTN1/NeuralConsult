@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173
   },
   build: {
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -17,6 +17,18 @@ export default defineConfig({
             }
             if (id.includes("recharts")) {
               return "recharts-bundle";
+            }
+            if (id.includes("firebase")) {
+              return "firebase-bundle";
+            }
+            if (id.includes("tesseract")) {
+              return "tesseract-bundle";
+            }
+            if (id.includes("gsap")) {
+              return "gsap-bundle";
+            }
+            if (id.includes("bootstrap")) {
+              return "bootstrap-bundle";
             }
             return "vendor";
           }
