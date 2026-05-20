@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import { chartTheme } from "../theme/chartTheme";
+import InteractiveLung3D from "../components/InteractiveLung3D";
 
 const severityFromScore = (score) => {
   if (score >= 11) return "critical";
@@ -254,6 +255,9 @@ const Dashboard = () => {
           </div>
         </section>
       )}
+
+      {/* 🫁 Visualisation 3D Interactive de l'Évolution Pulmonaire */}
+      <InteractiveLung3D diffDays={diffDays} />
 
       {/* 🏆 Section Gamification & Récompenses */}
       <section className="rewards-dashboard-section">

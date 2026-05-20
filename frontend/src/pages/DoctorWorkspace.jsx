@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import api from "../services/api";
 import { chartTheme } from "../theme/chartTheme";
+import InteractiveLung3D from "../components/InteractiveLung3D";
 
 const emptyForm = {
   city: "",
@@ -930,9 +931,18 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     const latestDepression = dossier.latestHad?.depressionScore;
     const currentRass = calculateRassScore(latestFScore, latestAnxiety, latestDepression);
 
+    const targetQuitDate = dossier.validatedPlan?.targetQuitDate || dossier.profile?.targetQuitDate || dossier.profile?.createdAt;
+    const quitDate = targetQuitDate ? new Date(targetQuitDate) : new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
+    const diffDays = Math.max(0, (Date.now() - quitDate.getTime()) / (1000 * 60 * 60 * 24));
+
     return (
       <div className="doctor-dossier-section">
         <strong>Dashboard clinique et historiques de tests</strong>
+        
+        {/* 🫁 Visualisation 3D Interactive de l'Évolution Pulmonaire (Patient) */}
+        <div className="mt-3">
+          <InteractiveLung3D diffDays={diffDays} />
+        </div>
         <div className="doctor-score-grid mt-3">
           <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(latestFScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
           <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(latestAnxiety)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
