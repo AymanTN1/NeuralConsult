@@ -9837,3 +9837,229 @@ body.sidebar-collapsed .clinical-workstation {
     width: 100% !important;
   }
 }
+
+/* 🎮 Gamification & Rewards Dashboard Section */
+.rewards-dashboard-section {
+  margin: 2.5rem 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+  .rewards-dashboard-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rewards-main-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 1.8rem;
+  box-shadow: 0 10px 40px rgba(31, 38, 135, 0.04);
+}
+
+.reward-ticker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 576px) {
+  .reward-ticker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reward-ticker-card {
+  background: white;
+  border-radius: 18px;
+  padding: 1.2rem;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reward-ticker-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+}
+
+.reward-ticker-card .ticker-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  display: block;
+}
+
+.reward-ticker-card .ticker-value {
+  font-family: "Sora", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  display: block;
+  margin-top: 0.4rem;
+}
+
+.reward-ticker-card .ticker-sub {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.3rem;
+  display: block;
+}
+
+/* Physiological recovery cards */
+.physiological-recovery-card {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 40px rgba(31, 38, 135, 0.03);
+  padding: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.physiological-item {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+}
+
+.physiological-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.physiological-item:first-child {
+  padding-top: 0;
+}
+
+.physiological-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.physiological-progress-wrap {
+  flex-grow: 1;
+}
+
+.physiological-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+
+.physiological-header strong {
+  font-size: 0.88rem;
+  color: #111827;
+}
+
+.physiological-header span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.physiological-bar-container {
+  height: 6px;
+  background-color: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.physiological-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badges styling */
+.badges-shelf {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.badge-trophy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  text-align: center;
+}
+
+.badge-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+.badge-trophy.unlocked .badge-circle {
+  animation: floatBadge 3s ease-in-out infinite alternate;
+}
+
+.badge-trophy.locked .badge-circle {
+  background-color: #e5e7eb !important;
+  color: #9ca3af !important;
+  opacity: 0.6;
+}
+
+.badge-trophy.locked .badge-lock {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background-color: #374151;
+  color: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid white;
+}
+
+.badge-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  margin-top: 0.2rem;
+}
+
+.badge-req {
+  font-size: 0.65rem;
+  color: #9ca3af;
+}
+
+@keyframes floatBadge {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-4px); }
+}

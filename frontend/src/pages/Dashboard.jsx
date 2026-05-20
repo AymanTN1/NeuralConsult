@@ -64,11 +64,10 @@ const Dashboard = () => {
     : 0;
   const baselineDailyConsumption = user?.profile?.cigarettesPerDay || onboarding?.manufacturedCigarettesPerDay || 0;
   const avoidedPerDay = Math.max(0, baselineDailyConsumption - averageDailyConsumption);
-  const lifeMinutesGained = avoidedPerDay * 11 * Math.max(reports.length, 1);
   const weeklySpend = onboarding?.weeklyTobaccoSpend || 0;
   const estimatedCostPerCigarette =
     baselineDailyConsumption > 0 && weeklySpend > 0 ? weeklySpend / Math.max(baselineDailyConsumption * 7, 1) : 0;
-  const moneySaved = avoidedPerDay * estimatedCostPerCigarette * Math.max(reports.length, 1);
+  
   const latestFScore = scores.fagerstromScore;
   const latestAnxiety = scores.hadAnxietyScore;
   const latestDepression = scores.hadDepressionScore;
@@ -84,7 +83,6 @@ const Dashboard = () => {
   };
 
   const currentRass = calculateRassScore(latestFScore, latestAnxiety, latestDepression);
-  const riskFocus = currentRass ?? Math.max(scores.fagerstromScore || 0, scores.hadAnxietyScore || 0, scores.hadDepressionScore || 0);
 
   const habitTrend = reports.map((report) => ({
     date: report.reportDate?.slice(5),
@@ -101,24 +99,6 @@ const Dashboard = () => {
       anxiete: test.anxietyScore ?? 0,
       depression: test.depressionScore ?? 0
     }));
-
-  const milestoneCards = [
-    {
-      label: "Temps de vie gagne",
-      value: formatLifeGain(lifeMinutesGained),
-      copy: "Estimation basee sur les cigarettes evitees depuis le debut du suivi."
-    },
-    {
-      label: "Jours traces",
-      value: `${reports.length}`,
-      copy: "Plus les saisies sont regulieres, plus l'interface devient claire."
-    },
-    {
-      label: "Economie estimee",
-      value: `${moneySaved.toFixed(1)} €`,
-      copy: "Visible, mais toujours en second plan derriere l'impact sante."
-    }
-  ];
 
   const healthMilestones = [
     {
@@ -137,6 +117,98 @@ const Dashboard = () => {
       done: Boolean(plan || clinicalNote)
     }
   ];
+
+  // 🎮 Gamification real-time calculations
+  const targetQuitDate = plan?.targetQuitDate || user?.profile?.targetQuitDate || user?.createdAt;
+  const quitDate = targetQuitDate ? new Date(targetQuitDate) : new Date(Date.now() - 4 * 24 * 60 * 60 * 1000); // 4 days default for stunning visual first impression!
+  
+  const [timeElapsed, setTimeElapsed] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [realtimeMoney, setRealtimeMoney] = useState(0);
+  const [realtimeCigarettes, setRealtimeCigarettes] = useState(0);
+
+  useEffect(() => {
+    const updateStats = () => {
+      const now = new Date();
+      const diffMs = Math.max(0, now.getTime() - quitDate.getTime());
+      
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+      
+      setTimeElapsed({ days, hours, minutes, seconds });
+
+      const dailyQty = baselineDailyConsumption || 15;
+      const costPerCig = estimatedCostPerCigarette || 2; // 2 DH per cigarette (40 DH per pack)
+      
+      const totalSecondsElapsed = diffMs / 1000;
+      const cigarettesPerSecond = dailyQty / (24 * 60 * 60);
+      const avoidedCigs = totalSecondsElapsed * cigarettesPerSecond;
+      const savedAmount = avoidedCigs * costPerCig;
+
+      setRealtimeCigarettes(avoidedCigs);
+      setRealtimeMoney(savedAmount);
+    };
+
+    updateStats();
+    const interval = setInterval(updateStats, 1000);
+    return () => clearInterval(interval);
+  }, [quitDate, baselineDailyConsumption, estimatedCostPerCigarette]);
+
+  const diffDays = Math.max(0, (Date.now() - quitDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  const physiologicalIndicators = [
+    {
+      name: "Oxygénation du sang",
+      duration: "24 heures",
+      progress: Math.min(100, (diffDays * 100) / 1),
+      icon: "bi-wind",
+      desc: "Le niveau d'oxygène dans le sang redevient normal.",
+      color: "#10b981"
+    },
+    {
+      name: "Monoxyde de carbone",
+      duration: "48 heures",
+      progress: Math.min(100, (diffDays * 100) / 2),
+      icon: "bi-shield-check",
+      desc: "Le CO est complètement éliminé des poumons.",
+      color: "#3b82f6"
+    },
+    {
+      name: "Goût & Odorat",
+      duration: "7 jours",
+      progress: Math.min(100, (diffDays * 100) / 7),
+      icon: "bi-flower1",
+      desc: "Les terminaisons nerveuses repoussent, les sens s'éveillent.",
+      color: "#f59e0b"
+    },
+    {
+      name: "Capacité pulmonaire",
+      duration: "30 jours",
+      progress: Math.min(100, (diffDays * 100) / 30),
+      icon: "bi-lungs",
+      desc: "La toux et l'essoufflement diminuent considérablement.",
+      color: "#ec4899"
+    },
+    {
+      name: "Santé Cardiovasculaire",
+      duration: "365 jours",
+      progress: Math.min(100, (diffDays * 100) / 365),
+      icon: "bi-heart-fill",
+      desc: "Le risque d'accident cardiaque est divisé par deux.",
+      color: "#ef4444"
+    }
+  ];
+
+  const badgesList = [
+    { id: "bronze", title: "Bronze", requirement: "3 jours libres", icon: "bi-award-fill", color: "#cd7f32", unlocked: diffDays >= 3 },
+    { id: "argent", title: "Argent", requirement: "1 semaine libre", icon: "bi-award-fill", color: "#c0c0c0", unlocked: diffDays >= 7 },
+    { id: "or", title: "Or", requirement: "1 mois libre", icon: "bi-award-fill", color: "#ffd700", unlocked: diffDays >= 30 },
+    { id: "platine", title: "Platine", requirement: "3 mois libres", icon: "bi-gem", color: "#60a5fa", unlocked: diffDays >= 90 },
+    { id: "legende", title: "Légende", requirement: "1 an libre", icon: "bi-trophy-fill", color: "#a855f7", unlocked: diffDays >= 365 }
+  ];
+
+  const currentLevel = Math.max(1, Math.floor(diffDays / 7) + 1);
 
   return (
     <div className={`app-page dashboard-stage dashboard-stage-${stage}`}>
@@ -183,23 +255,102 @@ const Dashboard = () => {
         </section>
       )}
 
-      <section className="life-gain-panel">
-        <div className="life-gain-main">
-          <span className="life-gain-label">Temps de vie gagne</span>
-          <strong>{formatLifeGain(lifeMinutesGained)}</strong>
-          <p>
-            Estimation mise en avant pour rappeler que la mission du produit reste la recuperation physiologique, pas la simple economie.
+      {/* 🏆 Section Gamification & Récompenses */}
+      <section className="rewards-dashboard-section">
+        {/* Main rewards card with real-time ticker and badges */}
+        <div className="rewards-main-card">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <span className="hero-kicker">🏆 Vos Victoires Cliniques & Récompenses</span>
+              <h3 className="fw-bold text-dark mb-0">Sevrage Niveau {currentLevel}</h3>
+            </div>
+            <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold border border-primary border-opacity-15">
+              Libre depuis {timeElapsed.days} jours
+            </span>
+          </div>
+
+          <p className="text-secondary mb-4">
+            Chaque seconde sans fumer permet à votre corps de se régénérer et à votre cagnotte de grandir. Continuez ainsi !
           </p>
+
+          <div className="reward-ticker-grid">
+            <div className="reward-ticker-card">
+              <span className="ticker-label">💰 Cagnotte Économisée</span>
+              <span className="ticker-value text-success">{realtimeMoney.toFixed(2)} DH</span>
+              <span className="ticker-sub">Basé sur vos dépenses habituelles</span>
+            </div>
+
+            <div className="reward-ticker-card">
+              <span className="ticker-label">🚭 Cigarettes Évitées</span>
+              <span className="ticker-value text-primary">{Math.floor(realtimeCigarettes)} cig.</span>
+              <span className="ticker-sub">Non consommées au total</span>
+            </div>
+
+            <div className="reward-ticker-card">
+              <span className="ticker-label">⏳ Temps de Liberté</span>
+              <span className="ticker-value text-dark" style={{ fontSize: "1.25rem", padding: "0.2rem 0" }}>
+                {timeElapsed.days}j {timeElapsed.hours}h {timeElapsed.minutes}m {timeElapsed.seconds}s
+              </span>
+              <span className="ticker-sub">Compteur de liberté en direct</span>
+            </div>
+          </div>
+
+          <hr className="my-4" style={{ opacity: 0.1 }} />
+
+          <div>
+            <h5 className="fw-bold text-dark mb-3"><i className="bi bi-trophy-fill text-warning me-2"></i>Vos Trophées Débloqués</h5>
+            <div className="badges-shelf">
+              {badgesList.map((badge) => (
+                <div key={badge.id} className={`badge-trophy ${badge.unlocked ? "unlocked" : "locked"}`} title={badge.unlocked ? `Débloqué ! - ${badge.requirement}` : `Verrouillé - Requis: ${badge.requirement}`}>
+                  <div className="badge-circle" style={{ backgroundColor: badge.unlocked ? `${badge.color}15` : "#e5e7eb", color: badge.unlocked ? badge.color : "#9ca3af", border: badge.unlocked ? `2px solid ${badge.color}` : "2px solid #d1d5db" }}>
+                    <i className={`bi ${badge.icon}`}></i>
+                    {!badge.unlocked && (
+                      <div className="badge-lock">
+                        <i className="bi bi-lock-fill"></i>
+                      </div>
+                    )}
+                  </div>
+                  <span className="badge-title">{badge.title}</span>
+                  <span className="badge-req">{badge.requirement}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="life-gain-side">
-          {milestoneCards.map((card) => (
-            <div key={card.label} className="life-gain-card">
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <p>{card.copy}</p>
-            </div>
-          ))}
+        {/* Physiological recovery gauges */}
+        <div className="physiological-recovery-card">
+          <div>
+            <span className="hero-kicker">🫁 Restauration Physiologique</span>
+            <h4 className="fw-bold text-dark mb-3">Régénération du Corps</h4>
+            <p className="text-secondary small mb-4">
+              Voici l'évolution de vos fonctions vitales depuis votre dernière cigarette :
+            </p>
+          </div>
+
+          <div className="d-flex flex-column gap-3">
+            {physiologicalIndicators.map((indicator) => (
+              <div key={indicator.name} className="physiological-item">
+                <div className="physiological-icon-wrap" style={{ backgroundColor: `${indicator.color}15`, color: indicator.color, border: `1px solid ${indicator.color}25` }}>
+                  <i className={`bi ${indicator.icon}`}></i>
+                </div>
+                <div className="physiological-progress-wrap">
+                  <div className="physiological-header">
+                    <strong>{indicator.name}</strong>
+                    <span style={{ color: indicator.color, fontSize: '0.75rem', fontWeight: 600 }}>
+                      {indicator.progress >= 100 ? "100% (Atteint)" : `${Math.round(indicator.progress)}% (${indicator.duration})`}
+                    </span>
+                  </div>
+                  <div className="physiological-bar-container">
+                    <div className="physiological-bar-fill" style={{ width: `${indicator.progress}%`, backgroundColor: indicator.color }}></div>
+                  </div>
+                  <span className="text-muted d-block mt-1" style={{ fontSize: "0.7rem", lineHeight: 1.2 }}>
+                    {indicator.desc}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
