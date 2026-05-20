@@ -276,7 +276,7 @@ const PatientGuide = () => {
       />
 
       <div
-        className="patient-guide-cloud"
+        className={`patient-guide-cloud guide-arrow-${placement}`}
         style={{
           top: bubbleTop,
           left: bubbleLeft,
@@ -284,8 +284,11 @@ const PatientGuide = () => {
         }}
       >
         <div className="patient-guide-kicker">
-          Guide patient
-          <span>{stepIndex + 1}/{routeSteps.length}</span>
+          <span className="d-flex align-items-center gap-2">
+            <span className="guide-dot" />
+            <span>Guide patient</span>
+          </span>
+          <span className="guide-step-counter">{stepIndex + 1}/{routeSteps.length}</span>
         </div>
         <h4>{currentStep.title}</h4>
         <p>{currentStep.body}</p>

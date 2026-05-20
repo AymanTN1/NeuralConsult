@@ -2089,49 +2089,120 @@ textarea.form-control:focus {
 
 .patient-guide-cloud {
   position: fixed;
-  padding: 1.2rem 1.2rem 1.05rem;
-  border-radius: 1.6rem;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(207, 244, 229, 0.22), transparent 38%),
-    linear-gradient(165deg, rgba(20, 33, 31, 0.97), rgba(8, 14, 19, 0.98));
-  border: 1px solid rgba(191, 237, 217, 0.18);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+  padding: 1.4rem !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 
+    0 30px 70px rgba(31, 38, 135, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
   pointer-events: auto;
+  animation: floatGuide 3.2s ease-in-out infinite alternate !important;
+  z-index: 230;
+}
+
+@keyframes floatGuide {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-6px); }
+}
+
+/* Speach bubble speech arrows pointing to the highlighted elements */
+.patient-guide-cloud::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.patient-guide-cloud.guide-arrow-bottom::after {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 12px 12px 12px;
+  border-color: transparent transparent rgba(255, 255, 255, 0.85) transparent;
+}
+
+.patient-guide-cloud.guide-arrow-top::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 12px 12px 0 12px;
+  border-color: rgba(255, 255, 255, 0.85) transparent transparent transparent;
+}
+
+.patient-guide-cloud.guide-arrow-right::after {
+  right: 100%;
+  top: 42px;
+  border-width: 12px 12px 12px 0;
+  border-color: transparent rgba(255, 255, 255, 0.85) transparent transparent;
+}
+
+.patient-guide-cloud.guide-arrow-left::after {
+  left: 100%;
+  top: 42px;
+  border-width: 12px 0 12px 12px;
+  border-color: transparent transparent transparent rgba(255, 255, 255, 0.85);
 }
 
 .patient-guide-kicker {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.55rem;
-  color: #b7d8cb;
-  font-size: 0.76rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  color: #3b82f6 !important;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
+  font-weight: 700;
 }
 
-.patient-guide-kicker span {
-  color: #f2f7f4;
-  letter-spacing: 0.08em;
+.guide-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  display: inline-block;
+  animation: guidePulse 1.8s infinite alternate;
+}
+
+@keyframes guidePulse {
+  0% { opacity: 0.4; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.25); }
+}
+
+.patient-guide-kicker .guide-step-counter {
+  color: #64748b !important;
+  font-weight: 600;
+  font-size: 0.72rem;
+  background: rgba(59, 130, 246, 0.08);
+  padding: 2px 8px;
+  border-radius: 20px;
 }
 
 .patient-guide-cloud h4 {
-  margin: 0 0 0.55rem;
-  color: #f4fbf7;
-  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+  color: #0f172a !important;
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: "Sora", sans-serif;
 }
 
 .patient-guide-cloud p {
   margin: 0;
-  color: #d8e9e1;
-  line-height: 1.65;
+  color: #475569 !important;
+  font-size: 0.88rem !important;
+  line-height: 1.6 !important;
+  font-weight: 500;
 }
 
 .patient-guide-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
 }
 
 .question-assistant-modal {
@@ -5641,15 +5712,7 @@ textarea.form-control:focus {
   background: rgba(219, 234, 254, 0.58) !important;
 }
 
-.patient-guide-cloud {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border-color: rgba(37, 99, 235, 0.2) !important;
-  color: var(--nc-copy) !important;
-}
 
-.patient-guide-cloud p {
-  color: #35516f !important;
-}
 
 .patient-guide-spotlight {
   border-color: rgba(37, 99, 235, 0.78) !important;
@@ -8786,16 +8849,35 @@ body.sidebar-collapsed .clinical-workstation {
 
 /* ── Patient Guide Button Visibility ── */
 .patient-guide-actions .btn-dark { 
-  background: #3b82f6 !important; 
-  border-color: #3b82f6 !important; 
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important; 
+  border: none !important; 
   color: #ffffff !important; 
-  opacity: 1 !important; 
-  font-weight: 800 !important; 
+  font-weight: 700 !important; 
+  border-radius: 50px !important;
+  padding: 0.55rem 1.4rem !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+  transition: all 0.2s ease !important;
+  opacity: 1 !important;
+}
+
+.patient-guide-actions .btn-dark:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4) !important;
 }
 
 .patient-guide-actions .btn-outline-dark { 
-  color: #ffffff !important; 
-  border-color: rgba(255,255,255,0.4) !important; 
+  color: #64748b !important; 
+  border: 1px solid rgba(0, 0, 0, 0.08) !important; 
+  background: rgba(0, 0, 0, 0.02) !important;
+  font-weight: 600 !important;
+  border-radius: 50px !important;
+  padding: 0.55rem 1.2rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.patient-guide-actions .btn-outline-dark:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
 }
 
 /* ── Question Assistant Modal ── */
