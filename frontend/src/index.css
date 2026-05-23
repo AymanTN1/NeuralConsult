@@ -9591,6 +9591,54 @@ body.sidebar-collapsed .clinical-workstation {
   background: linear-gradient(135deg, #b91c1c, #7f1d1d);
 }
 
+.support-patient-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.support-language-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.support-language-option {
+  min-width: 5.8rem;
+  min-height: 2.85rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.38rem 0.75rem;
+  display: grid;
+  place-items: center;
+  gap: 0.08rem;
+  color: #64748b;
+  background: transparent;
+  font-weight: 800;
+}
+
+.support-language-option small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.support-language-option.is-active {
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+}
+
+.support-language-option.is-active small {
+  color: rgba(255, 255, 255, 0.78);
+}
+
 .support-sos-banner {
   display: flex;
   align-items: flex-start;
@@ -9629,6 +9677,24 @@ body.sidebar-collapsed .clinical-workstation {
   .patient-sos-button-icon {
     width: 2.35rem;
     height: 2.35rem;
+  }
+
+  .support-patient-tools {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .support-language-switch {
+    width: 100%;
+  }
+
+  .support-language-option {
+    min-width: 0;
+    padding-inline: 0.45rem;
+  }
+
+  .support-sos-header-button {
+    width: 100%;
   }
 }
 

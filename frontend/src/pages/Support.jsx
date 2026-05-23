@@ -11,7 +11,31 @@ const riskCopy = {
   CRITICAL: "Critique"
 };
 
-const sosPrompt = "SOS envie: l'envie de fumer est tres forte maintenant. Guide-moi tout de suite avec respiration et sophrologie pendant 3 a 5 minutes.";
+const supportLanguageOptions = [
+  { value: "fr", label: "Francais", hint: "Clinique" },
+  { value: "darija", label: "Darija", hint: "Marocain" },
+  { value: "en", label: "English", hint: "Patient" }
+];
+
+const sosPrompts = {
+  fr: "SOS envie: l'envie de fumer est tres forte maintenant. Guide-moi tout de suite avec respiration et sophrologie pendant 3 a 5 minutes.",
+  darija: "SOS envie: bghit nkmmi daba bzaf. Hder m3aya b Darija w 3awenni b tanaffos w sophrologie f 3 ta 5 dqayeq.",
+  en: "SOS craving: the urge to smoke is very strong right now. Guide me immediately with breathing and grounding for 3 to 5 minutes."
+};
+
+const normalizeSupportLanguage = (value) => (
+  supportLanguageOptions.some((item) => item.value === value) ? value : "fr"
+);
+
+const readStoredSupportLanguage = () => {
+  try {
+    return normalizeSupportLanguage(window.localStorage.getItem("neuralconsult.supportLanguage"));
+  } catch (error) {
+    return "fr";
+  }
+};
+
+const getSosPrompt = (language) => sosPrompts[normalizeSupportLanguage(language)] || sosPrompts.fr;
 
 const formatDateTime = (value) => {
   if (!value) return "-";
@@ -38,7 +62,19 @@ const Support = () => {
   const [loading, setLoading] = useState(true);
   const [sosActive, setSosActive] = useState(false);
   const [sendingSos, setSendingSos] = useState(false);
+  const [supportLanguage, setSupportLanguage] = useState(readStoredSupportLanguage);
   const sosHandledRef = useRef(false);
+  const selectedSosPrompt = getSosPrompt(supportLanguage);
+
+  const updateSupportLanguage = (value) => {
+    const nextLanguage = normalizeSupportLanguage(value);
+    setSupportLanguage(nextLanguage);
+    try {
+      window.localStorage.setItem("neuralconsult.supportLanguage", nextLanguage);
+    } catch (error) {
+      // localStorage can be unavailable in private or restricted browser modes
+    }
+  };
 
   const loadPatientSupport = async () => {
     setLoading(true);
@@ -99,15 +135,16 @@ const Support = () => {
 
     sosHandledRef.current = true;
     setSosActive(true);
-    setDraft(sosPrompt);
+    setDraft(selectedSosPrompt);
 
     const startSos = async () => {
       setSendingSos(true);
       setMessage(null);
       try {
         const { data } = await api.post("/api/support/current/messages", {
-          message: sosPrompt,
-          emergencyMode: true
+          message: selectedSosPrompt,
+          emergencyMode: true,
+          preferredLanguage: supportLanguage
         });
         setConversation(data);
         setDraft("");
@@ -124,7 +161,7 @@ const Support = () => {
     };
 
     startSos();
-  }, [doctorMode, searchParams, setSearchParams]);
+  }, [doctorMode, searchParams, selectedSosPrompt, setSearchParams, supportLanguage]);
 
   useEffect(() => {
     if (!doctorMode) {
@@ -157,7 +194,11 @@ const Support = () => {
     if (!draft.trim()) return;
     setMessage(null);
     try {
-      const { data } = await api.post("/api/support/current/messages", { message: draft.trim(), emergencyMode: sosActive });
+      const { data } = await api.post("/api/support/current/messages", {
+        message: draft.trim(),
+        emergencyMode: sosActive,
+        preferredLanguage: supportLanguage
+      });
       setConversation(data);
       setDraft("");
       setSosActive(false);
@@ -192,14 +233,30 @@ const Support = () => {
           </p>
         </div>
         {!doctorMode && (
-          <button type="button" className="btn support-sos-header-button" onClick={() => {
-            setSosActive(true);
-            setDraft(sosPrompt);
-            navigate("/support?sos=1", { replace: true });
-          }}>
-            <i className="bi bi-broadcast-pin me-2" />
-            SOS Envie
-          </button>
+          <div className="support-patient-tools">
+            <div className="support-language-switch" aria-label="Langue de reponse de l'IA">
+              {supportLanguageOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`support-language-option ${supportLanguage === option.value ? "is-active" : ""}`}
+                  onClick={() => updateSupportLanguage(option.value)}
+                  title={`IA patient: ${option.label}`}
+                >
+                  <span>{option.label}</span>
+                  <small>{option.hint}</small>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn support-sos-header-button" onClick={() => {
+              setSosActive(true);
+              setDraft(selectedSosPrompt);
+              navigate("/support?sos=1", { replace: true });
+            }}>
+              <i className="bi bi-broadcast-pin me-2" />
+              SOS Envie
+            </button>
+          </div>
         )}
       </div>
 

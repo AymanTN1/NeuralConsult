@@ -17,6 +17,7 @@ class SupportChatRequest(ApiModel):
     conversation_history: List[Dict[str, str]] = Field(default_factory=list)
     latest_patient_message: str = ""
     emergency_mode: bool = False
+    preferred_language: str = "fr"
 
 
 class SupportChatResponse(ApiModel):
@@ -38,5 +39,6 @@ async def respond(payload: SupportChatRequest) -> SupportChatResponse:
         patient_facts=payload.patient_facts,
         conversation_history=payload.conversation_history,
         emergency_mode=payload.emergency_mode,
+        preferred_language=payload.preferred_language,
     )
     return SupportChatResponse(request_id=payload.request_id, **result)

@@ -79,13 +79,19 @@ public class SupportService {
 
   @Transactional
   public SupportConversationResponse sendAsPatient(User patientUser, String message) {
-    return sendAsPatient(patientUser, message, false);
+    return sendAsPatient(patientUser, message, false, "fr");
   }
 
   @Transactional
   public SupportConversationResponse sendAsPatient(User patientUser, String message, boolean emergencyMode) {
+    return sendAsPatient(patientUser, message, emergencyMode, "fr");
+  }
+
+  @Transactional
+  public SupportConversationResponse sendAsPatient(User patientUser, String message, boolean emergencyMode, String preferredLanguage) {
     PatientProfile patientProfile = patientProfileService.getOrCreate(patientUser);
     SupportConversation conversation = getOrCreateConversation(patientProfile);
+    String language = normalizePreferredLanguage(preferredLanguage);
 
     SupportMessage userMessage = new SupportMessage();
     userMessage.setConversation(conversation);
@@ -99,7 +105,8 @@ public class SupportService {
         buildFacts(patientProfile, conversation),
         buildConversationHistory(conversation),
         message,
-        emergencyMode
+        emergencyMode,
+        language
     ));
 
     SupportMessage aiMessage = new SupportMessage();
@@ -276,6 +283,20 @@ public class SupportService {
     } catch (IllegalArgumentException exception) {
       return SupportRiskLevel.LOW;
     }
+  }
+
+  private String normalizePreferredLanguage(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return "fr";
+    }
+    String value = raw.trim().toLowerCase();
+    if (value.equals("darija") || value.equals("ar") || value.equals("ar-ma") || value.equals("ma")) {
+      return "darija";
+    }
+    if (value.equals("en") || value.equals("english")) {
+      return "en";
+    }
+    return "fr";
   }
 
   private SupportConversationResponse toResponse(SupportConversation conversation) {
