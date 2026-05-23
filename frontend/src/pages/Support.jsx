@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -10,6 +10,8 @@ const riskCopy = {
   HIGH: "Eleve",
   CRITICAL: "Critique"
 };
+
+const sosPrompt = "SOS envie: l'envie de fumer est tres forte maintenant. Guide-moi tout de suite avec respiration et sophrologie pendant 3 a 5 minutes.";
 
 const formatDateTime = (value) => {
   if (!value) return "-";
@@ -34,6 +36,9 @@ const Support = () => {
   const [draft, setDraft] = useState("");
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sosActive, setSosActive] = useState(false);
+  const [sendingSos, setSendingSos] = useState(false);
+  const sosHandledRef = useRef(false);
 
   const loadPatientSupport = async () => {
     setLoading(true);
@@ -81,6 +86,47 @@ const Support = () => {
   }, [doctorMode]);
 
   useEffect(() => {
+    if (doctorMode) {
+      return;
+    }
+    if (searchParams.get("sos") !== "1") {
+      sosHandledRef.current = false;
+      return;
+    }
+    if (sosHandledRef.current) {
+      return;
+    }
+
+    sosHandledRef.current = true;
+    setSosActive(true);
+    setDraft(sosPrompt);
+
+    const startSos = async () => {
+      setSendingSos(true);
+      setMessage(null);
+      try {
+        const { data } = await api.post("/api/support/current/messages", {
+          message: sosPrompt,
+          emergencyMode: true
+        });
+        setConversation(data);
+        setDraft("");
+        setMessage({ type: "success", text: "Mode SOS active. L'IA te guide maintenant en respiration et sophrologie." });
+      } catch (error) {
+        const apiError = error?.response?.data?.message || error?.response?.data?.error;
+        setMessage({ type: "error", text: apiError || "Impossible de lancer le SOS envie. Reessayez depuis le bouton rouge." });
+      } finally {
+        setSendingSos(false);
+        const next = new URLSearchParams(searchParams);
+        next.delete("sos");
+        setSearchParams(next, { replace: true });
+      }
+    };
+
+    startSos();
+  }, [doctorMode, searchParams, setSearchParams]);
+
+  useEffect(() => {
     if (!doctorMode) {
       return;
     }
@@ -111,9 +157,10 @@ const Support = () => {
     if (!draft.trim()) return;
     setMessage(null);
     try {
-      const { data } = await api.post("/api/support/current/messages", { message: draft.trim() });
+      const { data } = await api.post("/api/support/current/messages", { message: draft.trim(), emergencyMode: sosActive });
       setConversation(data);
       setDraft("");
+      setSosActive(false);
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
       setMessage({ type: "error", text: apiError || "Impossible d'envoyer le message a l'IA." });
@@ -144,6 +191,16 @@ const Support = () => {
               : "Le patient peut parler avec l'assistant a tout moment. Les signaux a risque sont traces pour le medecin si la situation l'exige."}
           </p>
         </div>
+        {!doctorMode && (
+          <button type="button" className="btn support-sos-header-button" onClick={() => {
+            setSosActive(true);
+            setDraft(sosPrompt);
+            navigate("/support?sos=1", { replace: true });
+          }}>
+            <i className="bi bi-broadcast-pin me-2" />
+            SOS Envie
+          </button>
+        )}
       </div>
 
       {message && <div className={`alert mt-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`}>{message.text}</div>}
@@ -217,6 +274,15 @@ const Support = () => {
               <p className="muted-text mb-0 mt-3">Aucune conversation disponible pour le moment.</p>
             ) : (
               <>
+                {!doctorMode && sosActive && (
+                  <div className="support-sos-banner mt-3">
+                    <i className="bi bi-heart-pulse-fill" />
+                    <div>
+                      <strong>Urgences Respiration & Sophrologie</strong>
+                      <p className="mb-0">Restez sur cet ecran. L'IA vous accompagne sur la vague de 3 a 5 minutes et alerte le medecin si le risque devient critique.</p>
+                    </div>
+                  </div>
+                )}
                 <div className="doctor-dossier-section mt-3">
                   <strong>{doctorMode ? "Lecture conversationnelle cote medecin" : "Espace de parole continu"}</strong>
                   <p className="muted-text mb-0">{conversation.latestSummary || "L'IA garde un fil conducteur clinique a chaque echange."}</p>
@@ -236,7 +302,12 @@ const Support = () => {
                     <label className="form-label">Parle librement avec l'IA</label>
                     <textarea className="form-control" rows="4" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Explique ce qui te pese maintenant: craving, stress, peur de rechuter, sommeil, anxiete..." />
                     <div className="doctor-card-actions mt-3">
-                      <button type="submit" className="btn btn-dark">Envoyer</button>
+                      <button type="submit" className="btn btn-dark" disabled={sendingSos}>{sendingSos ? "SOS en cours..." : sosActive ? "Continuer le SOS" : "Envoyer"}</button>
+                      {sosActive && (
+                        <button type="button" className="btn btn-outline-dark" onClick={() => setSosActive(false)}>
+                          Revenir au chat normal
+                        </button>
+                      )}
                     </div>
                   </form>
                 )}

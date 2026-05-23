@@ -9415,7 +9415,7 @@ body.sidebar-collapsed .clinical-workstation {
   }
   .clinical-main {
     padding: 1rem 1.5rem !important;
-    padding-bottom: 6rem !important; /* Safety padding for bottom nav */
+    padding-bottom: 7.8rem !important; /* Safety padding for bottom nav and SOS */
   }
 }
 
@@ -9448,7 +9448,7 @@ body.sidebar-collapsed .clinical-workstation {
   }
   .clinical-main {
     padding: 1rem !important;
-    padding-bottom: 5.5rem !important;
+    padding-bottom: 7.8rem !important;
   }
   .landing-grid, .auth-stage-grid {
     grid-template-columns: 1fr !important;
@@ -9522,6 +9522,114 @@ body.sidebar-collapsed .clinical-workstation {
 
 .mobile-bottom-nav-link.active .mobile-bottom-icon {
   transform: translateY(-2px);
+}
+
+.patient-sos-button {
+  position: fixed;
+  right: 1.4rem;
+  bottom: 1.4rem;
+  z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.7rem;
+  padding: 0.55rem 1rem 0.55rem 0.62rem;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  box-shadow: 0 16px 32px rgba(220, 38, 38, 0.28);
+}
+
+.patient-sos-button:hover,
+.patient-sos-button:focus {
+  transform: translateY(-2px);
+  color: #ffffff;
+  box-shadow: 0 20px 40px rgba(220, 38, 38, 0.36);
+}
+
+.patient-sos-button-icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 1.3rem;
+}
+
+.patient-sos-button-copy {
+  display: grid;
+  gap: 0;
+  line-height: 1;
+  text-align: left;
+}
+
+.patient-sos-button-copy strong {
+  font-family: "Sora", sans-serif;
+  font-size: 1rem;
+}
+
+.patient-sos-button-copy small {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.86;
+}
+
+.support-sos-header-button {
+  color: #ffffff;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  border: 0;
+  box-shadow: 0 14px 28px rgba(220, 38, 38, 0.22);
+}
+
+.support-sos-header-button:hover,
+.support-sos-header-button:focus {
+  color: #ffffff;
+  background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+}
+
+.support-sos-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  color: #7f1d1d;
+  background: #fff1f2;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+}
+
+.support-sos-banner i {
+  color: #dc2626;
+  font-size: 1.35rem;
+  line-height: 1.4;
+}
+
+.support-sos-banner p {
+  color: #9f1239;
+}
+
+@media (max-width: 1024px) {
+  .patient-sos-button {
+    right: 50%;
+    bottom: 4.95rem;
+    min-height: 3.25rem;
+    padding: 0.45rem 0.85rem 0.45rem 0.48rem;
+    transform: translateX(50%);
+  }
+
+  .patient-sos-button:hover,
+  .patient-sos-button:focus {
+    transform: translateX(50%) translateY(-2px);
+  }
+
+  .patient-sos-button-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
 }
 
 /* =====================================================================

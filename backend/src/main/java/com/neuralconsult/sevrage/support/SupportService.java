@@ -79,21 +79,27 @@ public class SupportService {
 
   @Transactional
   public SupportConversationResponse sendAsPatient(User patientUser, String message) {
+    return sendAsPatient(patientUser, message, false);
+  }
+
+  @Transactional
+  public SupportConversationResponse sendAsPatient(User patientUser, String message, boolean emergencyMode) {
     PatientProfile patientProfile = patientProfileService.getOrCreate(patientUser);
     SupportConversation conversation = getOrCreateConversation(patientProfile);
 
     SupportMessage userMessage = new SupportMessage();
     userMessage.setConversation(conversation);
     userMessage.setSenderType(SupportMessage.SenderType.PATIENT);
-    userMessage.setContent(message);
-    userMessage.setRiskLevel(SupportRiskLevel.LOW);
+    userMessage.setContent(emergencyMode ? "[SOS Envie] " + message : message);
+    userMessage.setRiskLevel(emergencyMode ? SupportRiskLevel.HIGH : SupportRiskLevel.LOW);
     messageRepository.save(userMessage);
 
     AiSupportChatResponse ai = aiSupportChatClient.respond(new AiSupportChatRequest(
         UUID.randomUUID().toString(),
         buildFacts(patientProfile, conversation),
         buildConversationHistory(conversation),
-        message
+        message,
+        emergencyMode
     ));
 
     SupportMessage aiMessage = new SupportMessage();
@@ -115,7 +121,7 @@ public class SupportService {
       alert.setConversation(conversation);
       alert.setTriggeringMessage(aiMessage);
       alert.setLevel(parseRiskLevel(ai.riskLevel()));
-      alert.setTitle("Alerte soutien IA 24/7");
+      alert.setTitle(emergencyMode ? "SOS Envie - alerte urgence craving" : "Alerte soutien IA 24/7");
       alert.setSummary(ai.alertReason() != null && !ai.alertReason().isBlank() ? ai.alertReason() : ai.reply());
       DoctorAlert savedAlert = doctorAlertRepository.save(alert);
       savedAlert.setLastNotificationSentAt(Instant.now());
@@ -123,8 +129,10 @@ public class SupportService {
       notificationService.notify(
           conversation.getDoctorProfile().getUser(),
           NotificationItem.Type.AI_ALERT,
-          "Nouvelle alerte IA 24/7",
-          "Une alerte prioritaire de soutien a ete detectee pour " + patientProfile.getUser().getFullName() + ". Consulte la conversation des que possible pour confirmer l'urgence clinique.",
+          emergencyMode ? "SOS Envie critique" : "Nouvelle alerte IA 24/7",
+          (emergencyMode
+              ? "SOS Envie declenche par " + patientProfile.getUser().getFullName() + ". L'IA a juge l'envie critique et demande une verification rapide. Canaux actives: notification application, push navigateur si autorise, email urgent."
+              : "Une alerte prioritaire de soutien a ete detectee pour " + patientProfile.getUser().getFullName() + ". Consulte la conversation des que possible pour confirmer l'urgence clinique."),
           "/support?patient=" + patientProfile.getId(),
           "Ouvrir la conversation",
           "support-alert:" + savedAlert.getId()

@@ -7,6 +7,7 @@ public record AiSupportChatRequest(
     String requestId,
     Map<String, Object> patientFacts,
     List<Map<String, String>> conversationHistory,
-    String latestPatientMessage
+    String latestPatientMessage,
+    Boolean emergencyMode
 ) {
 }

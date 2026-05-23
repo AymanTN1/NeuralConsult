@@ -16,6 +16,7 @@ class SupportChatRequest(ApiModel):
     patient_facts: Dict[str, Any] = Field(default_factory=dict)
     conversation_history: List[Dict[str, str]] = Field(default_factory=list)
     latest_patient_message: str = ""
+    emergency_mode: bool = False
 
 
 class SupportChatResponse(ApiModel):
@@ -36,5 +37,6 @@ async def respond(payload: SupportChatRequest) -> SupportChatResponse:
         latest_patient_message=payload.latest_patient_message,
         patient_facts=payload.patient_facts,
         conversation_history=payload.conversation_history,
+        emergency_mode=payload.emergency_mode,
     )
     return SupportChatResponse(request_id=payload.request_id, **result)

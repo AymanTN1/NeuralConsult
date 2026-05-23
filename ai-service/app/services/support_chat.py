@@ -19,6 +19,7 @@ class SupportChatService:
         latest_patient_message: str,
         patient_facts: Dict[str, Any],
         conversation_history: List[Dict[str, str]],
+        emergency_mode: bool = False,
     ) -> Dict[str, Any]:
         references = self.kb.retrieve(
             query=latest_patient_message,
@@ -31,11 +32,12 @@ class SupportChatService:
                     patient_facts=patient_facts,
                     conversation_history=conversation_history,
                     references=references,
+                    emergency_mode=emergency_mode,
                 )
                 return self._validate(result)
             except Exception:
                 pass
-        return self._fallback(latest_patient_message, patient_facts)
+        return self._fallback(latest_patient_message, patient_facts, emergency_mode)
 
     async def _respond_with_llm(
         self,
@@ -44,12 +46,16 @@ class SupportChatService:
         patient_facts: Dict[str, Any],
         conversation_history: List[Dict[str, str]],
         references: List[KnowledgeReference],
+        emergency_mode: bool,
     ) -> Dict[str, Any]:
         system_prompt = (
             "You are a compassionate 24/7 tobacco-cessation support assistant. "
             "You speak in French, like a calm clinical psychologist. "
             "You help the patient regulate cravings, anxiety, relapse risk, and motivation. "
             "You must answer simply and warmly, like a real human clinician, not like documentation. "
+            "When emergency_mode is true, switch immediately to 'Urgences Respiration & Sophrologie': "
+            "guide the patient through a 3 to 5 minute craving protocol with cardiac coherence, grounding, "
+            "and one concrete next action. "
             "If you detect danger, severe distress, suicidal ideation, panic, or imminent relapse, "
             "you must set should_alert_doctor=true and explain why. "
             "Return valid JSON only."
@@ -60,6 +66,7 @@ class SupportChatService:
             f"Patient facts:\n{json.dumps(patient_facts, ensure_ascii=False, indent=2)}\n\n"
             f"Conversation history:\n{json.dumps(conversation_history, ensure_ascii=False, indent=2)}\n\n"
             f"References RAG du soutien 24/7:\n{json.dumps([ref.__dict__ for ref in references], ensure_ascii=False, indent=2)}\n\n"
+            f"Mode urgence SOS envie:\n{json.dumps(emergency_mode, ensure_ascii=False)}\n\n"
             f"Dernier message patient:\n{latest_patient_message}\n\n"
             "Return JSON with this exact structure:\n"
             "{\n"
@@ -79,14 +86,25 @@ class SupportChatService:
         result["model_name"] = f"{self.llm.provider}:{self.llm.model}"
         return result
 
-    def _fallback(self, latest_patient_message: str, patient_facts: Dict[str, Any]) -> Dict[str, Any]:
+    def _fallback(self, latest_patient_message: str, patient_facts: Dict[str, Any], emergency_mode: bool = False) -> Dict[str, Any]:
         text = (latest_patient_message or "").lower()
         risky_patterns = ["suicide", "mourir", "je vais craquer", "je vais refumer", "panique", "danger"]
-        should_alert = any(pattern in text for pattern in risky_patterns)
+        emergency_patterns = ["craquer", "refumer", "fumer", "cigarette", "critique", "urgent", "panique", "seul"]
+        should_alert = any(pattern in text for pattern in risky_patterns) or (
+            emergency_mode and any(pattern in text for pattern in emergency_patterns)
+        )
         anxiety = patient_facts.get("had_anxiety_score") or 0
         depression = patient_facts.get("had_depression_score") or 0
-        risk_level = "CRITICAL" if should_alert else "HIGH" if max(anxiety, depression) >= 11 else "MODERATE" if max(anxiety, depression) >= 8 else "LOW"
-        if should_alert:
+        risk_level = "CRITICAL" if should_alert else "HIGH" if emergency_mode or max(anxiety, depression) >= 11 else "MODERATE" if max(anxiety, depression) >= 8 else "LOW"
+        if emergency_mode:
+            reply = (
+                "Je suis avec vous maintenant. Posez les pieds au sol et lancez 5 cycles: inspirez 5 secondes, expirez 5 secondes. "
+                "Regardez un point fixe, desserrez les epaules, puis buvez quelques gorgees d'eau. "
+                "L'envie monte puis redescend souvent en 3 a 5 minutes; restez avec moi pour la vague suivante."
+            )
+            if should_alert:
+                reply += " Comme le niveau semble critique, votre medecin va etre alerte pour renforcer le soutien."
+        elif should_alert:
             reply = (
                 "Je reste avec vous. Ce que vous decrivez merite une attention rapide. "
                 "Essayez de vous mettre dans un endroit calme, de respirer lentement pendant une minute, "
@@ -101,9 +119,9 @@ class SupportChatService:
             "reply": reply,
             "risk_level": risk_level,
             "should_alert_doctor": should_alert,
-            "alert_reason": "Risque psychique ou rechute detecte dans l'echange." if should_alert else None,
-            "recommended_doctor_action": "Proposer une seance exceptionnelle de soutien." if should_alert else None,
-            "summary": "Echange de soutien IA en cours avec niveau de risque " + risk_level,
+            "alert_reason": "SOS Envie critique avec risque de rechute immediate." if should_alert and emergency_mode else "Risque psychique ou rechute detecte dans l'echange." if should_alert else None,
+            "recommended_doctor_action": "Contacter le patient ou proposer une seance urgente de soutien." if should_alert and emergency_mode else "Proposer une seance exceptionnelle de soutien." if should_alert else None,
+            "summary": ("SOS Envie en cours, protocole respiration/sophrologie active. " if emergency_mode else "Echange de soutien IA en cours avec ") + "niveau de risque " + risk_level,
             "model_name": "support-fallback",
         }
 

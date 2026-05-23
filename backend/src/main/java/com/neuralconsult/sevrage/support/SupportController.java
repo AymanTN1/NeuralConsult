@@ -41,7 +41,7 @@ public class SupportController {
   public SupportConversationResponse send(@AuthenticationPrincipal UserDetails principal,
                                           @RequestBody SupportChatRequest request) {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
-    return supportService.sendAsPatient(user, request.message());
+    return supportService.sendAsPatient(user, request.message(), Boolean.TRUE.equals(request.emergencyMode()));
   }
 
   @GetMapping("/doctor/alerts")
