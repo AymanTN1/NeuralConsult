@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 from typing import Any, Dict, Optional
@@ -56,6 +57,31 @@ class GeminiClient:
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"Gemini returned invalid JSON: {text[:300]}") from exc
 
+    async def generate_json_with_inline_data(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        inline_data: bytes,
+        mime_type: str,
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        payload = await self._request_payload(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            response_mime_type="application/json",
+            inline_data=inline_data,
+            inline_mime_type=mime_type,
+        )
+        text = self._extract_text(payload)
+        if not text:
+            raise RuntimeError("Gemini returned an empty multimodal JSON response.")
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Gemini returned invalid multimodal JSON: {text[:300]}") from exc
+
     async def _request_payload(
         self,
         *,
@@ -63,6 +89,8 @@ class GeminiClient:
         user_prompt: str,
         temperature: float,
         response_mime_type: str,
+        inline_data: bytes | None = None,
+        inline_mime_type: str | None = None,
     ) -> Dict[str, Any]:
         if not self.api_key:
             raise RuntimeError("GEMINI_API_KEY is not configured.")
@@ -71,6 +99,15 @@ class GeminiClient:
             f"{self.base_url}/v1beta/models/{self.model}:generateContent"
             f"?key={self.api_key}"
         )
+        parts: list[dict[str, Any]] = [{"text": user_prompt}]
+        if inline_data:
+            parts.append({
+                "inline_data": {
+                    "mime_type": inline_mime_type or "application/octet-stream",
+                    "data": base64.b64encode(inline_data).decode("utf-8"),
+                }
+            })
+
         body = {
             "system_instruction": {
                 "parts": [{"text": system_prompt}],
@@ -78,7 +115,7 @@ class GeminiClient:
             "contents": [
                 {
                     "role": "user",
-                    "parts": [{"text": user_prompt}],
+                    "parts": parts,
                 }
             ],
             "generationConfig": {

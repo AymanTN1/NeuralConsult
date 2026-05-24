@@ -14,13 +14,15 @@ import com.neuralconsult.sevrage.patient.PatientProfileService;
 import com.neuralconsult.sevrage.report.DailyReportRepository;
 import com.neuralconsult.sevrage.support.dto.AiSupportChatRequest;
 import com.neuralconsult.sevrage.support.dto.AiSupportChatResponse;
+import com.neuralconsult.sevrage.support.dto.AiSupportVoiceChatResponse;
 import com.neuralconsult.sevrage.support.dto.DoctorAlertResponse;
 import com.neuralconsult.sevrage.support.dto.SupportConversationResponse;
 import com.neuralconsult.sevrage.support.dto.SupportMessageResponse;
 import com.neuralconsult.sevrage.user.User;
 import jakarta.transaction.Transactional;
-import java.time.LocalDate;
+import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,9 +30,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class SupportService {
+
+  private static final long MAX_VOICE_AUDIO_BYTES = 10L * 1024L * 1024L;
+  private static final long MAX_VOICE_AUDIO_DURATION_MS = 90_000L;
 
   private final SupportConversationRepository conversationRepository;
   private final SupportMessageRepository messageRepository;
@@ -109,27 +115,117 @@ public class SupportService {
         language
     ));
 
+    persistAiResponse(
+        patientProfile,
+        conversation,
+        emergencyMode,
+        ai.reply(),
+        ai.riskLevel(),
+        ai.shouldAlertDoctor(),
+        ai.alertReason(),
+        ai.summary()
+    );
+
+    return toResponse(conversation);
+  }
+
+  @Transactional
+  public SupportConversationResponse sendVoiceAsPatient(User patientUser,
+                                                       MultipartFile audio,
+                                                       boolean emergencyMode,
+                                                       String preferredLanguage,
+                                                       Long audioDurationMs) {
+    validateVoiceAudio(audio, audioDurationMs);
+
+    PatientProfile patientProfile = patientProfileService.getOrCreate(patientUser);
+    SupportConversation conversation = getOrCreateConversation(patientProfile);
+    String language = normalizePreferredLanguage(preferredLanguage);
+
+    byte[] audioBytes;
+    try {
+      audioBytes = audio.getBytes();
+    } catch (IOException exception) {
+      throw new IllegalArgumentException("Impossible de lire le message vocal.", exception);
+    }
+
+    AiSupportVoiceChatResponse ai = aiSupportChatClient.respondVoice(
+        new AiSupportChatRequest(
+            UUID.randomUUID().toString(),
+            buildFacts(patientProfile, conversation),
+            buildConversationHistory(conversation),
+            "",
+            emergencyMode,
+            language
+        ),
+        audioBytes,
+        audio.getOriginalFilename(),
+        audio.getContentType(),
+        audioDurationMs
+    );
+
+    if (ai == null || ai.transcription() == null || ai.transcription().isBlank()) {
+      throw new IllegalStateException("L'analyse vocale n'a pas produit de transcription exploitable.");
+    }
+
+    SupportMessage userMessage = new SupportMessage();
+    userMessage.setConversation(conversation);
+    userMessage.setSenderType(SupportMessage.SenderType.PATIENT);
+    userMessage.setInputMode(SupportMessage.InputMode.VOICE);
+    userMessage.setContent(emergencyMode ? "[SOS Envie] " + ai.transcription().trim() : ai.transcription().trim());
+    userMessage.setRiskLevel(emergencyMode ? SupportRiskLevel.HIGH : SupportRiskLevel.LOW);
+    userMessage.setVoiceStressScore(clampStressScore(ai.voiceStressScore()));
+    userMessage.setVoiceStressLevel(parseRiskLevel(ai.voiceStressLevel()));
+    userMessage.setVoiceStressSummary(ai.voiceStressSummary());
+    userMessage.setAudioDurationMs(audioDurationMs);
+    messageRepository.save(userMessage);
+
+    persistAiResponse(
+        patientProfile,
+        conversation,
+        emergencyMode,
+        ai.reply(),
+        ai.riskLevel(),
+        ai.shouldAlertDoctor(),
+        ai.alertReason(),
+        ai.summary()
+    );
+
+    return toResponse(conversation);
+  }
+
+  private void persistAiResponse(PatientProfile patientProfile,
+                                 SupportConversation conversation,
+                                 boolean emergencyMode,
+                                 String reply,
+                                 String riskLevel,
+                                 Boolean shouldAlertDoctor,
+                                 String alertReason,
+                                 String summary) {
+    String safeReply = reply != null && !reply.isBlank()
+        ? reply
+        : "Je suis la avec vous. Pouvez-vous me dire ce qui vous pese le plus en ce moment ?";
+
     SupportMessage aiMessage = new SupportMessage();
     aiMessage.setConversation(conversation);
     aiMessage.setSenderType(SupportMessage.SenderType.AI);
-    aiMessage.setContent(ai.reply());
-    aiMessage.setRiskLevel(parseRiskLevel(ai.riskLevel()));
-    aiMessage.setRequiresDoctorAttention(Boolean.TRUE.equals(ai.shouldAlertDoctor()));
+    aiMessage.setContent(safeReply);
+    aiMessage.setRiskLevel(parseRiskLevel(riskLevel));
+    aiMessage.setRequiresDoctorAttention(Boolean.TRUE.equals(shouldAlertDoctor));
     messageRepository.save(aiMessage);
 
-    conversation.setLatestRiskLevel(parseRiskLevel(ai.riskLevel()));
-    conversation.setLatestSummary(ai.summary());
+    conversation.setLatestRiskLevel(parseRiskLevel(riskLevel));
+    conversation.setLatestSummary(summary);
     conversationRepository.save(conversation);
 
-    if (Boolean.TRUE.equals(ai.shouldAlertDoctor()) && conversation.getDoctorProfile() != null) {
+    if (Boolean.TRUE.equals(shouldAlertDoctor) && conversation.getDoctorProfile() != null) {
       DoctorAlert alert = new DoctorAlert();
       alert.setDoctorProfile(conversation.getDoctorProfile());
       alert.setPatientProfile(patientProfile);
       alert.setConversation(conversation);
       alert.setTriggeringMessage(aiMessage);
-      alert.setLevel(parseRiskLevel(ai.riskLevel()));
+      alert.setLevel(parseRiskLevel(riskLevel));
       alert.setTitle(emergencyMode ? "SOS Envie - alerte urgence craving" : "Alerte soutien IA 24/7");
-      alert.setSummary(ai.alertReason() != null && !ai.alertReason().isBlank() ? ai.alertReason() : ai.reply());
+      alert.setSummary(alertReason != null && !alertReason.isBlank() ? alertReason : safeReply);
       DoctorAlert savedAlert = doctorAlertRepository.save(alert);
       savedAlert.setLastNotificationSentAt(Instant.now());
       savedAlert = doctorAlertRepository.save(savedAlert);
@@ -145,8 +241,33 @@ public class SupportService {
           "support-alert:" + savedAlert.getId()
       );
     }
+  }
 
-    return toResponse(conversation);
+  private void validateVoiceAudio(MultipartFile audio, Long audioDurationMs) {
+    if (audio == null || audio.isEmpty()) {
+      throw new IllegalArgumentException("Le message vocal est vide.");
+    }
+    if (audio.getSize() > MAX_VOICE_AUDIO_BYTES) {
+      throw new IllegalArgumentException("Le message vocal depasse la taille autorisee de 10 Mo.");
+    }
+    if (audioDurationMs != null && audioDurationMs > MAX_VOICE_AUDIO_DURATION_MS) {
+      throw new IllegalArgumentException("Le message vocal doit durer 90 secondes maximum.");
+    }
+
+    String contentType = audio.getContentType() != null ? audio.getContentType().toLowerCase() : "";
+    boolean accepted = contentType.startsWith("audio/")
+        || contentType.startsWith("video/webm")
+        || contentType.equals("application/octet-stream");
+    if (!accepted) {
+      throw new IllegalArgumentException("Format audio non accepte. Utilisez un enregistrement vocal du navigateur.");
+    }
+  }
+
+  private Integer clampStressScore(Integer score) {
+    if (score == null) {
+      return null;
+    }
+    return Math.max(0, Math.min(100, score));
   }
 
   @Transactional
@@ -317,7 +438,12 @@ public class SupportService {
         message.getId(),
         message.getSenderType().name(),
         message.getContent(),
+        message.getInputMode() != null ? message.getInputMode().name() : SupportMessage.InputMode.TEXT.name(),
         message.getRiskLevel() != null ? message.getRiskLevel().name() : null,
+        message.getVoiceStressScore(),
+        message.getVoiceStressLevel() != null ? message.getVoiceStressLevel().name() : null,
+        message.getVoiceStressSummary(),
+        message.getAudioDurationMs(),
         message.isRequiresDoctorAttention(),
         message.getCreatedAt()
     );

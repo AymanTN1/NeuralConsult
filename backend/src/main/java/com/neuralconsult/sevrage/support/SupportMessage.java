@@ -30,11 +30,33 @@ public class SupportMessage extends AuditableEntity {
   private String content;
 
   @Enumerated(EnumType.STRING)
+  @Column(name = "input_mode", length = 16)
+  private InputMode inputMode = InputMode.TEXT;
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "risk_level", length = 24)
   private SupportRiskLevel riskLevel;
 
   @Column(name = "requires_doctor_attention", nullable = false)
   private boolean requiresDoctorAttention;
+
+  @Column(name = "voice_stress_score")
+  private Integer voiceStressScore;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "voice_stress_level", length = 24)
+  private SupportRiskLevel voiceStressLevel;
+
+  @Column(name = "voice_stress_summary", length = 1000)
+  private String voiceStressSummary;
+
+  @Column(name = "audio_duration_ms")
+  private Long audioDurationMs;
+
+  public enum InputMode {
+    TEXT,
+    VOICE
+  }
 
   public enum SenderType {
     PATIENT,

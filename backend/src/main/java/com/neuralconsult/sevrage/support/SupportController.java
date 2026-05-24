@@ -7,6 +7,7 @@ import com.neuralconsult.sevrage.user.User;
 import com.neuralconsult.sevrage.user.UserRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/support")
@@ -46,6 +49,23 @@ public class SupportController {
         request.message(),
         Boolean.TRUE.equals(request.emergencyMode()),
         request.preferredLanguage()
+    );
+  }
+
+  @PostMapping(value = "/current/voice-message", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAnyAuthority('ROLE_PATIENT', 'ROLE_USER')")
+  public SupportConversationResponse sendVoice(@AuthenticationPrincipal UserDetails principal,
+                                               @RequestParam("audio") MultipartFile audio,
+                                               @RequestParam(value = "emergencyMode", required = false) Boolean emergencyMode,
+                                               @RequestParam(value = "preferredLanguage", required = false) String preferredLanguage,
+                                               @RequestParam(value = "audioDurationMs", required = false) Long audioDurationMs) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
+    return supportService.sendVoiceAsPatient(
+        user,
+        audio,
+        Boolean.TRUE.equals(emergencyMode),
+        preferredLanguage,
+        audioDurationMs
     );
   }
 

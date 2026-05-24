@@ -46,6 +46,102 @@ class SupportChatService:
                 pass
         return self._fallback(latest_patient_message, patient_facts, emergency_mode, language)
 
+    async def respond_voice(
+        self,
+        *,
+        audio_bytes: bytes,
+        audio_mime_type: str,
+        patient_facts: Dict[str, Any],
+        conversation_history: List[Dict[str, str]],
+        emergency_mode: bool = False,
+        preferred_language: str = "fr",
+        audio_duration_ms: int | None = None,
+    ) -> Dict[str, Any]:
+        language = self._normalize_language(preferred_language)
+        voice_analysis = await self._analyze_voice_with_gemini(
+            audio_bytes=audio_bytes,
+            audio_mime_type=audio_mime_type,
+            preferred_language=language,
+            audio_duration_ms=audio_duration_ms,
+        )
+        transcription = voice_analysis["transcription"]
+        if not transcription:
+            raise ValueError("Audio inaudible ou transcription vide.")
+
+        enriched_facts = dict(patient_facts or {})
+        enriched_facts["voice_analysis"] = {
+            "stress_score": voice_analysis["voice_stress_score"],
+            "stress_level": voice_analysis["voice_stress_level"],
+            "stress_summary": voice_analysis["voice_stress_summary"],
+            "stress_signals": voice_analysis["voice_stress_signals"],
+            "audio_duration_ms": audio_duration_ms,
+            "non_diagnostic": True,
+        }
+
+        chat_result = await self.respond(
+            latest_patient_message=transcription,
+            patient_facts=enriched_facts,
+            conversation_history=conversation_history,
+            emergency_mode=emergency_mode,
+            preferred_language=language,
+        )
+        if chat_result.get("should_alert_doctor") and not self._has_doctor_alert_signal(
+            transcription,
+            emergency_mode,
+        ):
+            chat_result = {
+                **chat_result,
+                "should_alert_doctor": False,
+                "alert_reason": None,
+                "recommended_doctor_action": None,
+            }
+        return {
+            **chat_result,
+            **voice_analysis,
+        }
+
+    async def _analyze_voice_with_gemini(
+        self,
+        *,
+        audio_bytes: bytes,
+        audio_mime_type: str,
+        preferred_language: str,
+        audio_duration_ms: int | None,
+    ) -> Dict[str, Any]:
+        if not self.llm.gemini.is_configured():
+            raise RuntimeError("GEMINI_API_KEY est requis pour l'analyse vocale.")
+
+        mime_type = (audio_mime_type or "application/octet-stream").split(";")[0].strip()
+        system_prompt = (
+            "You transcribe short patient voice notes for a tobacco-cessation support app. "
+            "You also estimate apparent stress from voice tone/prosody and spoken content. "
+            "This estimate is non-diagnostic and must be cautious. "
+            "Return valid JSON only."
+        )
+        user_prompt = (
+            "Analyze the attached audio. Return JSON with this exact structure:\n"
+            "{\n"
+            '  "transcription": "verbatim transcript in the spoken language",\n'
+            '  "voice_stress_score": 0,\n'
+            '  "voice_stress_level": "LOW|MODERATE|HIGH|CRITICAL",\n'
+            '  "voice_stress_summary": "short French non-diagnostic summary",\n'
+            '  "voice_stress_signals": ["short French signal"]\n'
+            "}\n\n"
+            "Rules: keep the transcript faithful, do not invent missing words, "
+            "use CRITICAL only for extreme distress, panic, danger cues, or imminent relapse cues. "
+            "If the speech is in Moroccan Darija, transcribe it naturally in the same script/style used by the speaker when possible. "
+            f"Requested support language: {preferred_language}. "
+            f"Approximate duration in milliseconds: {audio_duration_ms}."
+        )
+        result = await self.llm.gemini.generate_json_with_inline_data(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            inline_data=audio_bytes,
+            mime_type=mime_type,
+            temperature=0.1,
+        )
+        return self._validate_voice_analysis(result)
+
     async def _respond_with_llm(
         self,
         *,
@@ -64,6 +160,8 @@ class SupportChatService:
             "Reply to the patient in the requested language: French for fr, Moroccan Darija for darija, English for en. "
             "For Darija, use natural Moroccan dialect; Latin-script Darija is acceptable unless the patient writes Arabic script. "
             "Keep all doctor-facing fields (summary, alert_reason, recommended_doctor_action) in French. "
+            "When patient_facts.voice_analysis is present, adapt warmth and regulation guidance to the apparent stress level, "
+            "but describe it as non-diagnostic and never alert the doctor solely because of vocal stress. "
             "When emergency_mode is true, switch immediately to 'Urgences Respiration & Sophrologie': "
             "guide the patient through a 3 to 5 minute craving protocol with cardiac coherence, grounding, "
             "and one concrete next action. "
@@ -79,6 +177,8 @@ class SupportChatService:
             f"References RAG du soutien 24/7:\n{json.dumps([ref.__dict__ for ref in references], ensure_ascii=False, indent=2)}\n\n"
             f"Mode urgence SOS envie:\n{json.dumps(emergency_mode, ensure_ascii=False)}\n\n"
             f"Langue patient demandee:\n{preferred_language}\n\n"
+            "Important si voice_analysis est present: utiliser ces indices pour choisir un ton plus contenant, "
+            "mais ne pas les presenter comme un diagnostic.\n\n"
             f"Dernier message patient:\n{latest_patient_message}\n\n"
             "Return JSON with this exact structure:\n"
             "{\n"
@@ -114,13 +214,22 @@ class SupportChatService:
         )
         anxiety = patient_facts.get("had_anxiety_score") or 0
         depression = patient_facts.get("had_depression_score") or 0
-        risk_level = "CRITICAL" if should_alert else "HIGH" if emergency_mode or max(anxiety, depression) >= 11 else "MODERATE" if max(anxiety, depression) >= 8 else "LOW"
+        voice_analysis = patient_facts.get("voice_analysis") if isinstance(patient_facts, dict) else None
+        voice_score = 0
+        if isinstance(voice_analysis, dict):
+            try:
+                voice_score = int(voice_analysis.get("stress_score") or 0)
+            except (TypeError, ValueError):
+                voice_score = 0
+        risk_level = "CRITICAL" if should_alert else "HIGH" if emergency_mode or max(anxiety, depression) >= 11 else "MODERATE" if max(anxiety, depression) >= 8 or voice_score >= 70 else "LOW"
         if emergency_mode:
             reply = self._emergency_reply(language)
             if should_alert:
                 reply += self._doctor_alert_suffix(language)
         elif should_alert:
             reply = self._alert_reply(language)
+        elif voice_score >= 70:
+            reply = self._stressed_voice_reply(language)
         else:
             reply = self._standard_reply(language)
         return {
@@ -141,6 +250,60 @@ class SupportChatService:
             return "en"
         return "fr"
 
+    def _validate_voice_analysis(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        transcription = str(result.get("transcription") or result.get("transcript") or "").strip()
+        if not transcription:
+            raise ValueError("Audio inaudible ou transcription vide.")
+
+        try:
+            score = int(float(result.get("voice_stress_score", 0)))
+        except (TypeError, ValueError):
+            score = 0
+        score = max(0, min(100, score))
+
+        level = str(result.get("voice_stress_level") or "").upper()
+        if level not in {"LOW", "MODERATE", "HIGH", "CRITICAL"}:
+            level = self._stress_level_from_score(score)
+
+        raw_signals = result.get("voice_stress_signals") or []
+        signals = [str(item).strip() for item in raw_signals if str(item).strip()]
+
+        return {
+            "transcription": transcription[:4000],
+            "voice_stress_score": score,
+            "voice_stress_level": level,
+            "voice_stress_summary": str(result.get("voice_stress_summary") or "").strip()[:1000] or None,
+            "voice_stress_signals": signals[:5],
+        }
+
+    def _stress_level_from_score(self, score: int) -> str:
+        if score >= 85:
+            return "CRITICAL"
+        if score >= 65:
+            return "HIGH"
+        if score >= 35:
+            return "MODERATE"
+        return "LOW"
+
+    def _has_doctor_alert_signal(self, text: str, emergency_mode: bool) -> bool:
+        value = (text or "").lower()
+        high_risk_patterns = [
+            "suicide",
+            "mourir",
+            "je vais craquer",
+            "je vais refumer",
+            "je vais fumer",
+            "panique",
+            "danger",
+            "urgent",
+            "je n'en peux plus",
+            "crise",
+        ]
+        craving_patterns = ["craquer", "refumer", "fumer", "cigarette", "critique", "seul"]
+        return any(pattern in value for pattern in high_risk_patterns) or (
+            emergency_mode and any(pattern in value for pattern in craving_patterns)
+        )
+
     def _standard_reply(self, language: str) -> str:
         if language == "darija":
             return (
@@ -155,6 +318,25 @@ class SupportChatService:
         return (
             "Je vous entends. On peut avancer pas a pas. "
             "Dites-moi surtout ce qui est le plus difficile maintenant: l'envie de fumer, le stress, ou la peur de rechuter ?"
+        )
+
+    def _stressed_voice_reply(self, language: str) -> str:
+        if language == "darija":
+            return (
+                "Sme3t belli l-stress tal3, w hadchi ghir ichara machi tachkhis. "
+                "Khalli telephone 7dak, tnaffess bchwia: dkhel nfass 4 tawan, khrej 6 tawan, 5 marrat. "
+                "Daba goul lia: wach bghiti nkmlo m3a l'envie dyal cigarette wla stress?"
+            )
+        if language == "en":
+            return (
+                "I hear tension in this moment, and I am treating that only as a support signal, not a diagnosis. "
+                "Put the phone down for a second: breathe in for 4, out for 6, five times. "
+                "What should we steady first: the cigarette urge or the stress?"
+            )
+        return (
+            "J'entends une tension dans ce moment, et je la prends seulement comme un signal de soutien, pas comme un diagnostic. "
+            "Posez le telephone une seconde: inspirez 4 secondes, expirez 6 secondes, cinq fois. "
+            "On stabilise d'abord l'envie de cigarette ou le stress ?"
         )
 
     def _emergency_reply(self, language: str) -> str:

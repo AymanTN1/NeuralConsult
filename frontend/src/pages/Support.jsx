@@ -23,6 +23,16 @@ const sosPrompts = {
   en: "SOS craving: the urge to smoke is very strong right now. Guide me immediately with breathing and grounding for 3 to 5 minutes."
 };
 
+const VOICE_MAX_DURATION_MS = 90_000;
+const VOICE_MAX_BYTES = 10 * 1024 * 1024;
+const voiceMimeTypeCandidates = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/ogg;codecs=opus",
+  "audio/ogg"
+];
+
 const normalizeSupportLanguage = (value) => (
   supportLanguageOptions.some((item) => item.value === value) ? value : "fr"
 );
@@ -36,6 +46,26 @@ const readStoredSupportLanguage = () => {
 };
 
 const getSosPrompt = (language) => sosPrompts[normalizeSupportLanguage(language)] || sosPrompts.fr;
+
+const getSupportedVoiceMimeType = () => {
+  if (typeof window === "undefined" || !window.MediaRecorder) {
+    return "";
+  }
+  return voiceMimeTypeCandidates.find((mimeType) => window.MediaRecorder.isTypeSupported(mimeType)) || "";
+};
+
+const getVoiceFileName = (mimeType) => {
+  if (mimeType?.includes("mp4")) return "support-voice.mp4";
+  if (mimeType?.includes("ogg")) return "support-voice.ogg";
+  return "support-voice.webm";
+};
+
+const formatVoiceDuration = (value) => {
+  const totalSeconds = Math.max(0, Math.round((value || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+};
 
 const formatDateTime = (value) => {
   if (!value) return "-";
@@ -63,7 +93,19 @@ const Support = () => {
   const [sosActive, setSosActive] = useState(false);
   const [sendingSos, setSendingSos] = useState(false);
   const [supportLanguage, setSupportLanguage] = useState(readStoredSupportLanguage);
+  const [voiceState, setVoiceState] = useState("idle");
+  const [voiceBlob, setVoiceBlob] = useState(null);
+  const [voiceDurationMs, setVoiceDurationMs] = useState(0);
+  const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
+  const [voiceError, setVoiceError] = useState(null);
   const sosHandledRef = useRef(false);
+  const mediaRecorderRef = useRef(null);
+  const voiceChunksRef = useRef([]);
+  const voiceStreamRef = useRef(null);
+  const voiceStartTimeRef = useRef(0);
+  const voiceTimerRef = useRef(null);
+  const voiceMaxTimerRef = useRef(null);
+  const voiceCancelRef = useRef(false);
   const selectedSosPrompt = getSosPrompt(supportLanguage);
 
   const updateSupportLanguage = (value) => {
@@ -74,6 +116,122 @@ const Support = () => {
     } catch (error) {
       // localStorage can be unavailable in private or restricted browser modes
     }
+  };
+
+  const clearVoiceTimers = () => {
+    if (voiceTimerRef.current) {
+      window.clearInterval(voiceTimerRef.current);
+      voiceTimerRef.current = null;
+    }
+    if (voiceMaxTimerRef.current) {
+      window.clearTimeout(voiceMaxTimerRef.current);
+      voiceMaxTimerRef.current = null;
+    }
+  };
+
+  const stopVoiceTracks = () => {
+    if (voiceStreamRef.current) {
+      voiceStreamRef.current.getTracks().forEach((track) => track.stop());
+      voiceStreamRef.current = null;
+    }
+  };
+
+  const resetVoiceDraft = () => {
+    clearVoiceTimers();
+    stopVoiceTracks();
+    voiceChunksRef.current = [];
+    voiceCancelRef.current = false;
+    mediaRecorderRef.current = null;
+    setVoiceBlob(null);
+    setVoiceDurationMs(0);
+    setVoiceState("idle");
+  };
+
+  const startVoiceRecording = async () => {
+    setVoiceError(null);
+    if (!navigator.mediaDevices?.getUserMedia || typeof window.MediaRecorder === "undefined") {
+      setVoiceError("L'enregistrement vocal n'est pas disponible dans ce navigateur.");
+      return;
+    }
+
+    try {
+      resetVoiceDraft();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = getSupportedVoiceMimeType();
+      const recorder = new window.MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      voiceStreamRef.current = stream;
+      voiceChunksRef.current = [];
+      voiceCancelRef.current = false;
+      voiceStartTimeRef.current = Date.now();
+
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) {
+          voiceChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const elapsed = Math.min(Date.now() - voiceStartTimeRef.current, VOICE_MAX_DURATION_MS);
+        clearVoiceTimers();
+        stopVoiceTracks();
+
+        if (voiceCancelRef.current) {
+          resetVoiceDraft();
+          return;
+        }
+
+        const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || mimeType || "audio/webm" });
+        voiceChunksRef.current = [];
+        mediaRecorderRef.current = null;
+
+        if (!blob.size) {
+          setVoiceError("Aucun son n'a ete capture.");
+          setVoiceState("idle");
+          return;
+        }
+        if (blob.size > VOICE_MAX_BYTES) {
+          setVoiceError("Le message vocal depasse 10 Mo.");
+          setVoiceState("idle");
+          return;
+        }
+
+        setVoiceBlob(blob);
+        setVoiceDurationMs(elapsed);
+        setVoiceState("ready");
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setVoiceState("recording");
+      voiceTimerRef.current = window.setInterval(() => {
+        setVoiceDurationMs(Math.min(Date.now() - voiceStartTimeRef.current, VOICE_MAX_DURATION_MS));
+      }, 250);
+      voiceMaxTimerRef.current = window.setTimeout(() => {
+        if (mediaRecorderRef.current?.state === "recording") {
+          mediaRecorderRef.current.stop();
+        }
+      }, VOICE_MAX_DURATION_MS);
+    } catch (error) {
+      stopVoiceTracks();
+      setVoiceState("idle");
+      setVoiceError("Micro inaccessible. Verifiez l'autorisation du navigateur.");
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const cancelVoiceRecording = () => {
+    setVoiceError(null);
+    voiceCancelRef.current = true;
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+      return;
+    }
+    resetVoiceDraft();
   };
 
   const loadPatientSupport = async () => {
@@ -120,6 +278,21 @@ const Support = () => {
   useEffect(() => {
     reload();
   }, [doctorMode]);
+
+  useEffect(() => {
+    if (!voiceBlob) {
+      setVoicePreviewUrl("");
+      return undefined;
+    }
+    const url = window.URL.createObjectURL(voiceBlob);
+    setVoicePreviewUrl(url);
+    return () => window.URL.revokeObjectURL(url);
+  }, [voiceBlob]);
+
+  useEffect(() => () => {
+    clearVoiceTimers();
+    stopVoiceTracks();
+  }, []);
 
   useEffect(() => {
     if (doctorMode) {
@@ -205,6 +378,35 @@ const Support = () => {
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
       setMessage({ type: "error", text: apiError || "Impossible d'envoyer le message a l'IA." });
+    }
+  };
+
+  const sendVoiceMessage = async () => {
+    if (!voiceBlob || voiceState === "processing") return;
+    setMessage(null);
+    setVoiceError(null);
+
+    if (voiceBlob.size > VOICE_MAX_BYTES) {
+      setVoiceError("Le message vocal depasse 10 Mo.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("audio", voiceBlob, getVoiceFileName(voiceBlob.type));
+    formData.append("emergencyMode", String(sosActive));
+    formData.append("preferredLanguage", supportLanguage);
+    formData.append("audioDurationMs", String(Math.min(voiceDurationMs, VOICE_MAX_DURATION_MS)));
+
+    setVoiceState("processing");
+    try {
+      const { data } = await api.post("/api/support/current/voice-message", formData);
+      setConversation(data);
+      resetVoiceDraft();
+      setSosActive(false);
+    } catch (error) {
+      const apiError = error?.response?.data?.message || error?.response?.data?.detail || error?.response?.data?.error;
+      setVoiceState("ready");
+      setVoiceError(apiError || "Impossible d'analyser le message vocal.");
     }
   };
 
@@ -347,8 +549,20 @@ const Support = () => {
                 <div className="support-thread mt-3">
                   {(conversation.messages || []).map((item) => (
                     <div key={item.id} className={`support-bubble ${item.senderType === "PATIENT" ? "is-patient" : item.senderType === "AI" ? "is-ai" : "is-system"}`}>
-                      <span className="profile-data-label">{item.senderType}</span>
+                      <div className="support-bubble-head">
+                        <span className="profile-data-label">
+                          {item.senderType === "PATIENT" && item.inputMode === "VOICE" ? "PATIENT · VOIX" : item.senderType}
+                        </span>
+                        {item.inputMode === "VOICE" && (
+                          <span className={`support-stress-chip level-${String(item.voiceStressLevel || "LOW").toLowerCase()}`}>
+                            Stress {riskCopy[item.voiceStressLevel] || "Faible"} · {item.voiceStressScore ?? 0}/100
+                          </span>
+                        )}
+                      </div>
                       <p className="mb-0">{item.content}</p>
+                      {item.inputMode === "VOICE" && item.voiceStressSummary && (
+                        <small className="support-voice-summary">{item.voiceStressSummary}</small>
+                      )}
                       <small>{formatDateTime(item.createdAt)}</small>
                     </div>
                   ))}
@@ -358,8 +572,60 @@ const Support = () => {
                   <form className="mt-3" onSubmit={sendMessage}>
                     <label className="form-label">Parle librement avec l'IA</label>
                     <textarea className="form-control" rows="4" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Explique ce qui te pese maintenant: craving, stress, peur de rechuter, sommeil, anxiete..." />
+                    <div className={`support-voice-panel is-${voiceState}`}>
+                      {voiceState === "idle" && (
+                        <button type="button" className="btn btn-outline-dark support-voice-button" onClick={startVoiceRecording}>
+                          <i className="bi bi-mic-fill me-2" />
+                          Message vocal
+                        </button>
+                      )}
+
+                      {voiceState === "recording" && (
+                        <div className="support-voice-row">
+                          <div className="support-recording-indicator">
+                            <span />
+                            <strong>{formatVoiceDuration(voiceDurationMs)}</strong>
+                          </div>
+                          <div className="support-voice-actions">
+                            <button type="button" className="btn btn-dark" onClick={stopVoiceRecording}>
+                              Terminer
+                            </button>
+                            <button type="button" className="btn btn-outline-dark" onClick={cancelVoiceRecording}>
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {voiceState === "ready" && (
+                        <div className="support-voice-ready">
+                          <div>
+                            <strong>Vocal pret · {formatVoiceDuration(voiceDurationMs)}</strong>
+                          </div>
+                          {voicePreviewUrl && <audio className="support-voice-player" controls src={voicePreviewUrl} />}
+                          <div className="support-voice-actions">
+                            <button type="button" className="btn btn-dark" onClick={sendVoiceMessage}>
+                              Envoyer
+                            </button>
+                            <button type="button" className="btn btn-outline-dark" onClick={cancelVoiceRecording}>
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {voiceState === "processing" && (
+                        <div className="support-voice-row">
+                          <div className="support-recording-indicator is-processing">
+                            <span />
+                            <strong>Analyse vocale...</strong>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {voiceError && <div className="alert alert-warning mt-3 mb-0">{voiceError}</div>}
                     <div className="doctor-card-actions mt-3">
-                      <button type="submit" className="btn btn-dark" disabled={sendingSos}>{sendingSos ? "SOS en cours..." : sosActive ? "Continuer le SOS" : "Envoyer"}</button>
+                      <button type="submit" className="btn btn-dark" disabled={sendingSos || voiceState !== "idle"}>{sendingSos ? "SOS en cours..." : sosActive ? "Continuer le SOS" : "Envoyer"}</button>
                       {sosActive && (
                         <button type="button" className="btn btn-outline-dark" onClick={() => setSosActive(false)}>
                           Revenir au chat normal
