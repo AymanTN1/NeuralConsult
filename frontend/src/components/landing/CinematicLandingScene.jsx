@@ -484,13 +484,13 @@ const BioLungSystem = ({ progress, scrollVelocity }) => {
 
 const HologramScene = ({ progress, scrollVelocity }) => (
   <div className="cinematic-canvas-shell" aria-hidden="true">
-    <Canvas camera={{ position: [0, 0.3, 8.2], fov: 32 }}>
+    <Canvas camera={{ position: [0, 0.35, 8.2], fov: 32 }}>
       <color
         attach="background"
         args={[
           new THREE.Color().lerpColors(
-            new THREE.Color("#f4f7fb"),
-            new THREE.Color("#e2e8f0"),
+            new THREE.Color("#f4f8fc"),
+            new THREE.Color("#e2eaf5"),
             THREE.MathUtils.clamp(progress * 0.9, 0, 1)
           ).getStyle()
         ]}
@@ -499,18 +499,19 @@ const HologramScene = ({ progress, scrollVelocity }) => (
         attach="fog"
         args={[
           new THREE.Color().lerpColors(
-            new THREE.Color("#f4f7fb"),
-            new THREE.Color("#e2e8f0"),
+            new THREE.Color("#f4f8fc"),
+            new THREE.Color("#e2eaf5"),
             THREE.MathUtils.clamp(progress * 0.92, 0, 1)
           ).getStyle(),
           8,
           17
         ]}
       />
-      <ambientLight intensity={0.26} color="#cfe0ff" />
-      <directionalLight position={[4, 4, 6]} intensity={0.48} color="#ffe0d8" />
-      <pointLight position={[0, 2.6, 2.2]} intensity={0.3} color="#9cc4ff" />
-      <pointLight position={[0, -1.4, 1.8]} intensity={0.22} color="#e7f0ff" />
+      <ambientLight intensity={0.36} color="#dbeafe" />
+      <directionalLight position={[4, 5, 6]} intensity={0.62} color="#ffffff" />
+      <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#93c5fd" />
+      <pointLight position={[0, 2.8, 2.5]} intensity={0.4} color="#60a5fa" />
+      <pointLight position={[0, -1.8, 2.0]} intensity={0.3} color="#fecdd3" />
       <BioLungSystem progress={progress} scrollVelocity={scrollVelocity} />
     </Canvas>
   </div>
@@ -521,27 +522,44 @@ const CinematicLandingScene = ({ progress, scrollVelocity, copyVisibility = 1 })
   const cigaretteBodyScale = Math.max(0.12, 1 - burnProgress * 0.84);
   const smokeDensity = THREE.MathUtils.clamp(0.25 + burnProgress * 0.45 + scrollVelocity * 0.15, 0.25, 0.85);
   const emberGlow = 8 + burnProgress * 12 + scrollVelocity * 8;
-  const statusTone = burnProgress < 0.34 ? "Repere initial" : burnProgress < 0.68 ? "Repere en cours" : "Repere de vigilance";
+  const statusTone =
+    burnProgress < 0.3
+      ? "Diagnostic initial & Prise de conscience"
+      : burnProgress < 0.7
+      ? "Processus actif & Détoxification"
+      : "Régénération pulmonaire consolidée";
 
   return (
     <div className="cinematic-stage">
       <HologramScene progress={burnProgress} scrollVelocity={scrollVelocity} />
 
       <div className="cinematic-stage-copy" style={{ opacity: copyVisibility }}>
-        <div className="hero-kicker">Restorative Clinical</div>
+        <div className="hero-kicker-badge">
+          <i className="bi bi-heart-pulse-fill text-danger me-2" />
+          <span>Plateforme Clinique & Sevrage Tabagique Avancé</span>
+        </div>
         <h1 className="landing-title cinematic-title">
           Reprendre le souffle.
-          <br />
-          Reouvrir la possibilite d'arreter.
+          <span className="cinematic-title-sub">Réouvrir la possibilité d'arrêter.</span>
         </h1>
+        <p className="cinematic-lead">
+          Une approche clinique fondée sur les preuves, reliant projection financière, score de Fagerström et suivi médical personnalisé.
+        </p>
       </div>
 
       <div className="sticky-cigarette-shell">
         <div className="sticky-cigarette-caption">
-          <span>Repere de consommation</span>
-          <strong>{Math.round(burnProgress * 100)}% du parcours visuel</strong>
-          <em>{statusTone}</em>
+          <div className="sticky-caption-header">
+            <span className="pulse-dot" />
+            <span className="caption-label">Visualisation Thérapeutique</span>
+          </div>
+          <div className="sticky-caption-main">
+            <strong>{Math.round(burnProgress * 100)}%</strong>
+            <span>de transition clinique</span>
+          </div>
+          <div className="sticky-caption-badge">{statusTone}</div>
         </div>
+
         <div className="sticky-cigarette-rail">
           <div className="sticky-cigarette-filter" />
           <div className="sticky-cigarette-body" style={{ transform: `scaleX(${cigaretteBodyScale})` }}>
@@ -551,7 +569,7 @@ const CinematicLandingScene = ({ progress, scrollVelocity, copyVisibility = 1 })
           <div
             className="sticky-cigarette-ember"
             style={{
-              boxShadow: `0 0 ${emberGlow}px rgba(201, 169, 135, 0.42), 0 0 ${emberGlow * 0.46}px rgba(244, 232, 209, 0.24)`
+              boxShadow: `0 0 ${emberGlow}px rgba(239, 68, 68, 0.6), 0 0 ${emberGlow * 0.5}px rgba(251, 191, 36, 0.4)`
             }}
           />
 

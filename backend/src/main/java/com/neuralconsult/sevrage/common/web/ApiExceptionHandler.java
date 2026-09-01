@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -37,6 +38,24 @@ public class ApiExceptionHandler {
         "timestamp", Instant.now().toString(),
         "error", "NOT_FOUND",
         "message", exception.getMessage() != null ? exception.getMessage() : "Element introuvable."
+    ));
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<Map<String, Object>> handleMaxUploadSize(MaxUploadSizeExceededException exception) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+        "timestamp", Instant.now().toString(),
+        "error", "PAYLOAD_TOO_LARGE",
+        "message", "Le fichier envoye depasse la taille maximale autorisee."
+    ));
+  }
+
+  @ExceptionHandler(IllegalStateException.class)
+  public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException exception) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+        "timestamp", Instant.now().toString(),
+        "error", "INTERNAL_ERROR",
+        "message", exception.getMessage() != null ? exception.getMessage() : "Erreur interne du serveur."
     ));
   }
 

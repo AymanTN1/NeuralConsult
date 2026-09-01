@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Area,
@@ -15,7 +15,17 @@ import {
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import { chartTheme } from "../theme/chartTheme";
-import InteractiveLung3D from "../components/InteractiveLung3D";
+
+const InteractiveLung3D = lazy(() => import("../components/InteractiveLung3D"));
+
+const Lung3DFallback = () => (
+  <div className="card shadow-sm border-0 rounded-4 p-4 text-center my-4" style={{ minHeight: "220px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--nc-panel)" }}>
+    <div className="d-flex flex-column align-items-center gap-2">
+      <div className="spinner-border text-info" role="status" style={{ width: "2.2rem", height: "2.2rem" }} />
+      <span className="muted-text small mt-2">Initialisation du modèle anatomique 3D...</span>
+    </div>
+  </div>
+);
 
 const severityFromScore = (score) => {
   if (score >= 11) return "critical";
@@ -257,7 +267,9 @@ const Dashboard = () => {
       )}
 
       {/* 🫁 Visualisation 3D Interactive de l'Évolution Pulmonaire */}
-      <InteractiveLung3D diffDays={diffDays} />
+      <Suspense fallback={<Lung3DFallback />}>
+        <InteractiveLung3D diffDays={diffDays} />
+      </Suspense>
 
       {/* 🏆 Section Gamification & Récompenses */}
       <section className="rewards-dashboard-section">

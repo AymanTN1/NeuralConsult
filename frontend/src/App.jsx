@@ -1,6 +1,8 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, useEffect, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { warmUpBackend } from "./services/keepAlive";
 import TopNav from "./components/TopNav";
 import AuthLayout from "./components/AuthLayout";
 import ClinicalSidebar from "./components/ClinicalSidebar";
@@ -44,6 +46,10 @@ const AppShell = () => {
   const location = useLocation();
   const isPublicRoute = PUBLIC_PATHS.has(location.pathname);
   const adminMode = isAdmin(user);
+
+  useEffect(() => {
+    warmUpBackend();
+  }, []);
 
   if (isPublicRoute) {
     return (
@@ -292,11 +298,13 @@ const AppShell = () => {
 };
 
 const App = () => (
-  <AuthProvider>
-    <BrowserRouter>
-      <AppShell />
-    </BrowserRouter>
-  </AuthProvider>
+  <ThemeProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
+    </AuthProvider>
+  </ThemeProvider>
 );
 
 export default App;

@@ -38,4 +38,10 @@ public class DoctorAvailability extends AuditableEntity {
 
   @Column(name = "active", nullable = false)
   private boolean active = true;
+
+  @Column(name = "buffer_minutes")
+  private Integer bufferMinutes = 10;
+
+  @Column(name = "slot_duration_minutes")
+  private Integer slotDurationMinutes = 20;
 }

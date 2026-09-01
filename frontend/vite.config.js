@@ -7,7 +7,10 @@ export default defineConfig({
     port: 5173
   },
   build: {
-    chunkSizeWarningLimit: 2000,
+    target: "es2020",
+    minify: "esbuild",
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -15,8 +18,11 @@ export default defineConfig({
             if (id.includes("three") || id.includes("@react-three")) {
               return "three-bundle";
             }
-            if (id.includes("recharts")) {
+            if (id.includes("recharts") || id.includes("d3-")) {
               return "recharts-bundle";
+            }
+            if (id.includes("bootstrap")) {
+              return "bootstrap-bundle";
             }
             if (id.includes("firebase")) {
               return "firebase-bundle";
@@ -26,9 +32,6 @@ export default defineConfig({
             }
             if (id.includes("gsap")) {
               return "gsap-bundle";
-            }
-            if (id.includes("bootstrap")) {
-              return "bootstrap-bundle";
             }
             return "vendor";
           }

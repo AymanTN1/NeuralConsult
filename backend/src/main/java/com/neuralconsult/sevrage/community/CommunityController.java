@@ -1,6 +1,7 @@
 package com.neuralconsult.sevrage.community;
 
 import com.neuralconsult.sevrage.community.dto.CommunityCommentCreateRequest;
+import com.neuralconsult.sevrage.community.dto.CommunityCommentResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityConnectionResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityDetailResponse;
 import com.neuralconsult.sevrage.community.dto.CommunityDirectMessageRequest;
@@ -115,6 +116,12 @@ public class CommunityController {
     return communityService.userProfile(currentUser(principal), targetUserId);
   }
 
+  @GetMapping("/social/users/by-username/{username}")
+  public CommunityUserProfileResponse profileByUsername(@AuthenticationPrincipal UserDetails principal,
+                                                        @PathVariable String username) {
+    return communityService.userProfileByUsername(currentUser(principal), username);
+  }
+
   @PostMapping("/social/posts")
   public CommunityPostResponse createPost(@AuthenticationPrincipal UserDetails principal,
                                           @RequestBody CommunityPostCreateRequest request) {
@@ -137,6 +144,13 @@ public class CommunityController {
                                      @PathVariable UUID postId,
                                      @RequestBody CommunityReactionRequest request) {
     return communityService.reactToPost(currentUser(principal), postId, request);
+  }
+
+  @PostMapping("/social/comments/{commentId}/reactions")
+  public CommunityCommentResponse reactComment(@AuthenticationPrincipal UserDetails principal,
+                                               @PathVariable UUID commentId,
+                                               @RequestBody CommunityReactionRequest request) {
+    return communityService.reactToComment(currentUser(principal), commentId, request);
   }
 
   @PostMapping("/social/posts/{postId}/comments")

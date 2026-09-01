@@ -57,10 +57,16 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost", "http://127.0.0.1", "https://neural-consult-tabac.vercel.app"));
+    configuration.setAllowedOriginPatterns(List.of(
+        "http://localhost*",
+        "http://127.0.0.1*",
+        "https://*.vercel.app",
+        "https://neural-consult-tabac.vercel.app"
+    ));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
+    configuration.setMaxAge(3600L);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

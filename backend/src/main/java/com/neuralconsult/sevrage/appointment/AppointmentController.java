@@ -185,7 +185,9 @@ public class AppointmentController {
         availability.getDayOfWeek() != null ? availability.getDayOfWeek().name() : null,
         availability.getStartTime(),
         availability.getEndTime(),
-        availability.isActive()
+        availability.isActive(),
+        availability.getBufferMinutes() != null ? availability.getBufferMinutes() : 10,
+        availability.getSlotDurationMinutes() != null ? availability.getSlotDurationMinutes() : 20
     );
   }
 }

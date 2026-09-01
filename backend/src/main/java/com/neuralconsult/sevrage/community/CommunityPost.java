@@ -32,11 +32,24 @@ public class CommunityPost extends AuditableEntity {
   @JoinColumn(name = "server_id")
   private CommunityServer server;
 
+  @Column(name = "title", length = 280)
+  private String title;
+
+  @Column(name = "flair", length = 80)
+  private String flair;
+
   @Column(name = "content", nullable = false, length = 5000)
   private String content;
 
   @Column(name = "image_url", length = 2000000)
   private String imageUrl;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "repost_of_post_id")
+  private CommunityPost repostOfPost;
+
+  @Column(name = "repost_comment", length = 1000)
+  private String repostComment;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "post_type", nullable = false, length = 24)

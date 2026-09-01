@@ -60,6 +60,13 @@ public class DemoAccountSeeder implements ApplicationRunner {
     private final AiGlobalSummaryRepository aiGlobalSummaryRepository;
     private final AiPhaseSummaryRepository aiPhaseSummaryRepository;
     private final AiPlanCandidateRepository aiPlanCandidateRepository;
+    private final com.neuralconsult.sevrage.onboarding.OnboardingRepository onboardingRepository;
+    private final com.neuralconsult.sevrage.community.CommunityServerRepository serverRepository;
+    private final com.neuralconsult.sevrage.community.CommunityChannelRepository channelRepository;
+    private final com.neuralconsult.sevrage.community.CommunityMemberRepository memberRepository;
+    private final com.neuralconsult.sevrage.community.CommunityPostRepository postRepository;
+    private final com.neuralconsult.sevrage.community.CommunityPostCommentRepository commentRepository;
+    private final com.neuralconsult.sevrage.community.CommunityPostReactionRepository reactionRepository;
     private final PasswordEncoder passwordEncoder;
     private final Random random = new Random();
 
@@ -69,7 +76,15 @@ public class DemoAccountSeeder implements ApplicationRunner {
                              DailyReportRepository dailyReportRepository, SevragePlanRepository sevragePlanRepository,
                              ConsultationReportRepository consultationReportRepository, AppointmentRepository appointmentRepository,
                              AiGlobalSummaryRepository aiGlobalSummaryRepository, AiPhaseSummaryRepository aiPhaseSummaryRepository,
-                             AiPlanCandidateRepository aiPlanCandidateRepository, PasswordEncoder passwordEncoder) {
+                             AiPlanCandidateRepository aiPlanCandidateRepository,
+                             com.neuralconsult.sevrage.onboarding.OnboardingRepository onboardingRepository,
+                             com.neuralconsult.sevrage.community.CommunityServerRepository serverRepository,
+                             com.neuralconsult.sevrage.community.CommunityChannelRepository channelRepository,
+                             com.neuralconsult.sevrage.community.CommunityMemberRepository memberRepository,
+                             com.neuralconsult.sevrage.community.CommunityPostRepository postRepository,
+                             com.neuralconsult.sevrage.community.CommunityPostCommentRepository commentRepository,
+                             com.neuralconsult.sevrage.community.CommunityPostReactionRepository reactionRepository,
+                             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.doctorProfileRepository = doctorProfileRepository;
         this.patientProfileRepository = patientProfileRepository;
@@ -83,16 +98,25 @@ public class DemoAccountSeeder implements ApplicationRunner {
         this.aiGlobalSummaryRepository = aiGlobalSummaryRepository;
         this.aiPhaseSummaryRepository = aiPhaseSummaryRepository;
         this.aiPlanCandidateRepository = aiPlanCandidateRepository;
+        this.onboardingRepository = onboardingRepository;
+        this.serverRepository = serverRepository;
+        this.channelRepository = channelRepository;
+        this.memberRepository = memberRepository;
+        this.postRepository = postRepository;
+        this.commentRepository = commentRepository;
+        this.reactionRepository = reactionRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         resetDemoPasswords();
+        seedCommunityDataIfNotExists();
+        ensureEssentialDemoDataEnriched();
 
         try {
-            if (userRepository.findByEmailIgnoreCase("tantaniayman0@gmail.com").isPresent()) {
-                log.info("✅ Demo data already exists, skipping full seeding (passwords reset).");
+            if (userRepository.findByEmailIgnoreCase("tantaniayman0@gmail.com").isPresent() && dailyReportRepository.count() > 10) {
+                log.info("✅ Demo clinical data already exists, skipping full seeding (passwords reset).");
                 return;
             }
 
@@ -455,4 +479,244 @@ public class DemoAccountSeeder implements ApplicationRunner {
             assignmentRepository.save(a);
         }
     }
+
+    private void seedCommunityDataIfNotExists() {
+        try {
+            if (serverRepository.count() > 0 && postRepository.count() > 0) {
+                return;
+            }
+
+            log.info("🌐 Seeding Reddit-style community spaces, posts, and interactions...");
+
+            User doctor = userRepository.findByEmailIgnoreCase("ayman.tantani@uit.ac.ma").orElse(null);
+            if (doctor == null) return;
+
+            User patientSamy = userRepository.findByEmailIgnoreCase("tantaniayman0@gmail.com").orElse(doctor);
+            User patientYasmine = userRepository.findByEmailIgnoreCase("aymantantani18@gmail.com").orElse(doctor);
+            User patientKarim = userRepository.findByEmailIgnoreCase("projetfinetude4@gmail.com").orElse(doctor);
+            User doctorLahlou = userRepository.findByEmailIgnoreCase("dr.lahlou@neural.ma").orElse(doctor);
+
+            // Configure nice pseudonyms and badges
+            doctor.setCommunityUsername("dr_tantani");
+            doctor.setVerifiedBadge(true);
+            doctor.setCommunityBio("Tabacologue & Addictologue Référent NeuralConsult.");
+            userRepository.save(doctor);
+
+            doctorLahlou.setCommunityUsername("dr_lahlou");
+            doctorLahlou.setVerifiedBadge(true);
+            doctorLahlou.setCommunityBio("Cardiologue & Prévention cardio-vasculaire.");
+            userRepository.save(doctorLahlou);
+
+            patientSamy.setCommunityUsername("samy_zen");
+            patientSamy.setCommunityBio("En sevrage depuis 1 mois. Objectif : marathon sans fumée !");
+            userRepository.save(patientSamy);
+
+            patientYasmine.setCommunityUsername("yasmine_m");
+            patientYasmine.setCommunityBio("Libérée du tabac depuis 2 semaines. Vive la respiration !");
+            userRepository.save(patientYasmine);
+
+            patientKarim.setCommunityUsername("karim_courage");
+            patientKarim.setCommunityBio("Sevrage actif avec patchs et sport.");
+            userRepository.save(patientKarim);
+
+            // Sub-communities (Subreddits)
+            com.neuralconsult.sevrage.community.CommunityServer rVictoires = createSubreddit("r/victoires_sevrage", "Partagez vos étapes, jours sans fumer, économies et trophées !", doctor);
+            com.neuralconsult.sevrage.community.CommunityServer rEntraide = createSubreddit("r/entraide_urgences", "Besoin d'aide immédiate, pics d'envie (craving) et soutien bienveillant.", doctor);
+            com.neuralconsult.sevrage.community.CommunityServer rConseils = createSubreddit("r/conseils_tabacologues", "Recommandations médicales, science du sevrage, sommeil et gestion de l'appétit.", doctor);
+            com.neuralconsult.sevrage.community.CommunityServer rTns = createSubreddit("r/substituts_tns", "Retours d'expérience sur les patchs, gommes, inhaleurs et varénicline.", doctor);
+            com.neuralconsult.sevrage.community.CommunityServer rSport = createSubreddit("r/sport_et_bienetre", "Gestion du stress par le sport, la cohérence cardiaque et la relaxation.", doctor);
+
+            // Post 1: Victoire J+30
+            com.neuralconsult.sevrage.community.CommunityPost post1 = new com.neuralconsult.sevrage.community.CommunityPost();
+            post1.setAuthor(patientSamy);
+            post1.setServer(rVictoires);
+            post1.setTitle("Aujourd'hui cela fait exactement 30 jours sans aucune cigarette ! Mon souffle et mon énergie sont de retour 🫁");
+            post1.setFlair("🏆 Victoire J+30");
+            post1.setContent("Il y a un mois, je fumais 25 cigarettes par jour. Les 5 premiers jours ont été difficiles, mais avec l'aide des patchs 21mg et les séances de respiration cohérence cardiaque sur l'app, j'ai tenu bon. Résultat : 270€ économisés et je monte enfin les escaliers sans être essoufflé ! Courage à tous ceux qui débutent, c'est possible !");
+            post1.setImageUrl("https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=80");
+            com.neuralconsult.sevrage.community.CommunityPost savedPost1 = postRepository.save(post1);
+
+            addComment(savedPost1, doctor, "Félicitations Samy ! Le cap des 30 jours est un tournant majeur sur le plan de la réactivité bronchique et de la normalisation du monoxyde de carbone. Continuez sur ce rythme !");
+            addComment(savedPost1, patientYasmine, "Bravo Samy, tu me motives énormément ! J'en suis à J+14 et ton message me donne la force pour aujourd'hui.");
+            addReaction(savedPost1, doctor, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.UPVOTE);
+            addReaction(savedPost1, patientYasmine, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.LOVE);
+            addReaction(savedPost1, patientKarim, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.FIRE);
+
+            // Post 2: Conseil Médical
+            com.neuralconsult.sevrage.community.CommunityPost post2 = new com.neuralconsult.sevrage.community.CommunityPost();
+            post2.setAuthor(doctorLahlou);
+            post2.setServer(rConseils);
+            post2.setTitle("Craving du matin et café : pourquoi cette envie est la plus violente et comment la neutraliser ☕");
+            post2.setFlair("🩺 Conseil Médecin");
+            post2.setContent("Le pic d'envie au réveil est dû à la chute nocturne du taux plasmatique de nicotine combinée à l'ancrage comportemental café-cigarette.\n\n💡 **Astuce clinique :** Prenez votre substitut oral (gomme ou pastille) 10 minutes AVANT votre café, ou changez temporairement de boisson (thé vert, citron chaud). Le cerveau déconditionne le réflexe en moins de 3 semaines !");
+            post2.setImageUrl("https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80");
+            com.neuralconsult.sevrage.community.CommunityPost savedPost2 = postRepository.save(post2);
+
+            addComment(savedPost2, patientKarim, "Merci infiniment Docteur ! C'était mon plus gros point faible, je vais appliquer la pastille 10 min avant dès demain matin.");
+            addReaction(savedPost2, doctor, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.UPVOTE);
+            addReaction(savedPost2, patientSamy, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.INSIGHT);
+            addReaction(savedPost2, patientYasmine, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.UPVOTE);
+
+            // Post 3: Urgence Craving
+            com.neuralconsult.sevrage.community.CommunityPost post3 = new com.neuralconsult.sevrage.community.CommunityPost();
+            post3.setAuthor(patientKarim);
+            post3.setServer(rEntraide);
+            post3.setTitle("Grosse envie soudaine après une journée de travail stressante... J'ai besoin de force 🚨");
+            post3.setFlair("🆘 Urgence Craving");
+            post3.setContent("La journée a été très lourde au bureau et mon ancien réflexe était d'allumer 3 cigarettes d'affilée en rentrant. Là je suis dans ma voiture, la tentation est forte. J'ai lancé le mode SOS de l'application et je poste ici pour m'occuper l'esprit.");
+            com.neuralconsult.sevrage.community.CommunityPost savedPost3 = postRepository.save(post3);
+
+            addComment(savedPost3, doctor, "Karim, respire calmement selon le protocole 4-7-8 pendant 3 minutes. Le pic de craving ne dure jamais plus de 5 minutes. Bois une gorgée d'eau fraîche, tu as déjà accompli de grandes choses !");
+            addComment(savedPost3, patientSamy, "On est avec toi Karim ! Ne lâche rien, dans 5 minutes l'envie sera passée. Mets de la musique et sors marcher un coup !");
+            addReaction(savedPost3, doctor, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.SUPPORT);
+            addReaction(savedPost3, patientSamy, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.SUPPORT);
+
+            // Post 4: Sport et Bien-être
+            com.neuralconsult.sevrage.community.CommunityPost post4 = new com.neuralconsult.sevrage.community.CommunityPost();
+            post4.setAuthor(patientYasmine);
+            post4.setServer(rSport);
+            post4.setTitle("Reprise de la course à pied à J+14 : premier 5km couru sans m'arrêter ! 🏃‍♀️");
+            post4.setFlair("🧘 Sport & Bien-être");
+            post4.setContent("Il y a 2 semaines, faire 500m en trottinant me brûlait les poumons. Ce matin, 5 kilomètres en 32 minutes avec le sourire. Le corps a une capacité de régénération absolument extraordinaire. Ne doutez jamais de votre corps !");
+            post4.setImageUrl("https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop&q=80");
+            com.neuralconsult.sevrage.community.CommunityPost savedPost4 = postRepository.save(post4);
+
+            addReaction(savedPost4, doctor, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.FIRE);
+            addReaction(savedPost4, patientSamy, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.CLAP);
+            addReaction(savedPost4, patientKarim, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType.UPVOTE);
+
+            // Post 5: Substituts TNS
+            com.neuralconsult.sevrage.community.CommunityPost post5 = new com.neuralconsult.sevrage.community.CommunityPost();
+            post5.setAuthor(patientSamy);
+            post5.setServer(rTns);
+            post5.setTitle("Mon retour d'expérience : combiner patch 14mg + pastilles 2mg en secours");
+            post5.setFlair("💊 Substituts & TNS");
+            post5.setContent("Pour ceux qui hésitent entre patch seul ou combiné : mon tabacologue m'a prescrit un patch 14mg continu + pastilles 2mg en secours. La combinaison fait toute la différence pendant les moments de convivialité ou après les repas !");
+            postRepository.save(post5);
+
+            log.info("✅ Reddit-style community seeded successfully with subreddits and realistic posts!");
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to seed community data: {}", e.getMessage());
+        }
+    }
+
+    private com.neuralconsult.sevrage.community.CommunityServer createSubreddit(String name, String description, User creator) {
+        return serverRepository.findByNameIgnoreCase(name).orElseGet(() -> {
+            com.neuralconsult.sevrage.community.CommunityServer s = new com.neuralconsult.sevrage.community.CommunityServer();
+            s.setName(name);
+            s.setDescription(description);
+            s.setCreatedByUser(creator);
+            com.neuralconsult.sevrage.community.CommunityServer saved = serverRepository.save(s);
+
+            com.neuralconsult.sevrage.community.CommunityChannel ch = new com.neuralconsult.sevrage.community.CommunityChannel();
+            ch.setServer(saved);
+            ch.setName("discussions");
+            ch.setDescription("Fil de discussions pour " + name);
+            channelRepository.save(ch);
+            return saved;
+        });
+    }
+
+    private void addComment(com.neuralconsult.sevrage.community.CommunityPost post, User author, String content) {
+        com.neuralconsult.sevrage.community.CommunityPostComment c = new com.neuralconsult.sevrage.community.CommunityPostComment();
+        c.setPost(post);
+        c.setAuthor(author);
+        c.setContent(content);
+        commentRepository.save(c);
+    }
+
+    private void addReaction(com.neuralconsult.sevrage.community.CommunityPost post, User user, com.neuralconsult.sevrage.community.CommunityPostReaction.ReactionType type) {
+        com.neuralconsult.sevrage.community.CommunityPostReaction r = new com.neuralconsult.sevrage.community.CommunityPostReaction();
+        r.setPost(post);
+        r.setUser(user);
+        r.setType(type);
+        reactionRepository.save(r);
+    }
+
+    private void ensureEssentialDemoDataEnriched() {
+        try {
+            User patientUser = userRepository.findByEmailIgnoreCase("tantaniayman0@gmail.com").orElse(null);
+            User doctorUser = userRepository.findByEmailIgnoreCase("ayman.tantani@uit.ac.ma").orElse(null);
+            if (patientUser == null || doctorUser == null) return;
+
+            PatientProfile patient = patientProfileRepository.findByUser(patientUser).orElse(null);
+            DoctorProfile doctor = doctorProfileRepository.findByUser(doctorUser).orElse(null);
+            if (patient == null || doctor == null) return;
+
+            // 1. Ensure SevragePlan exists
+            if (sevragePlanRepository.findByPatientProfile(patient).isEmpty()) {
+                SevragePlan plan = new SevragePlan();
+                plan.setPatientProfile(patient);
+                plan.setIntensity(SevragePlan.PlanIntensity.MODERATE);
+                plan.setSummary("Plan de sevrage personnalisé avec substitution nicotinique combinée (patch transdermique 21mg + gommes 2mg) et thérapie comportementale active.");
+                plan.setNrtRecommendation("Patch 21mg/24h le matin au réveil + gommes 2mg en cas de pic d'envie aigu (max 8 gommes/jour).");
+                plan.setBehavioralRecommendations("Séance de respiration 4-7-8 avant chaque café matinal, marche active quotidienne de 20 minutes, réhydratation réflexe lors des envies.");
+                plan.setFollowUpPlan("Téléconsultation de contrôle tous les 15 jours avec mesure du CO expiré et adaptation du palier nicotinique.");
+                plan.setRelapseProtocol("En cas de forte tentation ou de faux-pas, activer immédiatement le mode SOS Envie dans l'application et contacter le Dr. Tantani.");
+                plan.setStartDate(LocalDate.now().minusDays(30));
+                plan.setTargetQuitDate(LocalDate.now().minusDays(20));
+                plan.setSteps(List.of(
+                    "Étape 1 : Cartographie des déclencheurs et préparation de l'environnement sans tabac",
+                    "Étape 2 : Pose du premier patch 21mg et démarrage du journal quotidien",
+                    "Étape 3 : Passage du cap critique des 7 premiers jours sans aucune cigarette",
+                    "Étape 4 : Déconditionnement du rituel café-tabac avec les substituts oraux",
+                    "Étape 5 : Consolidation de l'abstinence et stabilisation du souffle"
+                ));
+                sevragePlanRepository.save(plan);
+                log.info("✅ SevragePlan seeded for Youssef El Fassi");
+            }
+
+            // 2. Ensure OnboardingAssessment exists
+            if (onboardingRepository.findByPatientProfile(patient).isEmpty()) {
+                com.neuralconsult.sevrage.onboarding.OnboardingAssessment ob = new com.neuralconsult.sevrage.onboarding.OnboardingAssessment();
+                ob.setPatientProfile(patient);
+                ob.setConsultationObjective(com.neuralconsult.sevrage.onboarding.OnboardingAssessment.ConsultationObjective.STOP_COMPLETELY);
+                ob.setProfessionalStatus(com.neuralconsult.sevrage.onboarding.OnboardingAssessment.ProfessionalStatus.ACTIVE);
+                ob.setEducationLevel(com.neuralconsult.sevrage.onboarding.OnboardingAssessment.EducationLevel.BAC_PLUS_2);
+                ob.setReferralSource(com.neuralconsult.sevrage.onboarding.OnboardingAssessment.ReferralSource.PERSONAL_DECISION);
+                ob.setIncomeBracket(com.neuralconsult.sevrage.onboarding.OnboardingAssessment.IncomeBracket.FROM_2001_TO_3000);
+                ob.setPhysicalActivityLevel(com.neuralconsult.sevrage.onboarding.OnboardingAssessment.PhysicalActivityLevel.ONE_TO_TWO_HOURS);
+                ob.setSmokesDaily(true);
+                ob.setManufacturedCigarettesPerDay(15);
+                ob.setWeeklyTobaccoSpend(290);
+                ob.setMotivationStage(4);
+                ob.setMotivationScore(9);
+                ob.setConfidenceScore(8);
+                ob.setSmokingReasonStress(8);
+                ob.setSmokingReasonConviviality(7);
+                ob.setSmokingReasonAutomatic(6);
+                ob.setSmokingReasonPleasure(5);
+                ob.setQuitReasons("Amélioration du souffle, préservation de la santé cardio-vasculaire, économies financières importantes et protection de ma famille.");
+                ob.setQuitFears("Peur de la prise de poids et des pics d'irritabilité les premières semaines.");
+                ob.setTriggers("Café du matin, pause au travail avec collègues fumeurs, soirées et fins de repas.");
+                onboardingRepository.save(ob);
+                log.info("✅ OnboardingAssessment seeded for Youssef El Fassi");
+            }
+
+            // 3. Ensure Upcoming Confirmed Teleconsultation exists
+            boolean hasUpcoming = appointmentRepository.findAll().stream()
+                .anyMatch(a -> a.getPatientProfile().getId().equals(patient.getId()) && a.getStartsAt().isAfter(LocalDateTime.now()));
+            if (!hasUpcoming) {
+                Appointment upcomingApt = new Appointment();
+                upcomingApt.setPatientProfile(patient);
+                upcomingApt.setDoctorProfile(doctor);
+                upcomingApt.setStartsAt(LocalDateTime.now().plusDays(3).withHour(15).withMinute(0).withSecond(0));
+                upcomingApt.setDurationMinutes(30);
+                upcomingApt.setStatus(Appointment.Status.CONFIRMED);
+                upcomingApt.setReason("Consultation de suivi M+1 : Bilan biologique, contrôle du monoxyde de carbone et consolidation du sevrage.");
+                upcomingApt.setDoctorNote("Patient très motivé. Prévoir vérification de l'adhésion au patch 14mg et maintien des exercices de cohérence cardiaque.");
+                upcomingApt.setPatientNote("Le souffle s'est nettement amélioré, les envies du matin ont quasiment disparu.");
+                upcomingApt.setMeetingProvider("JITSI");
+                upcomingApt.setMeetingRoomName("NeuralConsult-Sevrage-Suivi-Youssef-Tantani");
+                upcomingApt.setMeetingJoinUrl("https://meet.jit.si/NeuralConsult-Sevrage-Suivi-Youssef-Tantani");
+                upcomingApt.setMeetingLinkSentAt(java.time.Instant.now());
+                appointmentRepository.save(upcomingApt);
+                log.info("✅ Upcoming Teleconsultation seeded for Youssef El Fassi & Dr. Tantani");
+            }
+
+        } catch (Exception e) {
+            log.warn("⚠️ Error enriching essential demo data: {}", e.getMessage());
+        }
+    }
 }
+

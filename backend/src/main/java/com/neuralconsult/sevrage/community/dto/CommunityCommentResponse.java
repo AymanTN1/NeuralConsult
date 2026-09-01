@@ -1,6 +1,7 @@
 package com.neuralconsult.sevrage.community.dto;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 public record CommunityCommentResponse(
@@ -10,7 +11,12 @@ public record CommunityCommentResponse(
     String authorUsername,
     String authorPhotoUrl,
     String authorRole,
+    boolean authorVerifiedBadge,
     String content,
-    Instant createdAt
+    Instant createdAt,
+    UUID parentCommentId,
+    Map<String, Long> reactions,
+    String myReaction,
+    long upvotesCount
 ) {
 }

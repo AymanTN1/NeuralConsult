@@ -359,8 +359,15 @@ public class AppointmentService {
     if (!endTime.isAfter(startTime)) {
       throw new IllegalArgumentException("L'horaire de fin doit etre apres l'horaire de debut.");
     }
-    if (startTime.plusMinutes(SLOT_MINUTES).isAfter(endTime)) {
-      throw new IllegalArgumentException("Chaque plage doit couvrir au moins un creneau de 20 minutes.");
+    int slotDuration = request.slotDurationMinutes() != null && request.slotDurationMinutes() >= 15
+        ? request.slotDurationMinutes()
+        : SLOT_MINUTES;
+    int bufferMinutes = request.bufferMinutes() != null && request.bufferMinutes() >= 0
+        ? request.bufferMinutes()
+        : 10;
+
+    if (startTime.plusMinutes(slotDuration).isAfter(endTime)) {
+      throw new IllegalArgumentException("Chaque plage doit couvrir au moins un creneau de " + slotDuration + " minutes.");
     }
 
     DoctorAvailability availability = request.id() != null
@@ -373,6 +380,8 @@ public class AppointmentService {
     availability.setStartTime(startTime);
     availability.setEndTime(endTime);
     availability.setActive(request.active() == null || request.active());
+    availability.setBufferMinutes(bufferMinutes);
+    availability.setSlotDurationMinutes(slotDuration);
     return availabilityRepository.save(availability);
   }
 
@@ -445,13 +454,33 @@ public class AppointmentService {
     if (availabilities.isEmpty()) {
       throw new IllegalArgumentException("Ce medecin n'a pas encore ouvert de disponibilites.");
     }
-    LocalTime slotStart = startsAt.toLocalTime();
-    LocalTime slotEnd = slotStart.plusMinutes(SLOT_MINUTES);
-    boolean matches = availabilities.stream().anyMatch(availability ->
-        matchesAvailabilityDate(availability, startsAt.toLocalDate())
-            && !slotStart.isBefore(availability.getStartTime())
-            && !slotEnd.isAfter(availability.getEndTime())
-    );
+    LocalDate targetDate = startsAt.toLocalDate();
+    LocalTime targetTime = startsAt.toLocalTime();
+
+    boolean matches = false;
+    for (DoctorAvailability availability : availabilities) {
+      if (!matchesAvailabilityDate(availability, targetDate)) {
+        continue;
+      }
+      int slotDuration = availability.getSlotDurationMinutes() != null && availability.getSlotDurationMinutes() >= 15
+          ? availability.getSlotDurationMinutes()
+          : SLOT_MINUTES;
+      int buffer = availability.getBufferMinutes() != null && availability.getBufferMinutes() >= 0
+          ? availability.getBufferMinutes()
+          : 10;
+      int step = slotDuration + buffer;
+
+      LocalTime cur = availability.getStartTime();
+      while (!cur.plusMinutes(slotDuration).isAfter(availability.getEndTime())) {
+        if (cur.equals(targetTime)) {
+          matches = true;
+          break;
+        }
+        cur = cur.plusMinutes(step);
+      }
+      if (matches) break;
+    }
+
     if (!matches) {
       throw new IllegalArgumentException("Ce creneau ne fait pas partie des disponibilites ouvertes par le medecin.");
     }
@@ -533,6 +562,14 @@ public class AppointmentService {
     LocalDate endDate = startDate.plusDays(daysAhead);
 
     for (DoctorAvailability availability : availabilities) {
+      int slotDuration = availability.getSlotDurationMinutes() != null && availability.getSlotDurationMinutes() >= 15
+          ? availability.getSlotDurationMinutes()
+          : SLOT_MINUTES;
+      int buffer = availability.getBufferMinutes() != null && availability.getBufferMinutes() >= 0
+          ? availability.getBufferMinutes()
+          : 10;
+      int step = slotDuration + buffer;
+
       List<LocalDate> targetDates = availability.getAvailableDate() != null
           ? List.of(availability.getAvailableDate())
           : enumerateMatchingDates(startDate, endDate, availability.getDayOfWeek());
@@ -541,17 +578,17 @@ public class AppointmentService {
           continue;
         }
         LocalDateTime slot = LocalDateTime.of(date, availability.getStartTime());
-        LocalDateTime lastStart = LocalDateTime.of(date, availability.getEndTime()).minusMinutes(SLOT_MINUTES);
-        while (!slot.isAfter(lastStart)) {
+        LocalDateTime windowClose = LocalDateTime.of(date, availability.getEndTime());
+        while (!slot.plusMinutes(slotDuration).isAfter(windowClose)) {
           if (!slot.isBefore(now) && !occupiedStarts.contains(slot)) {
             slots.add(new AvailableAppointmentSlotResponse(
                 doctorProfile.getId(),
                 doctorProfile.getUser().getFullName(),
                 slot,
-                slot.plusMinutes(SLOT_MINUTES)
+                slot.plusMinutes(slotDuration)
             ));
           }
-          slot = slot.plusMinutes(SLOT_MINUTES);
+          slot = slot.plusMinutes(step);
         }
       }
     }

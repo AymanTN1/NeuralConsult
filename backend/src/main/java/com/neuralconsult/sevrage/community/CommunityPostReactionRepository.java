@@ -10,4 +10,5 @@ public interface CommunityPostReactionRepository extends JpaRepository<Community
   Optional<CommunityPostReaction> findByPostAndUser(CommunityPost post, User user);
   List<CommunityPostReaction> findAllByPost(CommunityPost post);
   List<CommunityPostReaction> findAllByPostAuthorOrderByCreatedAtDesc(User author);
+  long countByPostAuthor(User author);
 }

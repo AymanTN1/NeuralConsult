@@ -124,7 +124,7 @@ class GeminiClient:
             },
         }
 
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:
             response = await client.post(url, json=body)
             try:
                 response.raise_for_status()

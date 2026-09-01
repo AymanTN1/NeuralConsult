@@ -33,8 +33,13 @@ public class CommunityPostReaction extends AuditableEntity {
 
   public enum ReactionType {
     LIKE,
+    UPVOTE,
+    DOWNVOTE,
     LOVE,
     SUPPORT,
+    FIRE,
+    CLAP,
+    INSIGHT,
     LAUGH,
     ANGRY
   }

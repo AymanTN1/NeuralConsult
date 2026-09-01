@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import ConsultationReportForm from "../components/ConsultationReportForm";
 import LungLoader from "../components/LungLoader";
 import Modal from "react-bootstrap/Modal";
@@ -17,7 +17,17 @@ import {
 } from "recharts";
 import api from "../services/api";
 import { chartTheme } from "../theme/chartTheme";
-import InteractiveLung3D from "../components/InteractiveLung3D";
+
+const InteractiveLung3D = lazy(() => import("../components/InteractiveLung3D"));
+
+const Lung3DFallback = () => (
+  <div className="card shadow-sm border-0 rounded-4 p-4 text-center my-3" style={{ minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--nc-panel)" }}>
+    <div className="d-flex flex-column align-items-center gap-2">
+      <div className="spinner-border text-info" role="status" style={{ width: "2rem", height: "2rem" }} />
+      <span className="muted-text small mt-2">Chargement du modèle anatomique...</span>
+    </div>
+  </div>
+);
 
 const emptyForm = {
   city: "",
@@ -941,7 +951,9 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         
         {/* 🫁 Visualisation 3D Interactive de l'Évolution Pulmonaire (Patient) */}
         <div className="mt-3">
-          <InteractiveLung3D diffDays={diffDays} />
+          <Suspense fallback={<Lung3DFallback />}>
+            <InteractiveLung3D diffDays={diffDays} />
+          </Suspense>
         </div>
         <div className="doctor-score-grid mt-3">
           <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(latestFScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>

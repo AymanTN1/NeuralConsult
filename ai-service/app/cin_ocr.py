@@ -1,5 +1,7 @@
 import io
 import os
+import re
+import json
 import base64
 from typing import Optional
 import google.generativeai as genai
@@ -64,7 +66,6 @@ async def ocr_cin(file: UploadFile = File(...)):
         text = response.text
         
         # Simple JSON extraction from response
-        import json
         # Find JSON block
         json_match = re.search(r"\{.*\}", text, re.DOTALL)
         if json_match:
@@ -94,5 +95,3 @@ async def ocr_cin(file: UploadFile = File(...)):
     except Exception as e:
         print(f"OCR Error: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur OCR (Gemini) : {str(e)}")
-
-import re

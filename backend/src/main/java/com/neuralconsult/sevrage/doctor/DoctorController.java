@@ -352,15 +352,14 @@ public class DoctorController {
         && patientProfile.isOnboardingComplete()
         && patientProfile.isTestsComplete()
         && patientProfile.isJournalComplete()) {
-      try {
-        clinicalIntelligenceService.generateAndSave(patientProfile.getUser());
-        phaseSummaries = aiPhaseSummaryRepository.findAllByPatientProfileOrderByPhaseIdAsc(patientProfile);
-        globalSummary = aiGlobalSummaryRepository.findByPatientProfile(patientProfile).orElse(null);
-        planCandidates = aiPlanCandidateRepository.findAllByPatientProfileOrderByTrackAsc(patientProfile);
-        validatedPlan = validatedTreatmentPlanRepository.findByPatientProfile(patientProfile).orElse(null);
-      } catch (Exception ignored) {
-        // Le dossier reste consultable meme si la regeneration IA echoue ponctuellement.
-      }
+      final User patientUser = patientProfile.getUser();
+      java.util.concurrent.CompletableFuture.runAsync(() -> {
+        try {
+          clinicalIntelligenceService.generateAndSave(patientUser);
+        } catch (Exception ignored) {
+          // Le dossier reste consultable meme si la generation IA en arriere-plan echoue
+        }
+      });
     }
     List<AppointmentResponse> appointments = appointmentService.listForDoctor(user).stream()
         .filter(appointment -> appointment.getPatientProfile().getId().equals(patientProfileId))

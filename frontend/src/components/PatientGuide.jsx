@@ -283,6 +283,9 @@ const PatientGuide = () => {
           width: bubbleWidth
         }}
       >
+        <div className="cloud-puff puff-1" />
+        <div className="cloud-puff puff-2" />
+        <div className="cloud-puff puff-3" />
         <div className="patient-guide-kicker">
           <span className="d-flex align-items-center gap-2">
             <span className="guide-dot" />

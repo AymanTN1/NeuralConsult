@@ -25,6 +25,10 @@ public class CommunityPostComment extends AuditableEntity {
   @JoinColumn(name = "author_user_id", nullable = false)
   private User author;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parent_comment_id")
+  private CommunityPostComment parentComment;
+
   @Column(name = "content", nullable = false, length = 2400)
   private String content;
 }

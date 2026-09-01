@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import api from "../services/api";
 import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 import { requestNotificationPermission, processIncomingNotificationsForNativeAlerts } from "../services/desktopNotifications";
@@ -49,11 +50,16 @@ const pageMeta = {
   "/profile": {
     eyebrow: "Identite patient",
     title: "Profil personnel"
+  },
+  "/clinical-guidance": {
+    eyebrow: "Ressources Cliniques",
+    title: "Assistant Clinique RAG & Guidelines"
   }
 };
 
 const ClinicalTopbar = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const adminMode = isAdmin(user);
@@ -72,6 +78,8 @@ const ClinicalTopbar = () => {
           ? { eyebrow: "Conversations assistees", title: "Alertes IA et suivi psychologique continu" }
           : location.pathname === "/communities"
             ? { eyebrow: "Communautes cliniques", title: "Groupes d'entraide et moderation" }
+            : location.pathname === "/clinical-guidance"
+              ? { eyebrow: "Ressources Cliniques", title: "Assistant Clinique RAG & Guidelines" }
       : { eyebrow: "Espace medecin", title: "Demandes, dossiers et validation de plans" }
     : (pageMeta[location.pathname] || pageMeta["/dashboard"]);
   const riskScore = Math.max(
@@ -121,7 +129,7 @@ const ClinicalTopbar = () => {
   return (
     <header className="clinical-topbar">
       <div className="d-flex align-items-center gap-3">
-        <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
+        <img className="d-lg-none" src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover' }} />
         <div>
           <div className="topbar-eyebrow">{meta.eyebrow}</div>
           <h1 className="topbar-title">{meta.title}</h1>
@@ -129,6 +137,24 @@ const ClinicalTopbar = () => {
       </div>
 
       <div className="topbar-actions">
+        <button
+          className="theme-toggle-btn"
+          onClick={toggleTheme}
+          aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
+          title={isDark ? "Mode clair" : "Mode sombre"}
+        >
+          {isDark ? (
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-sun-fill text-warning" />
+              <span className="theme-toggle-label d-none d-md-inline">Clair</span>
+            </span>
+          ) : (
+            <span className="d-flex align-items-center gap-2">
+              <i className="bi bi-moon-stars-fill text-primary" />
+              <span className="theme-toggle-label d-none d-md-inline">Sombre</span>
+            </span>
+          )}
+        </button>
         <div className={`clinical-score-chip severity-${riskScore >= 11 ? "critical" : riskScore >= 8 ? "warning" : "stable"}`}>
           <span className="clinical-score-chip-label">{doctorMode || adminMode ? "Role" : "Repere"}</span>
           <span className="clinical-score-chip-value">{adminMode ? "ADMIN" : doctorMode ? "MD" : riskScore}</span>

@@ -164,6 +164,8 @@ const Appointments = () => {
     availableDate: todayDateValue(),
     startTime: "09:00",
     endTime: "12:00",
+    bufferMinutes: 10,
+    slotDurationMinutes: 20,
     active: true
   });
   const [urgentForm, setUrgentForm] = useState({
@@ -447,29 +449,67 @@ const hasReachedWeeklyLimit = (dateValue) => {
     }
   };
 
+  const calculateSlotPreview = (startTime, endTime, slotDuration = 20, buffer = 10) => {
+    if (!startTime || !endTime) return { count: 0, slots: [] };
+    const [startH, startM] = startTime.split(":").map(Number);
+    const [endH, endM] = endTime.split(":").map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    const step = Number(slotDuration) + Number(buffer);
+
+    let cur = startMinutes;
+    const slots = [];
+    while (cur + Number(slotDuration) <= endMinutes) {
+      const sH = String(Math.floor(cur / 60)).padStart(2, "0");
+      const sM = String(cur % 60).padStart(2, "0");
+      const eH = String(Math.floor((cur + Number(slotDuration)) / 60)).padStart(2, "0");
+      const eM = String((cur + Number(slotDuration)) % 60).padStart(2, "0");
+      slots.push(`${sH}:${sM} - ${eH}:${eM}`);
+      cur += step;
+    }
+    return { count: slots.length, slots };
+  };
+
   const saveAvailability = async (event) => {
     event.preventDefault();
     setMessage(null);
     setSavingAvailability(true);
     try {
-      await api.post("/api/appointments/availability/doctor", availabilityForm);
+      const response = await api.post("/api/appointments/availability/doctor", availabilityForm);
+      const savedAvailability = response.data;
+
+      // Mise à jour immédiate du state local pour affichage instantané sans recharger la page
+      if (savedAvailability && savedAvailability.id) {
+        setAvailabilities((prev) => {
+          const index = prev.findIndex((a) => a.id === savedAvailability.id);
+          if (index >= 0) {
+            const next = [...prev];
+            next[index] = savedAvailability;
+            return next;
+          }
+          return [savedAvailability, ...prev];
+        });
+      }
+
       setMessage({
         type: "success",
         text: availabilityForm.id
-          ? "Disponibilite modifiee. Les patients verront la nouvelle plage sur le calendrier."
-          : "Disponibilite ajoutee. Les patients verront maintenant ce jour et ces creneaux sur leur calendrier."
+          ? "Disponibilité modifiée avec succès. Les créneaux ont été recalculés."
+          : "Disponibilité ajoutée avec succès. Elle apparaît immédiatement dans votre planning."
       });
       setAvailabilityForm({
         id: "",
         availableDate: todayDateValue(),
         startTime: "09:00",
         endTime: "12:00",
+        bufferMinutes: 10,
+        slotDurationMinutes: 20,
         active: true
       });
       await load();
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setMessage({ type: "error", text: apiError || "Impossible d'enregistrer cette disponibilite." });
+      setMessage({ type: "error", text: apiError || "Impossible d'enregistrer cette disponibilité." });
     } finally {
       setSavingAvailability(false);
     }
@@ -481,11 +521,13 @@ const hasReachedWeeklyLimit = (dateValue) => {
       availableDate: availability.availableDate || todayDateValue(),
       startTime: availability.startTime?.slice(0, 5) || "09:00",
       endTime: availability.endTime?.slice(0, 5) || "12:00",
+      bufferMinutes: availability.bufferMinutes !== undefined ? availability.bufferMinutes : 10,
+      slotDurationMinutes: availability.slotDurationMinutes || 20,
       active: availability.active
     });
     setMessage({
       type: "success",
-      text: "Mode modification actif. Ajuste la plage puis enregistre pour mettre a jour ce creneau."
+      text: "Mode modification actif. Ajuste la plage ou la pause inter-séances puis enregistre."
     });
   };
 
@@ -495,6 +537,8 @@ const hasReachedWeeklyLimit = (dateValue) => {
       availableDate: todayDateValue(),
       startTime: "09:00",
       endTime: "12:00",
+      bufferMinutes: 10,
+      slotDurationMinutes: 20,
       active: true
     });
   };
@@ -569,7 +613,8 @@ const hasReachedWeeklyLimit = (dateValue) => {
     setMessage(null);
     try {
       await api.post(`/api/appointments/availability/doctor/${availabilityId}/delete`);
-      setMessage({ type: "success", text: "Disponibilite supprimee." });
+      setAvailabilities((prev) => prev.filter((a) => a.id !== availabilityId));
+      setMessage({ type: "success", text: "Disponibilité supprimée avec succès." });
       if (availabilityForm.id === availabilityId) {
         resetAvailabilityForm();
       }
@@ -886,11 +931,21 @@ const hasReachedWeeklyLimit = (dateValue) => {
       {doctorMode ? (
         <>
           <section className="card form-card mt-4">
-            <div className="section-title-sm">Disponibilites de teleconsultation</div>
-            <p className="muted-text mt-2">Choisis une date precise depuis le calendrier puis une plage horaire. Tu peux ouvrir des disponibilites plusieurs mois a l'avance, et chaque plage est decoupee automatiquement en seances de 20 minutes.</p>
-            <form className="row g-3 mt-1" onSubmit={saveAvailability}>
-              <div className="col-12 col-md-4">
-                <label className="form-label">Date</label>
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <div className="section-title-sm">Disponibilites de teleconsultation</div>
+                <p className="muted-text mt-1 mb-0">
+                  Configurez vos plages de teleconsultation. Chaque plage est decoupee automatiquement en seances de <strong>20 minutes</strong> avec un <strong>temps de pause (gap)</strong> configurable pour rediger vos notes, ordonnances ou souffler entre deux patients.
+                </p>
+              </div>
+              <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                <i className="bi bi-clock-history me-1" /> Seances 20 min + Pause
+              </span>
+            </div>
+
+            <form className="row g-3 mt-2" onSubmit={saveAvailability}>
+              <div className="col-12 col-md-3">
+                <label className="form-label fw-semibold">Date</label>
                 <input
                   className="form-control"
                   type="date"
@@ -900,25 +955,42 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   required
                 />
               </div>
-              <div className="col-12 col-md-3">
-                <label className="form-label">Heure de debut</label>
+              <div className="col-6 col-md-2">
+                <label className="form-label fw-semibold">Heure de debut</label>
                 <input
                   className="form-control"
                   type="time"
                   step={300}
                   value={availabilityForm.startTime}
                   onChange={(event) => setAvailabilityForm((previous) => ({ ...previous, startTime: event.target.value }))}
+                  required
                 />
               </div>
-              <div className="col-12 col-md-3">
-                <label className="form-label">Heure de fin</label>
+              <div className="col-6 col-md-2">
+                <label className="form-label fw-semibold">Heure de fin</label>
                 <input
                   className="form-control"
                   type="time"
                   step={300}
                   value={availabilityForm.endTime}
                   onChange={(event) => setAvailabilityForm((previous) => ({ ...previous, endTime: event.target.value }))}
+                  required
                 />
+              </div>
+              <div className="col-12 col-md-3">
+                <label className="form-label fw-semibold">
+                  Pause inter-seances (Gap)
+                </label>
+                <select
+                  className="form-select"
+                  value={availabilityForm.bufferMinutes}
+                  onChange={(event) => setAvailabilityForm((previous) => ({ ...previous, bufferMinutes: Number(event.target.value) }))}
+                >
+                  <option value={5}>5 min (Pause minimale)</option>
+                  <option value={10}>10 min (Recommande - Synthese dossier)</option>
+                  <option value={15}>15 min (Pause confort & ordonnance)</option>
+                  <option value={20}>20 min (Pause approfondie)</option>
+                </select>
               </div>
               <div className="col-12 col-md-2 d-flex align-items-end gap-2">
                 <button className="btn btn-success w-100" type="submit" disabled={savingAvailability}>
@@ -928,12 +1000,51 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <button className="btn btn-outline-secondary w-100" type="button" onClick={resetAvailabilityForm}>Annuler</button>
                 ) : null}
               </div>
+
+              {/* Dynamic Preview of Generated Slots with Gap */}
+              {(() => {
+                const preview = calculateSlotPreview(
+                  availabilityForm.startTime,
+                  availabilityForm.endTime,
+                  availabilityForm.slotDurationMinutes || 20,
+                  availabilityForm.bufferMinutes !== undefined ? availabilityForm.bufferMinutes : 10
+                );
+                return (
+                  <div className="col-12">
+                    <div className="p-3 rounded-3 bg-light border border-light-subtle d-flex flex-column gap-2">
+                      <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <span className="fw-semibold text-primary" style={{ fontSize: "0.88rem" }}>
+                          <i className="bi bi-magic me-1" />
+                          Decoupage automatique : <strong>{preview.count} seance{preview.count > 1 ? "s" : ""}</strong> de 20 min avec <strong>{availabilityForm.bufferMinutes} min</strong> de pause inter-seances
+                        </span>
+                        <span className="badge bg-secondary-subtle text-secondary" style={{ fontSize: "0.75rem" }}>
+                          Duree : 20 min | Pause : {availabilityForm.bufferMinutes} min
+                        </span>
+                      </div>
+                      {preview.slots.length > 0 ? (
+                        <div className="d-flex flex-wrap gap-2 mt-1">
+                          {preview.slots.map((s, idx) => (
+                            <span key={idx} className="badge bg-white text-dark border px-2 py-1" style={{ fontSize: "0.82rem", fontWeight: 600 }}>
+                              <i className="bi bi-camera-video me-1 text-primary" />
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted" style={{ fontSize: "0.82rem" }}>
+                          Ajustez l'heure de debut et de fin pour generer au moins une seance de 20 minutes.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </form>
 
             <div className="doctor-table-shell mt-4">
               {availabilities.length === 0 ? (
                 <div className="doctor-dossier-empty-state">
-                  <p className="mb-0">Aucune disponibilite definie pour le moment. Ajoute au moins une plage pour debloquer la reservation cote patient.</p>
+                  <p className="mb-0">Aucune disponibilite definie pour le moment. Ajoutez au moins une plage pour debloquer la reservation cote patient.</p>
                 </div>
               ) : (
                 <table className="table table-borderless align-middle doctor-table appointment-table">
@@ -941,8 +1052,9 @@ const hasReachedWeeklyLimit = (dateValue) => {
                     <tr>
                       <th>Date</th>
                       <th>Jour</th>
-                      <th>Debut</th>
-                      <th>Fin</th>
+                      <th>Plage Horaire</th>
+                      <th>Seance</th>
+                      <th>Pause (Gap)</th>
                       <th>Etat</th>
                       <th className="text-end">Actions</th>
                     </tr>
@@ -952,8 +1064,21 @@ const hasReachedWeeklyLimit = (dateValue) => {
                       <tr key={availability.id}>
                         <td><strong>{availability.availableDate ? formatDate(availability.availableDate) : "-"}</strong></td>
                         <td>{weekdayOptions.find((option) => option.value === availability.dayOfWeek)?.label || availability.dayOfWeek || "-"}</td>
-                        <td>{formatTime(`2000-01-01T${availability.startTime}`)}</td>
-                        <td>{formatTime(`2000-01-01T${availability.endTime}`)}</td>
+                        <td>
+                          <span className="badge bg-light text-dark border">
+                            {formatTime(`2000-01-01T${availability.startTime}`)} - {formatTime(`2000-01-01T${availability.endTime}`)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge bg-primary-subtle text-primary">
+                            {availability.slotDurationMinutes || 20} min
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge bg-info-subtle text-info">
+                            {availability.bufferMinutes !== undefined ? availability.bufferMinutes : 10} min pause
+                          </span>
+                        </td>
                         <td>
                           <span className={`doctor-status-chip ${availability.active ? "status-confirmed" : "status-cancelled"}`}>
                             {availability.active ? "Active" : "Inactive"}

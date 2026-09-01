@@ -10,6 +10,8 @@ public record DoctorAvailabilityResponse(
     String dayOfWeek,
     LocalTime startTime,
     LocalTime endTime,
-    boolean active
+    boolean active,
+    int bufferMinutes,
+    int slotDurationMinutes
 ) {
 }

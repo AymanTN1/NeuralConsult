@@ -4,6 +4,8 @@ import com.neuralconsult.sevrage.common.auditing.AuditableEntity;
 import com.neuralconsult.sevrage.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -14,17 +16,18 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "community_follow")
-public class CommunityFollow extends AuditableEntity {
+@Table(name = "community_comment_reaction")
+public class CommunityCommentReaction extends AuditableEntity {
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "follower_user_id", nullable = false)
-  private User follower;
+  @JoinColumn(name = "comment_id", nullable = false)
+  private CommunityPostComment comment;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "followed_user_id", nullable = false)
-  private User followed;
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-  @Column(name = "active", nullable = false)
-  private boolean active = true;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reaction_type", nullable = false, length = 24)
+  private CommunityPostReaction.ReactionType type = CommunityPostReaction.ReactionType.LIKE;
 }

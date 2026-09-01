@@ -6,7 +6,10 @@ public record CommunityUserProfileResponse(
     CommunityUserSummaryResponse user,
     String bio,
     long followingCount,
+    long followersCount,
     long friendsCount,
+    long karmaScore,
+    String smokeFreeStatus,
     List<CommunityPostResponse> posts
 ) {
 }

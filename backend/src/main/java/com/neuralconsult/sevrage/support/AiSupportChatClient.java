@@ -74,6 +74,11 @@ public class AiSupportChatClient {
         throw new IllegalArgumentException(message, exception);
       }
       throw new IllegalStateException(message, exception);
+    } catch (Exception exception) {
+      throw new IllegalStateException(
+          "Service d'analyse vocale temporairement indisponible. Reessayez dans quelques instants.",
+          exception
+      );
     }
   }
 

@@ -101,29 +101,40 @@ const ClinicalSidebar = () => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="sidebar-brand-wrapper">
-        <div className="sidebar-brand">
-          <div className="brand-main">
-            <div className="brand-mark">
-              <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" />
-            </div>
-            {isExpanded && (
-              <div className="brand-text">
-                <div className="sidebar-eyebrow">Calm Clinical Care</div>
-                <div className="sidebar-title">NeuralConsult</div>
-              </div>
-            )}
+      <div className="sidebar-brand-header">
+        <div className="brand-main">
+          <div className="brand-mark" onClick={toggleSidebar} role="button" title={isCollapsed ? "Déplier le menu" : "NeuralConsult"}>
+            <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="NeuralConsult" />
           </div>
-          
+          {isExpanded && (
+            <div className="brand-text">
+              <span className="sidebar-eyebrow">Calm Clinical Care</span>
+              <span className="sidebar-title">NeuralConsult</span>
+            </div>
+          )}
+        </div>
+        
+        {isExpanded ? (
           <button 
             type="button" 
-            className={`sidebar-master-toggle ${isCollapsed ? "is-mini" : ""}`} 
+            className="sidebar-master-toggle" 
             onClick={toggleSidebar}
-            title={isCollapsed ? "Deplier" : "Replier"}
+            title="Replier le menu"
+            aria-label="Replier le menu"
           >
-            <i className={`bi ${isCollapsed ? "bi-list" : "bi-text-indent-right"}`} />
+            <i className="bi bi-layout-sidebar-inset" />
           </button>
-        </div>
+        ) : (
+          <button 
+            type="button" 
+            className="sidebar-mini-toggle" 
+            onClick={toggleSidebar}
+            title="Déplier le menu"
+            aria-label="Déplier le menu"
+          >
+            <i className="bi bi-list" />
+          </button>
+        )}
       </div>
 
       {isExpanded && (

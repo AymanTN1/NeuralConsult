@@ -1,1667 +1,1528 @@
-import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Modal from "react-bootstrap/Modal";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
-const emptyOverview = {
-  viewer: null,
-  posts: [],
-  servers: [],
-  people: [],
-  pendingInvitations: [],
-  friends: [],
-  conversations: [],
-  activity: []
-};
-
-const sectionItems = [
-  { key: "feed", label: "Pour vous", icon: "bi-house-heart" },
-  { key: "explore", label: "Explorer", icon: "bi-search-heart" },
-  { key: "activity", label: "Activite", icon: "bi-bell" },
-  { key: "messages", label: "Messages", icon: "bi-chat-dots" },
-  { key: "profile", label: "Mon profil", icon: "bi-person-badge" }
+// Fallback initial subreddits
+const DEFAULT_SUBREDDITS = [
+  { id: "all", name: "r/tous", label: "Accueil Global", icon: "bi-globe2", color: "#3b82f6" },
+  { id: "victoires", name: "r/victoires_sevrage", label: "Victoires & Étapes", icon: "bi-trophy-fill", color: "#10b981" },
+  { id: "entraide", name: "r/entraide_urgences", label: "SOS & Urgences Craving", icon: "bi-shield-fill-exclamation", color: "#ef4444" },
+  { id: "conseils", name: "r/conseils_tabacologues", label: "Conseils Médicaux", icon: "bi-heart-pulse-fill", color: "#8b5cf6" },
+  { id: "tns", name: "r/substituts_tns", label: "Substituts & Traitements", icon: "bi-capsule", color: "#f59e0b" },
+  { id: "sport", name: "r/sport_et_bienetre", label: "Sport & Respiration", icon: "bi-lungs-fill", color: "#06b6d4" }
 ];
 
-const formatDate = (value) => {
-  if (!value) return "maintenant";
+const FLAIRS = [
+  { label: "🏆 Victoire J+30", color: "#10b981", bg: "rgba(16, 185, 129, 0.12)" },
+  { label: "🌟 Victoire J+14", color: "#34d399", bg: "rgba(52, 211, 153, 0.12)" },
+  { label: "🆘 Urgence Craving", color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+  { label: "🩺 Conseil Médecin", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.12)" },
+  { label: "💡 Astuce du Jour", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+  { label: "💊 Substituts & TNS", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.12)" },
+  { label: "🧘 Sport & Bien-être", color: "#06b6d4", bg: "rgba(6, 182, 212, 0.12)" },
+  { label: "🔄 Rechute & Courage", color: "#ec4899", bg: "rgba(236, 72, 153, 0.12)" }
+];
+
+const formatDateAgo = (isoDate) => {
+  if (!isoDate) return "à l'instant";
   try {
-    return new Intl.DateTimeFormat("fr-FR", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit"
-    }).format(new Date(value));
-  } catch (error) {
-    return value;
+    const diff = Math.floor((new Date() - new Date(isoDate)) / 1000);
+    if (diff < 60) return "à l'instant";
+    if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
+    if (diff < 604800) return `il y a ${Math.floor(diff / 86400)} j`;
+    return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short" }).format(new Date(isoDate));
+  } catch (e) {
+    return isoDate;
   }
 };
 
-const formatLongDate = (value) => {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    }).format(new Date(value));
-  } catch (error) {
-    return value;
-  }
+const getAvatarLetter = (name, username) => {
+  const str = (username || name || "NC").replace("@", "").trim();
+  return str.slice(0, 2).toUpperCase();
 };
 
-const totalReactions = (post) => Object.values(post?.reactions || {}).reduce((sum, value) => sum + Number(value || 0), 0);
-const loveCount = (post) => Number(post?.reactions?.LOVE || 0);
-
-const userLabel = (user) => user?.name || (user?.username ? `@${user.username}` : "Membre NeuralConsult");
-
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    if (!file) {
-      resolve(null);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Impossible de lire cette image."));
-    reader.readAsDataURL(file);
-  });
-
-const avatarFallback = (value) => {
-  if (!value) return "NC";
-  return value
-    .replace("@", "")
-    .split(/[\s._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("") || "NC";
-};
-
-const Communities = () => {
+export default function Communities() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [overview, setOverview] = useState(emptyOverview);
-  const [activeSection, setActiveSection] = useState("feed");
+  const { user: authUser } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
+
+  // Core Community State
+  const [posts, setPosts] = useState([]);
+  const [servers, setServers] = useState([]);
+  const [people, setPeople] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState(null);
-  const [composer, setComposer] = useState({ content: "", serverId: "", imageUrl: "" });
-  const [profileForm, setProfileForm] = useState({ username: "", profilePhotoUrl: "", bio: "" });
-  const [shareDraft, setShareDraft] = useState({ postId: "", counterpartId: "", message: "" });
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Filters & Navigation
+  const [activeSubreddit, setActiveSubreddit] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("hot"); // hot, new, top, discussed
+  const [activeFlair, setActiveFlair] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Modals & Panels
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showRepostModal, setShowRepostModal] = useState(false);
+  const [targetRepostPost, setTargetRepostPost] = useState(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState({});
-  const [commentDrafts, setCommentDrafts] = useState({});
-  const [chatDraft, setChatDraft] = useState("");
+  const [imageLightboxUrl, setImageLightboxUrl] = useState(null);
+
+  // Post Draft Form
+  const [postDraft, setPostDraft] = useState({
+    title: "",
+    flair: "🏆 Victoire J+30",
+    content: "",
+    imageUrl: "",
+    serverId: ""
+  });
+  const [postTab, setPostTab] = useState("text"); // text, media, link
+  const [repostComment, setRepostComment] = useState("");
+
+  // Comments Inline Management
+  const [expandedComments, setExpandedComments] = useState({});
+  const [commentInputs, setCommentInputs] = useState({});
+  const [replyingTo, setReplyingTo] = useState({}); // { [postId]: parentCommentId }
+
+  // Notifications
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
+  const [showNotifsMenu, setShowNotifsMenu] = useState(false);
+
+  // Reddit Floating Chat Dock
+  const [chatDockOpen, setChatDockOpen] = useState(false);
+  const [activeChatTarget, setActiveChatTarget] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
-  const [messageLoading, setMessageLoading] = useState(false);
-  const [exploreQuery, setExploreQuery] = useState("");
-  const deferredQuery = useDeferredValue(exploreQuery);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [activeStory, setActiveStory] = useState(null);
-  const [showArchives, setShowArchives] = useState(false);
-  const [selectedServerId, setSelectedServerId] = useState(null);
-  const [showCreateServerModal, setShowCreateServerModal] = useState(false);
-  const [showServerSettings, setShowServerSettings] = useState(false);
-  const [serverForm, setServerForm] = useState({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
-  const [creatingServer, setCreatingServer] = useState(false);
-  const [mockMembers, setMockMembers] = useState({});
-  const [showBlockedModal, setShowBlockedModal] = useState(false);
-  const [showComposerModal, setShowComposerModal] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [conversations, setConversations] = useState([]);
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
 
-  const viewer = overview.viewer;
-  const myPosts = useMemo(
-    () => (overview.posts || []).filter((post) => post.author?.id === viewer?.id),
-    [overview.posts, viewer]
-  );
+  // Feedback banner
+  const [feedback, setFeedback] = useState(null);
 
-  const unresolvedInvitations = overview.pendingInvitations || [];
-  const conversations = overview.conversations || [];
-  const friends = overview.friends || [];
-  const discoverPeople = deferredQuery.trim() ? searchResults : overview.people || [];
+  const showToast = (msg, type = "success") => {
+    setFeedback({ msg, type });
+    setTimeout(() => setFeedback(null), 4000);
+  };
 
-  const setToast = (type, text) => setFeedback({ type, text });
-
-  const loadOverview = async () => {
-    setLoading(true);
+  // Load Social Feed & Data
+  const loadCommunityData = async () => {
     try {
-      const { data } = await api.get("/api/communities/social");
-      setOverview(data || emptyOverview);
-      if (data?.viewer) {
-        setProfileForm({
-          username: data.viewer.username || "",
-          profilePhotoUrl: data.viewer.profilePhotoUrl || "",
-          bio: data.viewer.bio || ""
-        });
-        setShowProfileSetup(!data.viewer.profileCompleted);
+      setLoading(true);
+      const [socialRes, notifRes, summaryRes] = await Promise.all([
+        api.get("/api/communities/social").catch(() => ({ data: null })),
+        api.get("/api/notifications").catch(() => ({ data: [] })),
+        api.get("/api/notifications/summary").catch(() => ({ data: { unreadCount: 0 } }))
+      ]);
+
+      if (socialRes?.data) {
+        const data = socialRes.data;
+        setPosts(data.posts || []);
+        setServers(data.servers || []);
+        setPeople(data.people || []);
+        setMyProfile(data.viewer || null);
+        setConversations(data.conversations || []);
       }
-    } catch (error) {
-      setOverview(emptyOverview);
-      setToast("error", "Impossible de charger l'espace communaute.");
+
+      setNotifications(notifRes?.data || []);
+      setUnreadNotifsCount(summaryRes?.data?.unreadCount || 0);
+    } catch (err) {
+      console.error("Error loading community:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadOverview();
+    loadCommunityData();
   }, []);
 
+  // Handle URL Param for Direct Profile or Post Open
   useEffect(() => {
-    const targetChat = searchParams.get("chat");
-    if (!targetChat) {
-      return;
+    const userParam = searchParams.get("user");
+    const usernameParam = searchParams.get("username");
+    if (userParam) {
+      handleOpenUserProfile(userParam);
+    } else if (usernameParam) {
+      handleOpenUserProfileByUsername(usernameParam);
     }
-    const candidate = conversations.find((item) => item.counterpartId === targetChat) || friends.find((item) => item.id === targetChat);
-    if (!candidate) {
-      return;
-    }
-    openConversation(candidate);
-    const next = new URLSearchParams(searchParams);
-    next.delete("chat");
-    setSearchParams(next, { replace: true });
-  }, [conversations, friends, searchParams, setSearchParams]);
+  }, [searchParams]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const query = deferredQuery.trim();
-    if (!query) {
-      setSearchResults([]);
-      return undefined;
-    }
-
-    const load = async () => {
-      setSearching(true);
-      try {
-        const { data } = await api.get(`/api/communities/social/search?query=${encodeURIComponent(query)}`);
-        if (!cancelled) {
-          setSearchResults(data || []);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setSearchResults([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setSearching(false);
-        }
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [deferredQuery]);
-
-  const saveProfile = async (event) => {
-    event?.preventDefault();
-    setSavingProfile(true);
+  // Upvote / Downvote Post
+  const handleVote = async (postId, type) => {
     try {
-      await api.put("/api/communities/social/profile", profileForm);
-      setShowProfileSetup(false);
-      await loadOverview();
-      setToast("success", "Profil communautaire mis a jour.");
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible d'enregistrer ce profil communautaire.");
-    } finally {
-      setSavingProfile(false);
+      const res = await api.post(`/api/communities/social/posts/${postId}/reactions`, { type });
+      if (res?.data) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? res.data : p)));
+      }
+    } catch (err) {
+      showToast("Erreur lors du vote", "danger");
     }
   };
 
-  const handleProfilePhoto = async (event, target = "profile") => {
+  // React to Post with Emoji
+  const handleReaction = async (postId, type) => {
     try {
-      const file = event.target.files?.[0];
-      const dataUrl = await readFileAsDataUrl(file);
-      if (!dataUrl) return;
-      if (dataUrl.length > 1_800_000) {
-        setToast("error", "L'image est trop lourde. Choisis une photo plus legere.");
-        return;
+      const res = await api.post(`/api/communities/social/posts/${postId}/reactions`, { type });
+      if (res?.data) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? res.data : p)));
       }
-      if (target === "profile") {
-        setProfileForm((previous) => ({ ...previous, profilePhotoUrl: dataUrl }));
-      } else {
-        setComposer((previous) => ({ ...previous, imageUrl: dataUrl }));
-      }
-    } catch (error) {
-      setToast("error", "Impossible de charger cette image.");
-    } finally {
-      event.target.value = "";
+    } catch (err) {
+      showToast("Erreur lors de la réaction", "danger");
     }
   };
 
-  const publishPost = async (event) => {
-    event.preventDefault();
-    setPublishing(true);
+  // Comment on Post (or Reply to a comment)
+  const handleAddComment = async (postId) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+    const parentId = replyingTo[postId] || null;
+
     try {
-      await api.post("/api/communities/social/posts", {
-        content: composer.content,
-        serverId: composer.serverId || null,
-        imageUrl: composer.imageUrl || null
+      const res = await api.post(`/api/communities/social/posts/${postId}/comments`, {
+        content: text,
+        parentCommentId: parentId
       });
-      setComposer({ content: "", serverId: "", imageUrl: "" });
-      await loadOverview();
-      setToast("success", "Post publie dans la communaute.");
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible de publier ce post.");
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const toggleLove = async (postId) => {
-    try {
-      await api.post(`/api/communities/social/posts/${postId}/reactions`, { type: "LOVE" });
-      await loadOverview();
-    } catch (error) {
-      setToast("error", "Impossible de mettre a jour le coeur.");
-    }
-  };
-
-  const toggleComments = (postId) => {
-    setCommentsOpen((previous) => ({ ...previous, [postId]: !previous[postId] }));
-  };
-
-  const commentOnPost = async (postId) => {
-    const content = (commentDrafts[postId] || "").trim();
-    if (!content) return;
-    try {
-      await api.post(`/api/communities/social/posts/${postId}/comments`, { content });
-      setCommentDrafts((previous) => ({ ...previous, [postId]: "" }));
-      setCommentsOpen((previous) => ({ ...previous, [postId]: true }));
-      await loadOverview();
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible d'ajouter ce commentaire.");
-    }
-  };
-
-  const toggleFollow = async (userId) => {
-    try {
-      await api.post(`/api/communities/social/users/${userId}/follow`);
-      await loadOverview();
-      if (selectedProfile?.user?.id === userId) {
-        await openProfile(userId);
+      if (res?.data) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? res.data : p)));
+        setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+        setReplyingTo((prev) => ({ ...prev, [postId]: null }));
+        setExpandedComments((prev) => ({ ...prev, [postId]: true }));
+        showToast("Commentaire publié !");
       }
-    } catch (error) {
-      setToast("error", "Impossible de modifier le suivi.");
+    } catch (err) {
+      showToast("Impossible d'ajouter le commentaire", "danger");
     }
   };
 
-  const sendInvitation = async (userId) => {
+  // React to Comment
+  const handleCommentReaction = async (postId, commentId, type = "UPVOTE") => {
     try {
-      await api.post(`/api/communities/social/users/${userId}/connections`);
-      await loadOverview();
-      if (selectedProfile?.user?.id === userId) {
-        await openProfile(userId);
+      const res = await api.post(`/api/communities/social/comments/${commentId}/reactions`, { type });
+      if (res?.data) {
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p.id !== postId) return p;
+            const updatedComments = (p.comments || []).map((c) => (c.id === commentId ? res.data : c));
+            return { ...p, comments: updatedComments };
+          })
+        );
       }
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible d'envoyer cette invitation.");
+    } catch (err) {
+      showToast("Erreur réaction commentaire", "danger");
     }
   };
 
-  const answerInvitation = async (connectionId, action) => {
+  // Toggle Follow User
+  const handleToggleFollow = async (targetUserId) => {
     try {
-      await api.post(`/api/communities/social/connections/${connectionId}/${action}`);
-      await loadOverview();
-      setToast("success", action === "accept" ? "Invitation acceptee." : "Invitation refusee.");
-    } catch (error) {
-      setToast("error", "Impossible de traiter cette invitation.");
+      const res = await api.post(`/api/communities/social/users/${targetUserId}/follow`);
+      if (res?.data) {
+        showToast(res.data.following ? "Abonnement enregistré !" : "Désabonnement effectué.");
+        // Refresh profile if open
+        if (selectedUserProfile?.user?.id === targetUserId) {
+          handleOpenUserProfile(targetUserId);
+        }
+        // Update user state in feed
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p.author?.id === targetUserId) {
+              return { ...p, author: { ...p.author, following: res.data.following } };
+            }
+            return p;
+          })
+        );
+      }
+    } catch (err) {
+      showToast("Erreur lors de l'abonnement", "danger");
     }
   };
 
-  const openConversation = async (person) => {
-    const counterpartId = person.counterpartId || person.id;
-    setActiveSection("messages");
-    setActiveChat(person);
-    setMessageLoading(true);
+  // Open User Profile Modal (Click on avatar or username)
+  const handleOpenUserProfile = async (userId) => {
     try {
-      const { data } = await api.get(`/api/communities/social/direct/${counterpartId}`);
-      setChatMessages(data || []);
-      await loadOverview();
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible d'ouvrir cette discussion.");
-    } finally {
-      setMessageLoading(false);
-    }
-  };
-
-  const sendMessage = async (event) => {
-    event.preventDefault();
-    const counterpartId = activeChat?.counterpartId || activeChat?.id;
-    if (!counterpartId || !chatDraft.trim()) return;
-    try {
-      await api.post(`/api/communities/social/direct/${counterpartId}`, { content: chatDraft.trim() });
-      setChatDraft("");
-      const { data } = await api.get(`/api/communities/social/direct/${counterpartId}`);
-      setChatMessages(data || []);
-      await loadOverview();
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible d'envoyer ce message.");
-    }
-  };
-
-  const openProfile = async (userId) => {
-    setProfileLoading(true);
-    try {
-      const { data } = await api.get(`/api/communities/social/users/${userId}`);
-      setSelectedProfile(data);
-    } catch (error) {
-      setToast("error", "Impossible de charger ce profil.");
+      setProfileLoading(true);
+      setShowProfileModal(true);
+      const res = await api.get(`/api/communities/social/users/${userId}`);
+      setSelectedUserProfile(res.data);
+    } catch (err) {
+      showToast("Impossible de charger ce profil", "danger");
+      setShowProfileModal(false);
     } finally {
       setProfileLoading(false);
     }
   };
 
-  const openShare = (postId) => {
-    setShareDraft({ postId, counterpartId: friends[0]?.id || "", message: "" });
-    setShowShareModal(true);
-  };
-
-  const submitShare = async (event) => {
-    event.preventDefault();
-    if (!shareDraft.postId || !shareDraft.counterpartId) return;
+  // Open User Profile by Username
+  const handleOpenUserProfileByUsername = async (username) => {
     try {
-      await api.post(`/api/communities/social/posts/${shareDraft.postId}/share`, {
-        counterpartId: shareDraft.counterpartId,
-        message: shareDraft.message
-      });
-      setShowShareModal(false);
-      setShareDraft({ postId: "", counterpartId: "", message: "" });
-      await loadOverview();
-      setToast("success", "Post partage avec votre ami.");
-    } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setToast("error", apiError || "Impossible de partager ce post.");
-    }
-  };
-
-  const joinCircle = async (circleId) => {
-    try {
-      await api.post(`/api/communities/servers/${circleId}/join`);
-      await loadOverview();
-      setToast("success", "Cercle rejoint.");
-    } catch (error) {
-      setToast("error", "Impossible de rejoindre ce cercle.");
-    }
-  };
-
-  const renderAvatar = (person, className = "social-space-avatar") => {
-    const isVerified = person?.verifiedBadge;
-    return (
-      <div className="social-space-avatar-wrapper">
-        {person?.profilePhotoUrl ? (
-          <img className={className} src={person.profilePhotoUrl} alt={userLabel(person)} />
-        ) : (
-          <div className={`${className} is-fallback`}>{avatarFallback(person?.name || person?.username)}</div>
-        )}
-        {isVerified && <i className="bi bi-patch-check-fill social-verified-badge" title="Compte officiel"></i>}
-      </div>
-    );
-  };
-
-  const renderPostCard = (post) => {
-    const commentsVisible = Boolean(commentsOpen[post.id]);
-    return (
-      <article key={post.id} className="social-space-post">
-        <button type="button" className="social-space-post-head" onClick={() => openProfile(post.author.id)}>
-          {renderAvatar(post.author)}
-          <div className="social-space-post-meta">
-            <div className="social-space-post-author-row">
-              <strong>{post.author.name}</strong>
-              {post.postType === "OFFICIAL_NEWS" && <span className="badge bg-primary ms-2 social-blog-badge">ARTICLE OFFICIEL</span>}
-            </div>
-            <span>{post.author.role} · {post.serverName} · {formatDate(post.createdAt)}</span>
-          </div>
-        </button>
-
-        {post.content?.trim() && <p className="social-space-post-copy">{post.content}</p>}
-        {post.imageUrl && (
-          <div className="social-space-post-media">
-            <img src={post.imageUrl} alt={post.content || "Publication communautaire"} />
-          </div>
-        )}
-
-        {post.postType === "OFFICIAL_NEWS" && post.sourceUrl && (
-          <div className="social-blog-footer">
-            <a href={post.sourceUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm w-100 mt-2">
-              <i className="bi bi-box-arrow-up-right me-2"></i>
-              Lire l'article sur {post.sourceLabel || "la source originale"}
-            </a>
-          </div>
-        )}
-
-        <div className="social-space-post-actions">
-          <button type="button" className={`social-space-action ${post.myReaction === "LOVE" ? "is-active" : ""}`} onClick={() => toggleLove(post.id)}>
-            <i className={`bi ${post.myReaction === "LOVE" ? "bi-heart-fill" : "bi-heart"}`} />
-            <span>{loveCount(post)}</span>
-          </button>
-          <button type="button" className={`social-space-action ${commentsVisible ? "is-active" : ""}`} onClick={() => toggleComments(post.id)}>
-            <i className="bi bi-chat" />
-            <span>{post.comments?.length || 0}</span>
-          </button>
-          <button type="button" className="social-space-action" onClick={() => openShare(post.id)}>
-            <i className="bi bi-send" />
-            <span>Partager</span>
-          </button>
-          <div className="social-space-engagement">{totalReactions(post)} reactions</div>
-        </div>
-
-        {commentsVisible && (
-          <div className="social-space-comments">
-            {(post.comments || []).length === 0 ? (
-              <p className="muted-text mb-0">Aucun commentaire pour le moment.</p>
-            ) : (
-              (post.comments || []).map((comment) => (
-                <div key={comment.id} className="social-space-comment">
-                  {renderAvatar({ profilePhotoUrl: comment.authorPhotoUrl, name: comment.authorName, username: comment.authorUsername }, "social-space-avatar social-space-avatar-sm")}
-                  <div>
-                    <strong>{comment.authorName}</strong>
-                    <p>{comment.content}</p>
-                    <span>{formatDate(comment.createdAt)}</span>
-                  </div>
-                </div>
-              ))
-            )}
-            <div className="social-space-comment-compose">
-              <input
-                className="form-control"
-                placeholder="Ajouter un commentaire"
-                value={commentDrafts[post.id] || ""}
-                onChange={(event) => setCommentDrafts((previous) => ({ ...previous, [post.id]: event.target.value }))}
-              />
-              <button type="button" className="btn btn-dark" onClick={() => commentOnPost(post.id)}>Envoyer</button>
-            </div>
-          </div>
-        )}
-      </article>
-    );
-  };
-
-  const renderStories = () => {
-    const storyList = [
-      { id: "story-1", name: "Dr. Amrani", avatar: "", active: true, isDr: true, initial: "DA" },
-      { id: "story-2", name: "Samy_Zen", avatar: "", active: true, initial: "SZ" },
-      { id: "story-3", name: "PneumoCare", avatar: "", active: false, initial: "PC" },
-      { id: "story-4", name: "Yasmine_M", avatar: "", active: true, initial: "YM" },
-      { id: "story-5", name: "Anas_S", avatar: "", active: true, initial: "AS" },
-      { id: "story-6", name: "SevrePure", avatar: "", active: false, initial: "SP" },
-    ];
-
-    return (
-      <div className="instagram-stories-bar mb-3" style={{
-        display: "flex",
-        gap: "1.2rem",
-        overflowX: "auto",
-        padding: "1rem",
-        background: "rgba(255, 255, 255, 0.8)",
-        borderRadius: "16px",
-        border: "1px solid rgba(59, 130, 246, 0.15)",
-        scrollbarWidth: "none"
-      }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }}>
-          <div style={{
-            width: "66px",
-            height: "66px",
-            borderRadius: "50%",
-            padding: "3px",
-            background: "linear-gradient(45deg, #3b82f6, #8b5cf6, #10b981)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative"
-          }}>
-            <div style={{
-              width: "100%",
-              height: "100%",
-              borderRadius: "50%",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden"
-            }}>
-              {viewer?.profilePhotoUrl ? (
-                <img src={viewer.profilePhotoUrl} alt="Moi" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#3b82f6" }}>{avatarFallback(viewer?.displayName)}</div>
-              )}
-            </div>
-            <div style={{
-              position: "absolute",
-              bottom: "0",
-              right: "0",
-              background: "#3b82f6",
-              color: "#fff",
-              borderRadius: "50%",
-              width: "20px",
-              height: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px solid #fff",
-              fontSize: "0.8rem",
-              fontWeight: "bold"
-            }}>+</div>
-          </div>
-          <span style={{ fontSize: "0.78rem", marginTop: "0.4rem", color: "#4b5563", fontWeight: 600 }}>Votre story</span>
-        </div>
-
-        {storyList.map((story) => (
-          <div key={story.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setActiveStory(story)}>
-            <div style={{
-              width: "66px",
-              height: "66px",
-              borderRadius: "50%",
-              padding: "3px",
-              background: story.active ? "linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6)" : "rgba(156, 163, 175, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}>
-              <div style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "50%",
-                background: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden"
-              }}>
-                {story.avatar ? (
-                  <img src={story.avatar} alt={story.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{
-                    fontWeight: 700,
-                    fontSize: "1.1rem",
-                    color: story.active ? "#ec4899" : "#9ca3af",
-                    background: "rgba(243, 244, 246, 1)",
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>{story.initial}</div>
-                )}
-              </div>
-            </div>
-            <span style={{ fontSize: "0.78rem", marginTop: "0.4rem", color: "#4b5563", fontWeight: 500 }}>
-              {story.name} {story.isDr && "🩺"}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-
-  const getActiveServer = () => (overview.servers || []).find(c => c.id === selectedServerId) || null;
-
-  const createServer = async (e) => {
-    e.preventDefault();
-    if (!serverForm.name.trim()) return;
-    setCreatingServer(true);
-    try {
-      const { data } = await api.post("/api/communities/servers", serverForm);
-      setOverview(prev => ({ ...prev, circles: [...(prev.circles || []), { ...data, joined: true, myRole: "OWNER" }] }));
-      setSelectedServerId(data.id);
-      // Seed mock members for new server
-      setMockMembers(prev => ({ ...prev, [data.id]: [
-        { id: "m1", name: viewer?.displayName || viewer?.username || "Vous", username: viewer?.username, role: "OWNER", avatar: viewer?.profilePhotoUrl },
-      ]}));
-      setServerForm({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
-      setShowCreateServerModal(false);
-      setToast("success", `Serveur "${data.name}" cree avec succes !`);
-    } catch {
-      // Create a local mock server if API fails (demo mode)
-      const mockId = `local-${Date.now()}`;
-      const mockServer = { id: mockId, name: serverForm.name, description: serverForm.description, visibility: serverForm.visibility, joined: true, myRole: "OWNER", memberCount: 1, createdAt: new Date().toISOString() };
-      setOverview(prev => ({ ...prev, circles: [...(prev.circles || []), mockServer] }));
-      setSelectedServerId(mockId);
-      setMockMembers(prev => ({ ...prev, [mockId]: [
-        { id: "m1", name: viewer?.displayName || viewer?.username || "Vous", username: viewer?.username, role: "OWNER", avatar: viewer?.profilePhotoUrl },
-      ]}));
-      setServerForm({ name: "", description: "", visibility: "PUBLIC", iconUrl: "" });
-      setShowCreateServerModal(false);
-      setToast("success", `Serveur "${serverForm.name}" cree (mode demo) !`);
+      setProfileLoading(true);
+      setShowProfileModal(true);
+      const clean = username.replace("@", "");
+      const res = await api.get(`/api/communities/social/users/by-username/${clean}`);
+      setSelectedUserProfile(res.data);
+    } catch (err) {
+      showToast("Profil introuvable pour @" + username, "danger");
+      setShowProfileModal(false);
     } finally {
-      setCreatingServer(false);
+      setProfileLoading(false);
     }
   };
 
-  const changeMemberRole = (serverId, memberId, newRole) => {
-    setMockMembers(prev => ({
-      ...prev,
-      [serverId]: (prev[serverId] || []).map(m => m.id === memberId ? { ...m, role: newRole } : m)
-    }));
+  // Create Post Submit
+  const handleCreatePostSubmit = async (e) => {
+    e?.preventDefault();
+    if (!postDraft.title.trim() && !postDraft.content.trim()) {
+      showToast("Veuillez saisir un titre ou un contenu.", "warning");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const payload = {
+        title: postDraft.title.trim(),
+        flair: postDraft.flair,
+        content: postDraft.content.trim(),
+        imageUrl: postDraft.imageUrl.trim() || null,
+        serverId: postDraft.serverId || null
+      };
+      const res = await api.post("/api/communities/social/posts", payload);
+      if (res?.data) {
+        setPosts((prev) => [res.data, ...prev]);
+        setShowCreateModal(false);
+        setPostDraft({ title: "", flair: "🏆 Victoire J+30", content: "", imageUrl: "", serverId: "" });
+        showToast("🎉 Publication créée avec succès !");
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || "Erreur création post", "danger");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const kickMember = (serverId, memberId) => {
-    setMockMembers(prev => ({
-      ...prev,
-      [serverId]: (prev[serverId] || []).filter(m => m.id !== memberId)
-    }));
+  // Repost / Cross-Post Submit
+  const handleRepostSubmit = async () => {
+    if (!targetRepostPost) return;
+    try {
+      setActionLoading(true);
+      const payload = {
+        title: `Republication : ${targetRepostPost.title || "Témoignage inspirant"}`,
+        flair: "💡 Partage",
+        content: repostComment.trim() || "Je partage cette publication inspirante !",
+        repostOfPostId: targetRepostPost.id,
+        repostComment: repostComment.trim()
+      };
+      const res = await api.post("/api/communities/social/posts", payload);
+      if (res?.data) {
+        setPosts((prev) => [res.data, ...prev]);
+        setShowRepostModal(false);
+        setTargetRepostPost(null);
+        setRepostComment("");
+        showToast("Publication republiée dans le fil !");
+      }
+    } catch (err) {
+      showToast("Erreur lors de la republication", "danger");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const renderServerMemberPanel = () => {
-    const server = getActiveServer();
-    if (!server) return null;
-    const members = mockMembers[server.id] || (overview.people || []).slice(0, 8).map((p, i) => ({
-      id: p.id || i,
-      name: p.name,
-      username: p.username,
-      avatar: p.profilePhotoUrl,
-      role: i === 0 ? "OWNER" : i < 2 ? "ADMIN" : i < 4 ? "MODERATOR" : "MEMBER"
-    }));
-
-    const roleOrder = ["OWNER", "ADMIN", "MODERATOR", "MEMBER"];
-    const roleLabel = { OWNER: "👑 Propriétaire", ADMIN: "🛡️ Administrateurs", MODERATOR: "🔨 Modérateurs", MEMBER: "👤 Membres" };
-    const roleColor = { OWNER: "#f59e0b", ADMIN: "#3b82f6", MODERATOR: "#8b5cf6", MEMBER: "#6b7280" };
-    const grouped = roleOrder.reduce((acc, r) => { acc[r] = members.filter(m => m.role === r); return acc; }, {});
-    const isAdmin = server.myRole === "OWNER" || server.myRole === "ADMIN";
-
-    return (
-      <aside className="social-space-sidepane">
-        <section className="social-space-panel" style={{ position: "sticky", top: "100px" }}>
-          <div className="social-space-panel-head">
-            <div>
-              <h3 style={{ fontSize: "1rem" }}>Membres</h3>
-              <p>{server.memberCount || members.length} dans ce serveur</p>
-            </div>
-            {isAdmin && (
-              <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setShowServerSettings(true)}>
-                <i className="bi bi-gear" />
-              </button>
-            )}
-          </div>
-          <div style={{ maxHeight: "calc(100vh - 260px)", overflowY: "auto" }}>
-            {roleOrder.map(role => grouped[role].length > 0 && (
-              <div key={role}>
-                <div className="discord-member-role-header" style={{ color: roleColor[role] }}>{roleLabel[role]} — {grouped[role].length}</div>
-                {grouped[role].map(member => (
-                  <button key={member.id} type="button" className="discord-member-item" onClick={() => isAdmin && member.role !== "OWNER" && setShowServerSettings(true)}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {member.avatar
-                        ? <img src={member.avatar} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#374151" }}>{avatarFallback(member.name)}</span>
-                      }
-                    </div>
-                    <div className="discord-member-item-info">
-                      <strong>{member.name}</strong>
-                      <span>{member.username ? `@${member.username}` : role}</span>
-                    </div>
-                    <span className="ms-auto" style={{ fontSize: "0.65rem", background: roleColor[role] + "22", color: roleColor[role], padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>
-                      {role === "OWNER" ? "Owner" : role === "ADMIN" ? "Admin" : role === "MODERATOR" ? "Mod" : ""}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
-      </aside>
-    );
+  // Direct Messaging / Chat in Dock
+  const handleOpenChatWith = async (user) => {
+    if (!user) return;
+    setActiveChatTarget(user);
+    setChatDockOpen(true);
+    const targetId = user.id || user.userId;
+    if (!targetId) return;
+    try {
+      const res = await api.get(`/api/communities/social/direct/${targetId}`);
+      setChatMessages(res.data || []);
+    } catch (err) {
+      console.error("Error loading direct thread:", err);
+    }
   };
 
-  const renderDiscordServerSidebar = () => {
-    const myCircles = (overview.servers || []).filter(c => c.joined);
-    return (
-      <div className="discord-server-sidebar">
-        <button type="button" className={`discord-server-btn ${!selectedServerId ? "is-active" : ""}`} title="Fil global" onClick={() => setSelectedServerId(null)}>
-          <i className="bi bi-house-heart-fill" />
-        </button>
-        {myCircles.length > 0 && <div className="discord-server-divider" />}
-        {myCircles.map(circle => (
-          <button key={circle.id} type="button" className={`discord-server-btn ${selectedServerId === circle.id ? "is-active" : ""}`} title={circle.name} onClick={() => setSelectedServerId(circle.id)}>
-            {circle.iconUrl
-              ? <img src={circle.iconUrl} alt={circle.name} />
-              : <span>{avatarFallback(circle.name)}</span>
-            }
-          </button>
-        ))}
-        <div className="discord-server-divider" />
-        <button type="button" className="discord-server-btn" title="Creer un serveur" onClick={() => setShowCreateServerModal(true)} style={{ background: "#f0fdf4", color: "#16a34a", fontSize: "1.4rem" }}>
-          <i className="bi bi-plus-lg" />
-        </button>
-      </div>
-    );
+  const handleSendChatMessage = async (e) => {
+    e?.preventDefault();
+    if (!chatInput.trim() || !activeChatTarget) return;
+
+    const targetId = activeChatTarget.id || activeChatTarget.userId;
+    if (!targetId) {
+      showToast("Destinataire introuvable", "warning");
+      return;
+    }
+
+    try {
+      const res = await api.post(`/api/communities/social/direct/${targetId}`, {
+        content: chatInput.trim()
+      });
+      if (res?.data) {
+        setChatMessages((prev) => [...prev, res.data]);
+        setChatInput("");
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "Impossible d'envoyer le message";
+      showToast(msg, "danger");
+    }
   };
 
-  const renderFeed = () => {
-    const activeCircle = getActiveServer();
-    const feedPosts = activeCircle ? (overview.posts || []).filter(p => p.serverId === activeCircle.id) : (overview.posts || []);
-
-    return (
-      <div className="social-space-column">
-        {!activeCircle && renderStories()}
-        {activeCircle && (
-          <section className="social-space-panel" style={{ background: "linear-gradient(135deg, #667eea22, #764ba222)", border: "1px solid rgba(102,126,234,0.2)" }}>
-            <div className="d-flex align-items-center gap-3">
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: "#764ba2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 700, color: "white", flexShrink: 0 }}>
-                {activeCircle.iconUrl ? <img src={activeCircle.iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} /> : avatarFallback(activeCircle.name)}
-              </div>
-              <div className="flex-grow-1">
-                <h3 className="mb-0 fw-bold"># {activeCircle.name}</h3>
-                <p className="mb-1 text-muted small">{activeCircle.description || "Espace d'entraide communautaire."}</p>
-                <div className="d-flex gap-2 flex-wrap">
-                  <span className="badge" style={{ background: "#764ba222", color: "#764ba2" }}><i className="bi bi-people-fill me-1" />{activeCircle.memberCount || 1} membres</span>
-                  {activeCircle.myRole === "OWNER" && <span className="badge" style={{ background: "#fef3c722", color: "#f59e0b" }}>👑 Propriétaire</span>}
-                  {activeCircle.myRole === "ADMIN" && <span className="badge" style={{ background: "#dbeafe", color: "#3b82f6" }}>🛡️ Admin</span>}
-                  <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}>🔓 {activeCircle.visibility === "PRIVATE" ? "Privé" : "Public"}</span>
-                </div>
-              </div>
-              {(activeCircle.myRole === "OWNER" || activeCircle.myRole === "ADMIN") && (
-                <button type="button" className="btn btn-light btn-sm rounded-circle" onClick={() => setShowServerSettings(true)}>
-                  <i className="bi bi-gear-fill" />
-                </button>
-              )}
-            </div>
-          </section>
-        )}
-
-        <section className="social-space-panel social-space-composer d-none d-md-block">
-          <div className="social-space-panel-head">
-            <div>
-              <h3>Publier dans le fil</h3>
-              <p>{activeCircle ? `Dans #${activeCircle.name}` : "Une victoire, une photo, une pensee ou une difficulte du jour."}</p>
-            </div>
-          </div>
-          <form onSubmit={publishPost}>
-            <textarea
-              className="form-control social-space-textarea"
-              rows="3"
-              placeholder={activeCircle ? `Ecrire dans #${activeCircle.name}...` : "Qu'est-ce qui merite d'etre partage aujourd'hui ?"}
-              value={composer.content}
-              onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value, serverId: activeCircle?.id || "" }))}
-            />
-            {composer.imageUrl && (
-              <div className="social-space-upload-preview">
-                <img src={composer.imageUrl} alt="Apercu du post" />
-                <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))}>Retirer</button>
-              </div>
-            )}
-            <div className="social-space-composer-row">
-              <label className="social-space-upload-btn">
-                <i className="bi bi-image" />
-                <span>Photo</span>
-                <input type="file" accept="image/*" onChange={(event) => handleProfilePhoto(event, "post")} />
-              </label>
-              <button type="submit" className="btn btn-primary" disabled={publishing}>
-                {publishing ? "Publication..." : "Publier"}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        {/* Floating action button (FAB) for posting on mobile */}
-        <button 
-          type="button" 
-          className="btn btn-primary rounded-circle d-md-none position-fixed" 
-          style={{ bottom: '90px', right: '20px', width: '56px', height: '56px', zIndex: 990, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)' }}
-          onClick={() => setShowComposerModal(true)}
-        >
-          <i className="bi bi-pencil-fill fs-4" />
-        </button>
-
-        {loading ? (
-          <section className="social-space-panel"><p className="muted-text mb-0">Chargement du fil...</p></section>
-        ) : feedPosts.length === 0 ? (
-          <section className="social-space-empty p-5 text-center">
-            <div className="mb-3"><i className={`bi ${activeCircle ? "bi-hash" : "bi-inbox"} fs-1 text-muted`} /></div>
-            <h3>{activeCircle ? `#${activeCircle.name} est encore calme.` : "Le fil attend votre premiere histoire."}</h3>
-            <p>{activeCircle ? "Soyez le premier à partager quelque chose avec ce groupe." : "Publiez une photo, un petit progres ou un moment difficile pour demarrer les echanges."}</p>
-          </section>
-        ) : (
-          feedPosts.map(renderPostCard)
-        )}
-      </div>
-    );
+  // Notifications Mark as Read
+  const handleMarkNotifRead = async (notifId) => {
+    try {
+      await api.post(`/api/notifications/${notifId}/read`);
+      setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, status: "READ" } : n)));
+      setUnreadNotifsCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Error mark notif read:", err);
+    }
   };
 
+  // Filtered & Sorted Posts
+  const filteredPosts = useMemo(() => {
+    let result = [...posts];
 
-  const renderExplore = () => (
-    <div className="social-space-column">
-      <section className="social-space-panel">
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Explorer la communaute</h3>
-            <p>Rechercher des personnes, voir leurs profils et trouver de nouveaux espaces.</p>
-          </div>
-        </div>
-        <div className="social-space-search-row">
-          <div className="social-space-search-box">
-            <i className="bi bi-search" />
-            <input
-              type="search"
-              value={exploreQuery}
-              onChange={(event) => setExploreQuery(event.target.value)}
-              placeholder="Chercher un utilisateur, un username ou un email"
-            />
-          </div>
-          <span className="social-space-search-state">{searching ? "Recherche..." : `${discoverPeople.length} profils`}</span>
-        </div>
-      </section>
+    // Filter by Subreddit
+    if (activeSubreddit !== "all") {
+      result = result.filter((p) => {
+        const sName = (p.serverName || "").toLowerCase();
+        if (activeSubreddit === "victoires") return sName.includes("victoire");
+        if (activeSubreddit === "entraide") return sName.includes("entraide") || sName.includes("urgence");
+        if (activeSubreddit === "conseils") return sName.includes("conseil");
+        if (activeSubreddit === "tns") return sName.includes("substitut") || sName.includes("tns");
+        if (activeSubreddit === "sport") return sName.includes("sport") || sName.includes("bienetre");
+        return p.serverId === activeSubreddit;
+      });
+    }
 
-      <section className="social-space-user-grid">
-        {discoverPeople.map((person) => (
-          <article key={person.id} className="social-space-user-card">
-            <button type="button" className="social-space-user-head" onClick={() => openProfile(person.id)}>
-              {renderAvatar(person)}
-              <div>
-                <strong>{person.name}</strong>
-                <span>{person.username ? `@${person.username}` : person.role}</span>
-              </div>
-            </button>
-            <p>{person.bio || "Parcours discret, mais deja present dans l'espace de soutien."}</p>
-            <div className="social-space-user-stats">
-              <span>{person.followersCount} abonnes</span>
-              <span>{person.postsCount} posts</span>
-            </div>
-            <div className="social-space-user-actions">
-              <button type="button" className="btn btn-outline-dark" onClick={() => toggleFollow(person.id)}>
-                {person.following ? "Suivi" : "Suivre"}
-              </button>
-              {person.connectionStatus === "FRIEND" ? (
-                <button type="button" className="btn btn-dark" onClick={() => openConversation(person)}>Message</button>
-              ) : person.connectionStatus === "PENDING_SENT" ? (
-                <button type="button" className="btn btn-light" disabled>Invitation envoyee</button>
-              ) : (
-                <button type="button" className="btn btn-primary" onClick={() => sendInvitation(person.id)}>Ajouter</button>
-              )}
-            </div>
-          </article>
-        ))}
-      </section>
+    // Filter by Flair
+    if (activeFlair) {
+      result = result.filter((p) => p.flair === activeFlair);
+    }
 
-      <section className="social-space-panel">
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Cercles thematiques</h3>
-            <p>Des espaces plus calmes autour d'un besoin commun.</p>
-          </div>
-        </div>
-        <div className="social-space-circle-grid">
-          {(overview.servers || []).map((circle) => (
-            <article key={circle.id} className="social-space-circle-card">
-              <div>
-                <strong>{circle.name}</strong>
-                <span>{circle.memberCount} membres</span>
-              </div>
-              <p>{circle.description || "Espace de discussion et d'entraide."}</p>
-              {circle.joined ? (
-                <span className="social-space-mini-state">deja rejoint</span>
-              ) : (
-                <button type="button" className="btn btn-outline-dark" onClick={() => joinCircle(circle.id)}>Rejoindre</button>
-              )}
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
+    // Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          (p.title || "").toLowerCase().includes(q) ||
+          (p.content || "").toLowerCase().includes(q) ||
+          (p.author?.name || "").toLowerCase().includes(q) ||
+          (p.author?.username || "").toLowerCase().includes(q) ||
+          (p.flair || "").toLowerCase().includes(q)
+      );
+    }
 
-  const renderActivity = () => (
-    <div className="social-space-column">
-      <section className="social-space-panel">
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Activite autour de vous</h3>
-            <p>Ceux qui ont commente vos posts, envoye un coeur ou demande a vous rejoindre.</p>
-          </div>
-        </div>
-      </section>
+    // Sorting
+    if (activeFilter === "new") {
+      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (activeFilter === "top") {
+      result.sort((a, b) => (b.upvotesCount || 0) - (a.upvotesCount || 0));
+    } else if (activeFilter === "discussed") {
+      result.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+    } else {
+      // "hot" score
+      result.sort((a, b) => {
+        const scoreA = (a.upvotesCount || 0) * 3 + (a.comments?.length || 0) * 2;
+        const scoreB = (b.upvotesCount || 0) * 3 + (b.comments?.length || 0) * 2;
+        return scoreB - scoreA;
+      });
+    }
 
-      <section className="social-space-panel">
-        <h4>Invitations a traiter</h4>
-        {unresolvedInvitations.length === 0 ? (
-          <p className="muted-text mb-0">Aucune invitation en attente.</p>
-        ) : (
-          <div className="social-space-activity-stack">
-            {unresolvedInvitations.map((item) => (
-              <article key={item.id} className="social-space-activity-card">
-                {renderAvatar(item.requester)}
-                <div className="social-space-activity-copy">
-                  <strong>{item.requester.name}</strong>
-                  <p>souhaite vous ajouter a son reseau de soutien</p>
-                  <span>{formatDate(item.createdAt)}</span>
-                </div>
-                <div className="social-space-activity-actions">
-                  <button type="button" className="btn btn-primary" onClick={() => answerInvitation(item.id, "accept")}>Accepter</button>
-                  <button type="button" className="btn btn-outline-dark" onClick={() => answerInvitation(item.id, "decline")}>Refuser</button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="social-space-panel">
-        <h4>Reactions et commentaires</h4>
-        {(overview.activity || []).length === 0 ? (
-          <p className="muted-text mb-0">Les nouvelles interactions sur vos posts apparaitront ici.</p>
-        ) : (
-          <div className="social-space-activity-stack">
-            {(overview.activity || []).map((item) => (
-              <article key={`${item.type}-${item.id}`} className="social-space-activity-card">
-                {renderAvatar(item.actor)}
-                <div className="social-space-activity-copy">
-                  <strong>{item.actor.name}</strong>
-                  <p>
-                    {item.type === "COMMENT" ? "a commente votre publication" : "a laisse un coeur sur votre publication"}
-                  </p>
-                  <small>{item.content}</small>
-                  <span>{formatDate(item.createdAt)}</span>
-                </div>
-                <button type="button" className="btn btn-outline-dark" onClick={() => openProfile(item.actor.id)}>Voir le profil</button>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-
-  const renderMessages = () => (
-    <div className={`social-space-messaging ${activeChat ? "chat-open" : ""}`}>
-      <aside className="social-space-thread-list">
-        <div className="social-space-thread-head p-3 border-bottom d-flex align-items-center justify-content-between">
-          <h3 className="mb-0 fs-5 fw-bold">Discussions</h3>
-          <button type="button" className="btn btn-link p-0 text-dark">
-            <i className="bi bi-pencil-square fs-5" />
-          </button>
-        </div>
-        <div className="social-space-thread-scroll">
-          {conversations.length === 0 ? (
-            <div className="p-4 text-center">
-              <p className="muted-text mb-0">Ajoutez un ami pour demarrer une conversation.</p>
-            </div>
-          ) : (
-            conversations.map((conversation) => (
-              <button
-                key={conversation.counterpartId}
-                type="button"
-                className={`social-space-thread-card ${activeChat?.counterpartId === conversation.counterpartId ? "is-active" : ""}`}
-                onClick={() => openConversation(conversation)}
-              >
-                {renderAvatar({ profilePhotoUrl: conversation.counterpartPhotoUrl, name: conversation.counterpartName, username: conversation.counterpartUsername }, "social-space-avatar social-space-avatar-sm")}
-                <div>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <strong>{conversation.counterpartName}</strong>
-                    {conversation.unreadCount > 0 && <span className="badge rounded-circle bg-primary p-1" style={{ width: '8px', height: '8px' }}> </span>}
-                  </div>
-                  <span>{conversation.lastMessage || "Nouveau message..."}</span>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      </aside>
-
-      <section className="social-space-thread-panel">
-        {!activeChat ? (
-          <div className="social-space-thread-empty flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center p-5">
-            <div className="rounded-circle border border-2 border-dark p-3 mb-3">
-              <i className="bi bi-send fs-1" />
-            </div>
-            <h3>Vos messages</h3>
-            <p className="muted-text">Envoyez des messages directs a vos amis pour un soutien plus personnel.</p>
-            <button type="button" className="btn btn-primary" onClick={() => setActiveSection("explore")}>Chercher des amis</button>
-          </div>
-        ) : (
-          <>
-            <div className="social-space-thread-head p-3 border-bottom bg-white d-flex align-items-center gap-2">
-              <button 
-                type="button" 
-                className="btn btn-link p-0 text-dark d-md-none me-2" 
-                onClick={() => setActiveChat(null)}
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <i className="bi bi-arrow-left fs-4" />
-              </button>
-              <button type="button" className="social-space-user-head is-inline" onClick={() => openProfile(activeChat.counterpartId || activeChat.id)}>
-                {renderAvatar(
-                  {
-                    profilePhotoUrl: activeChat.counterpartPhotoUrl || activeChat.profilePhotoUrl,
-                    name: activeChat.counterpartName || activeChat.name,
-                    username: activeChat.counterpartUsername || activeChat.username
-                  },
-                  "social-space-avatar"
-                )}
-                <div className="ms-2">
-                  <strong className="d-block">{activeChat.counterpartName || activeChat.name}</strong>
-                  <span className="muted-text" style={{ fontSize: '0.8rem' }}>{activeChat.counterpartUsername ? `@${activeChat.counterpartUsername}` : activeChat.counterpartRole || activeChat.role}</span>
-                </div>
-              </button>
-            </div>
-
-            <div className="social-space-thread-body p-4 flex-grow-1 overflow-auto bg-white">
-              {messageLoading ? (
-                <p className="muted-text mb-0">Chargement des messages...</p>
-              ) : (
-                chatMessages.map((message) => (
-                  <div key={message.id} className={`social-space-message-bubble ${message.mine ? "is-mine" : ""}`}>
-                    {message.sharedPostId && (
-                      <div className="social-space-shared-post mb-2 p-2 border rounded bg-light">
-                        {message.sharedPostImageUrl && <img src={message.sharedPostImageUrl} alt={message.sharedPostPreview || "Post partage"} className="img-fluid rounded mb-2" />}
-                        <div>
-                          <strong className="d-block small">{message.sharedPostAuthorName}</strong>
-                          <span className="small text-muted">{message.sharedPostPreview}</span>
-                        </div>
-                      </div>
-                    )}
-                    {message.content && <p className="mb-1">{message.content}</p>}
-                    <small className="opacity-50" style={{ fontSize: '0.7rem' }}>{formatDate(message.createdAt)}</small>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="p-3 bg-white border-top">
-              <form className="social-space-thread-form d-flex gap-2 align-items-center" onSubmit={sendMessage}>
-                <div className="flex-grow-1 position-relative">
-                  <input 
-                    className="form-control rounded-pill px-4 py-2" 
-                    value={chatDraft} 
-                    onChange={(event) => setChatDraft(event.target.value)} 
-                    placeholder="Ecrire un message..." 
-                  />
-                </div>
-                <button type="submit" className="btn btn-link text-primary fw-bold text-decoration-none" disabled={!chatDraft.trim()}>Envoyer</button>
-              </form>
-            </div>
-          </>
-        )}
-      </section>
-    </div>
-  );
-
-  const renderProfile = () => (
-    <div className="social-space-column">
-      <section className="social-space-panel social-space-profile-editor" style={{ position: 'relative', zIndex: 100 }}>
-        <div className="social-space-panel-head">
-          <div>
-            <h3>Votre identite communautaire</h3>
-            <p>Le username est ce qui sera vu par la communaute. La photo reste optionnelle.</p>
-          </div>
-          <div className="position-relative">
-            <button 
-              type="button" 
-              className="btn btn-outline-dark btn-sm rounded-circle p-2" 
-              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-              style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <i className="bi bi-three-dots-vertical" />
-            </button>
-            {showOptionsMenu && (
-              <div className="profile-option-menu">
-                <button type="button" className="profile-option-item" onClick={() => { navigate("/profile"); setShowOptionsMenu(false); }}>
-                  <i className="bi bi-gear" /> <span>Parametres</span>
-                </button>
-                <button type="button" className="profile-option-item" onClick={() => { setShowBlockedModal(true); setShowOptionsMenu(false); }}>
-                  <i className="bi bi-slash-circle" /> <span>Comptes bloques</span>
-                </button>
-                <button type="button" className="profile-option-item" onClick={() => { setShowArchives(true); setShowOptionsMenu(false); }}>
-                  <i className="bi bi-archive" /> <span>Archives stories</span>
-                </button>
-                <hr className="my-1" />
-                <button type="button" className="profile-option-item text-danger" onClick={async () => { setShowOptionsMenu(false); await logout(); navigate("/login"); }}>
-                  <i className="bi bi-box-arrow-right" /> <span>Deconnexion</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        <form onSubmit={saveProfile}>
-          <div className="social-space-profile-layout">
-            <div className="social-space-profile-preview position-relative" style={{ zIndex: 10 }}>
-              <div 
-                className="profile-avatar-interactive rounded-circle overflow-hidden d-flex align-items-center justify-content-center" 
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                style={{ width: '120px', height: '120px', margin: '0 auto', border: '3px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              >
-                {profileForm.profilePhotoUrl ? (
-                  <img src={profileForm.profilePhotoUrl} className="w-100 h-100 object-fit-cover" alt="Profile" />
-                ) : (
-                  <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-primary fs-1 fw-bold">
-                    {(profileForm.username || viewer?.displayName || "NC").substring(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="profile-avatar-overlay">
-                  <i className="bi bi-camera-fill fs-3" />
-                </div>
-              </div>
-
-              {showProfileMenu && (
-                <div className="profile-option-menu" style={{ zIndex: 1000 }}>
-                  <label className="profile-option-item mb-0 cursor-pointer">
-                    <i className="bi bi-image" /> 
-                    <span>Choisir une photo</span>
-                    <input type="file" accept="image/*" className="d-none" onChange={(event) => { handleProfilePhoto(event, "profile"); setShowProfileMenu(false); }} />
-                  </label>
-                  <button type="button" className="profile-option-item" onClick={() => { setActiveSection("feed"); setShowProfileMenu(false); }}>
-                    <i className="bi bi-plus-circle" /> <span>Ajouter une story</span>
-                  </button>
-                  <button type="button" className="profile-option-item text-danger" onClick={() => { setProfileForm(p => ({ ...p, profilePhotoUrl: "" })); setShowProfileMenu(false); }}>
-                    <i className="bi bi-trash" /> <span>Supprimer la photo</span>
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="social-space-profile-fields">
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label className="form-label">Username</label>
-                  <input className="form-control" value={profileForm.username} onChange={(event) => setProfileForm((previous) => ({ ...previous, username: event.target.value }))} placeholder="ex: souffle.neuf" />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Role visible</label>
-                  <input className="form-control" value={viewer?.role || ""} readOnly />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">Bio</label>
-                  <textarea className="form-control" rows="3" value={profileForm.bio} onChange={(event) => setProfileForm((previous) => ({ ...previous, bio: event.target.value }))} placeholder="Quelques mots sur votre parcours ou votre maniere d'aider." />
-                </div>
-              </div>
-              <div className="social-space-composer-row mt-3">
-                <button type="submit" className="btn btn-primary" disabled={savingProfile}>
-                  {savingProfile ? "Enregistrement..." : "Enregistrer le profil"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
-      </section>
-
-      {showArchives ? (
-        <section className="social-space-panel">
-          <div className="social-space-panel-head d-flex align-items-center gap-3">
-            <button type="button" className="btn btn-link p-0 text-dark" onClick={() => setShowArchives(false)}>
-              <i className="bi bi-arrow-left fs-4" />
-            </button>
-            <div>
-              <h3>Archives des stories</h3>
-              <p>Retrouvez vos moments passes, classes par date.</p>
-            </div>
-          </div>
-          <div className="row g-3 mt-2">
-            {[
-              { date: "12 Mai 2024", time: "14:20", text: "Premier jour sans tabac !", color: "#3b82f6" },
-              { date: "10 Mai 2024", time: "09:15", text: "Petit footing matinal", color: "#8b5cf6" },
-              { date: "05 Mai 2024", time: "22:45", text: "Moment de detente", color: "#10b981" }
-            ].map((arch, idx) => (
-              <div key={idx} className="col-6 col-md-4">
-                <div className="rounded-3 p-3 text-white d-flex flex-column justify-content-between shadow-sm" style={{ height: '160px', background: arch.color }}>
-                  <span className="small opacity-75">{arch.date} · {arch.time}</span>
-                  <strong className="small">{arch.text}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <>
-          <section className="social-space-panel">
-            <div className="social-space-panel-head">
-              <div>
-                <h3>Vos publications</h3>
-                <p>{myPosts.length} post{myPosts.length > 1 ? "s" : ""} deja visibles dans le fil.</p>
-              </div>
-            </div>
-          </section>
-
-          {myPosts.length === 0 ? (
-            <section className="social-space-empty">
-              <h3>Votre profil est pret.</h3>
-              <p>Le premier post donnera vie a votre espace et aidera les autres a vous reconnaitre.</p>
-            </section>
-          ) : (
-            myPosts.map(renderPostCard)
-          )}
-        </>
-      )}
-    </div>
-  );
+    return result;
+  }, [posts, activeSubreddit, activeFlair, searchQuery, activeFilter]);
 
   return (
-    <div className="container py-4 app-shell social-space" data-guide-id="communities-main">
-      <div className="profile-page-header social-space-header" data-guide-id="communities-header">
-        <div>
-          <div className="hero-kicker">Communaute de soutien</div>
-          <h2 className="fw-bold mb-1">Un espace plus vivant, plus humain et plus simple a parcourir</h2>
-          <p className="muted-text mb-0">
-            Fil photo, recherche de profils, activite, messagerie privee et cercles thematiques dans une interface plus douce et plus engageante.
-          </p>
-        </div>
-      </div>
-
+    <div className="reddit-root">
+      {/* Toast Feedback */}
       {feedback && (
-        <div className={`floating-feedback-toast ${feedback.type === "error" ? "is-error" : "is-success"}`}>
-          <div>
-            <strong>{feedback.type === "error" ? "Action non terminee" : "Action confirmee"}</strong>
-            <p className="mb-0">{feedback.text}</p>
-          </div>
+        <div className={`reddit-toast alert alert-${feedback.type}`}>
+          <i className="bi bi-info-circle me-2"></i>
+          {feedback.msg}
         </div>
       )}
 
-      <section className="social-space-shell">
-        {renderDiscordServerSidebar()}
-
-        <aside className="social-space-sidebar">
-          <div className="social-space-viewer-card align-items-center">
-            {renderAvatar({ profilePhotoUrl: viewer?.profilePhotoUrl, name: viewer?.displayName, username: viewer?.username })}
-            <div className="d-flex flex-column overflow-hidden text-truncate">
-              {(!viewer?.displayName || viewer.displayName === viewer.username || viewer.displayName === `@${viewer.username}`) ? (
-                <strong className="text-truncate">{viewer?.username ? `@${viewer.username}` : "Votre espace"}</strong>
-              ) : (
-                <>
-                  <strong className="text-truncate">{viewer?.displayName}</strong>
-                  <span className="text-truncate text-muted" style={{ fontSize: '0.85rem' }}>{viewer?.username ? `@${viewer.username}` : "Configurez votre profil"}</span>
-                </>
-              )}
+      {/* TOP REDDIT HEADER */}
+      <header className="reddit-topbar">
+        <div className="reddit-topbar-left">
+          <div className="reddit-brand" onClick={() => { setActiveSubreddit("all"); setActiveFlair(null); setSearchQuery(""); }}>
+            <span className="reddit-logo-icon">🧠</span>
+            <div className="reddit-brand-text">
+              <span className="brand-title">NeuralCommunity</span>
+              <span className="brand-badge">Sevrage & Entraide</span>
             </div>
           </div>
 
-          <nav className="social-space-nav">
-            {sectionItems.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`social-space-nav-item ${activeSection === item.key ? "is-active" : ""}`}
-                onClick={() => setActiveSection(item.key)}
-              >
-                <i className={`bi ${item.icon}`} />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
+          {/* Subreddit Quick Switcher */}
+          <div className="reddit-subreddit-select-wrap">
+            <select
+              className="reddit-subreddit-select"
+              value={activeSubreddit}
+              onChange={(e) => setActiveSubreddit(e.target.value)}
+            >
+              {DEFAULT_SUBREDDITS.map((sub) => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name} · {sub.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-          <section className="social-space-sidebar-panel">
-            <h4>Rythme du moment</h4>
-            <div className="social-space-stat-row">
-              <span>Amis</span>
-              <strong>{friends.length}</strong>
-            </div>
-            <div className="social-space-stat-row">
-              <span>Invitations</span>
-              <strong>{unresolvedInvitations.length}</strong>
-            </div>
-            <div className="social-space-stat-row">
-              <span>Interactions</span>
-              <strong>{overview.activity?.length || 0}</strong>
-            </div>
-          </section>
-        </aside>
-
-        <main className="social-space-main">
-          {activeSection === "feed" && renderFeed()}
-          {activeSection === "explore" && renderExplore()}
-          {activeSection === "activity" && renderActivity()}
-          {activeSection === "messages" && renderMessages()}
-          {activeSection === "profile" && renderProfile()}
-        </main>
-
-        {activeSection === "feed" && selectedServerId ? renderServerMemberPanel() : (
-          <aside className="social-space-sidepane">
-            <section className="social-space-panel">
-              <div className="social-space-panel-head">
-                <div>
-                  <h3>A la une</h3>
-                  <p>Un regard rapide sur votre espace relationnel.</p>
-                </div>
-              </div>
-              <div className="social-space-compact-list">
-                {friends.slice(0, 5).map((friend) => (
-                  <button key={friend.id} type="button" className="social-space-compact-item" onClick={() => openConversation(friend)}>
-                    {renderAvatar(friend, "social-space-avatar social-space-avatar-sm")}
-                    <div>
-                      <strong>{friend.name}</strong>
-                      <span>{friend.username ? `@${friend.username}` : friend.role}</span>
-                    </div>
-                  </button>
-                ))}
-                {friends.length === 0 && <p className="muted-text mb-0">Les amis acceptes apparaitront ici.</p>}
-              </div>
-            </section>
-
-            <section className="social-space-panel">
-              <div className="social-space-panel-head">
-                <div>
-                  <h3>Profils a voir</h3>
-                  <p>Une selection courte pour ne pas surcharger l'ecran.</p>
-                </div>
-              </div>
-              <div className="social-space-compact-list">
-                {(overview.people || []).slice(0, 4).map((person) => (
-                  <button key={person.id} type="button" className="social-space-compact-item" onClick={() => openProfile(person.id)}>
-                    {renderAvatar(person, "social-space-avatar social-space-avatar-sm")}
-                    <div>
-                      <strong>{person.name}</strong>
-                      <span>{person.username ? `@${person.username}` : person.role}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-          </aside>
-        )}
-      </section>
-
-      {/* ── Create Server Modal ── */}
-      <Modal show={showCreateServerModal} onHide={() => setShowCreateServerModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>✨ Créer un nouveau serveur</Modal.Title>
-        </Modal.Header>
-        <form onSubmit={createServer}>
-          <Modal.Body>
-            <p className="text-muted small mb-4">Un serveur est un espace privé pour votre groupe. Donnez-lui un nom, une description et une image.</p>
-            <div className="mb-3">
-              <label className="form-label fw-semibold">Nom du serveur *</label>
-              <input className="form-control" placeholder="ex: Équipe Cardiologie, Support sevrage..." value={serverForm.name} onChange={e => setServerForm(p => ({ ...p, name: e.target.value }))} required />
-            </div>
-            <div className="mb-3">
-              <label className="form-label fw-semibold">Description</label>
-              <textarea className="form-control" rows="2" placeholder="Décrivez l'objectif de ce serveur..." value={serverForm.description} onChange={e => setServerForm(p => ({ ...p, description: e.target.value }))} />
-            </div>
-            <div className="mb-3">
-              <label className="form-label fw-semibold">Visibilité</label>
-              <select className="form-select" value={serverForm.visibility} onChange={e => setServerForm(p => ({ ...p, visibility: e.target.value }))}>
-                <option value="PUBLIC">🔓 Public — Tout le monde peut rejoindre</option>
-                <option value="PRIVATE">🔐 Privé — Sur invitation uniquement</option>
-              </select>
-            </div>
-          </Modal.Body>
-          <Modal.Footer>
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateServerModal(false)}>Annuler</button>
-            <button type="submit" className="btn btn-primary" disabled={creatingServer || !serverForm.name.trim()}>
-              {creatingServer ? "Création..." : "Créer le serveur"}
+        {/* Global Search Bar */}
+        <div className="reddit-search-box">
+          <i className="bi bi-search search-icon"></i>
+          <input
+            type="text"
+            placeholder="Rechercher sur NeuralCommunity (titres, astuces, @pseudos, flairs)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="clear-search-btn" onClick={() => setSearchQuery("")}>
+              <i className="bi bi-x-circle-fill"></i>
             </button>
-          </Modal.Footer>
-        </form>
-      </Modal>
+          )}
+        </div>
 
-      {/* ── Server Settings Modal ── */}
-      <Modal show={showServerSettings} onHide={() => setShowServerSettings(false)} size="lg" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>⚙️ Gérer le serveur — {getActiveServer()?.name}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {(() => {
-            const server = getActiveServer();
-            if (!server) return null;
-            const members = mockMembers[server.id] || (overview.people || []).slice(0, 8).map((p, i) => ({ id: p.id || i, name: p.name, username: p.username, avatar: p.profilePhotoUrl, role: i === 0 ? "OWNER" : i < 2 ? "ADMIN" : "MEMBER" }));
-            const roleColor = { OWNER: "#f59e0b", ADMIN: "#3b82f6", MODERATOR: "#8b5cf6", MEMBER: "#6b7280" };
-            return (
-              <div>
-                <h6 className="fw-bold mb-3">Membres du serveur ({members.length})</h6>
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Membre</th>
-                        <th>Rôle actuel</th>
-                        <th>Changer le rôle</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {members.map(member => (
-                        <tr key={member.id}>
-                          <td>
-                            <div className="d-flex align-items-center gap-2">
-                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                                {member.avatar ? <img src={member.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>{avatarFallback(member.name)}</span>}
-                              </div>
-                              <div>
-                                <div className="fw-semibold">{member.name}</div>
-                                {member.username && <div className="text-muted small">@{member.username}</div>}
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span className="badge rounded-pill" style={{ background: roleColor[member.role] + "22", color: roleColor[member.role], fontWeight: 700 }}>
-                              {member.role === "OWNER" ? "👑 Owner" : member.role === "ADMIN" ? "🛡️ Admin" : member.role === "MODERATOR" ? "🔨 Mod" : "👤 Membre"}
-                            </span>
-                          </td>
-                          <td>
-                            {member.role !== "OWNER" ? (
-                              <select className="form-select form-select-sm" style={{ width: "auto" }} value={member.role} onChange={e => changeMemberRole(server.id, member.id, e.target.value)}>
-                                <option value="ADMIN">🛡️ Admin</option>
-                                <option value="MODERATOR">🔨 Modérateur</option>
-                                <option value="MEMBER">👤 Membre</option>
-                              </select>
-                            ) : <span className="text-muted small">—</span>}
-                          </td>
-                          <td>
-                            {member.role !== "OWNER" ? (
-                              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => kickMember(server.id, member.id)}>
-                                <i className="bi bi-person-dash" /> Retirer
-                              </button>
-                            ) : <span className="text-muted small">—</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+        {/* Topbar Actions */}
+        <div className="reddit-topbar-right">
+          {/* Theme Toggle Button */}
+          <button
+            className="reddit-icon-btn"
+            title={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
+            onClick={toggleTheme}
+          >
+            {isDark ? <i className="bi bi-sun-fill text-warning"></i> : <i className="bi bi-moon-stars-fill text-primary"></i>}
+          </button>
+
+          {/* Create Post Action */}
+          <button className="reddit-create-btn" onClick={() => setShowCreateModal(true)}>
+            <i className="bi bi-plus-lg"></i>
+            <span>Créer</span>
+          </button>
+
+          {/* Chat Dock Trigger */}
+          <button
+            className={`reddit-icon-btn ${chatDockOpen ? "active" : ""}`}
+            title="Discussions privées"
+            onClick={() => setChatDockOpen(!chatDockOpen)}
+          >
+            <i className="bi bi-chat-dots-fill"></i>
+          </button>
+
+          {/* Notification Bell with Menu */}
+          <div className="reddit-notif-wrap">
+            <button
+              className="reddit-icon-btn position-relative"
+              onClick={() => setShowNotifsMenu(!showNotifsMenu)}
+              title="Notifications"
+            >
+              <i className="bi bi-bell-fill"></i>
+              {unreadNotifsCount > 0 && (
+                <span className="reddit-notif-badge">{unreadNotifsCount}</span>
+              )}
+            </button>
+
+            {showNotifsMenu && (
+              <div className="reddit-notif-dropdown">
+                <div className="notif-header">
+                  <h6>Notifications</h6>
+                  <span className="notif-sub">{notifications.length} récentes</span>
+                </div>
+                <div className="notif-list">
+                  {notifications.length === 0 ? (
+                    <div className="notif-empty">Aucune notification pour le moment.</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`notif-item ${n.status === "UNREAD" ? "unread" : ""}`}
+                        onClick={() => handleMarkNotifRead(n.id)}
+                      >
+                        <div className="notif-icon">
+                          <i className="bi bi-heart-pulse-fill text-danger"></i>
+                        </div>
+                        <div className="notif-content">
+                          <div className="notif-title">{n.title}</div>
+                          <div className="notif-text">{n.content}</div>
+                          <div className="notif-time">{formatDateAgo(n.createdAt)}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            );
-          })()}
-        </Modal.Body>
-        <Modal.Footer>
-          <button type="button" className="btn btn-outline-secondary" onClick={() => setShowServerSettings(false)}>Fermer</button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal show={showShareModal} onHide={() => setShowShareModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Partager avec un ami</Modal.Title>
-        </Modal.Header>
-        <form onSubmit={submitShare}>
-          <Modal.Body>
-            {friends.length === 0 ? (
-              <p className="mb-0">Ajoutez d'abord un ami avant de partager un post en direct.</p>
-            ) : (
-              <>
-                <label className="form-label">Choisir un ami</label>
-                <select className="form-select mb-3" value={shareDraft.counterpartId} onChange={(event) => setShareDraft((previous) => ({ ...previous, counterpartId: event.target.value }))}>
-                  {friends.map((friend) => <option key={friend.id} value={friend.id}>{friend.name}</option>)}
-                </select>
-                <label className="form-label">Petit mot optionnel</label>
-                <textarea className="form-control" rows="3" value={shareDraft.message} onChange={(event) => setShareDraft((previous) => ({ ...previous, message: event.target.value }))} placeholder="Pourquoi ce post pourrait lui parler ?" />
-              </>
             )}
-          </Modal.Body>
-          <Modal.Footer>
-            <button type="button" className="btn btn-outline-dark" onClick={() => setShowShareModal(false)}>Fermer</button>
-            <button type="submit" className="btn btn-primary" disabled={friends.length === 0}>Partager</button>
-          </Modal.Footer>
-        </form>
-      </Modal>
+          </div>
 
-      <Modal show={Boolean(selectedProfile) || profileLoading} onHide={() => setSelectedProfile(null)} size="lg" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{selectedProfile?.user?.name || "Profil communautaire"}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {profileLoading || !selectedProfile ? (
-            <p className="mb-0">Chargement du profil...</p>
-          ) : (
-            <div className="social-space-profile-modal">
-              <div className="social-space-profile-banner">
-                {renderAvatar(selectedProfile.user)}
-                <div>
-                  <h3>{selectedProfile.user.name}</h3>
-                  <p>{selectedProfile.user.username ? `@${selectedProfile.user.username}` : selectedProfile.user.role}</p>
-                  <span>{selectedProfile.bio || "Pas encore de bio partagee."}</span>
-                </div>
-              </div>
-              <div className="social-space-profile-stats">
-                <div><strong>{selectedProfile.user.followersCount}</strong><span>abonnes</span></div>
-                <div><strong>{selectedProfile.followingCount}</strong><span>abonnements</span></div>
-                <div><strong>{selectedProfile.friendsCount}</strong><span>amis</span></div>
-                <div><strong>{selectedProfile.user.postsCount}</strong><span>posts</span></div>
-              </div>
-              <div className="social-space-user-actions mb-3">
-                <button type="button" className="btn btn-outline-dark" onClick={() => toggleFollow(selectedProfile.user.id)}>
-                  {selectedProfile.user.following ? "Suivi" : "Suivre"}
-                </button>
-                {selectedProfile.user.connectionStatus === "FRIEND" ? (
-                  <button type="button" className="btn btn-primary" onClick={() => { setSelectedProfile(null); openConversation(selectedProfile.user); }}>
-                    Message
-                  </button>
-                ) : selectedProfile.user.connectionStatus === "PENDING_SENT" ? (
-                  <button type="button" className="btn btn-light" disabled>Invitation envoyee</button>
+          {/* Current User Pill (Click to view own profile) */}
+          {myProfile && (
+            <div
+              className="reddit-user-chip"
+              onClick={() => myProfile.id && handleOpenUserProfile(myProfile.id)}
+              title="Voir mon profil public"
+            >
+              <div className="reddit-avatar-sm">
+                {myProfile.profilePhotoUrl ? (
+                  <img src={myProfile.profilePhotoUrl} alt="Avatar" />
                 ) : (
-                  <button type="button" className="btn btn-primary" onClick={() => sendInvitation(selectedProfile.user.id)}>
-                    Ajouter
-                  </button>
+                  <span>{getAvatarLetter(myProfile.name, myProfile.username)}</span>
                 )}
               </div>
-              <div className="social-space-modal-posts">
-                {selectedProfile.posts.map(renderPostCard)}
+              <div className="user-info-text d-none d-lg-block">
+                <div className="user-name">@{myProfile.username || "mon_profil"}</div>
+                <div className="user-role">{myProfile.role || "Patient"}</div>
               </div>
             </div>
           )}
-        </Modal.Body>
-      </Modal>
+        </div>
+      </header>
 
-      <Modal show={showProfileSetup} backdrop="static" keyboard={false} centered>
-        <Modal.Header>
-          <Modal.Title>Choisissez votre identite communautaire</Modal.Title>
-        </Modal.Header>
-        <form onSubmit={saveProfile}>
-          <Modal.Body>
-            <p className="mb-3">
-              Pour entrer dans l'espace communaute, choisissez un username. La photo de profil peut etre ajoutee maintenant ou plus tard.
-            </p>
-            <div className="social-space-profile-preview is-modal">
-              {renderAvatar({ profilePhotoUrl: profileForm.profilePhotoUrl, name: profileForm.username })}
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Username</label>
-              <input className="form-control" value={profileForm.username} onChange={(event) => setProfileForm((previous) => ({ ...previous, username: event.target.value }))} placeholder="ex: souffle.neuf" />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Bio courte</label>
-              <textarea className="form-control" rows="3" value={profileForm.bio} onChange={(event) => setProfileForm((previous) => ({ ...previous, bio: event.target.value }))} placeholder="Une phrase sur votre presence ici." />
-            </div>
-            <label className="social-space-upload-btn">
-              <i className="bi bi-camera" />
-              <span>Ajouter une photo optionnelle</span>
-              <input type="file" accept="image/*" onChange={(event) => handleProfilePhoto(event, "profile")} />
-            </label>
-          </Modal.Body>
-          <Modal.Footer>
-            <button type="submit" className="btn btn-primary" disabled={savingProfile}>
-              {savingProfile ? "Enregistrement..." : "Entrer dans la communaute"}
+      {/* 3-COLUMN REDDIT BODY */}
+      <div className="reddit-container">
+        {/* LEFT SIDEBAR: Subreddits & Flairs */}
+        <aside className="reddit-sidebar-left">
+          <div className="sidebar-section">
+            <div className="sidebar-title">FLUX PRINCIPAUX</div>
+            <button
+              className={`sidebar-nav-item ${activeSubreddit === "all" ? "active" : ""}`}
+              onClick={() => { setActiveSubreddit("all"); setActiveFlair(null); }}
+            >
+              <i className="bi bi-house-door-fill"></i>
+              <span>Accueil Global</span>
             </button>
-          </Modal.Footer>
-        </form>
-      </Modal>
+            <button
+              className={`sidebar-nav-item ${activeFilter === "hot" && activeSubreddit === "all" ? "active" : ""}`}
+              onClick={() => { setActiveFilter("hot"); setActiveSubreddit("all"); }}
+            >
+              <i className="bi bi-fire text-warning"></i>
+              <span>Populaires (Hot)</span>
+            </button>
+            <button
+              className={`sidebar-nav-item ${activeFilter === "top" ? "active" : ""}`}
+              onClick={() => setActiveFilter("top")}
+            >
+              <i className="bi bi-graph-up-arrow text-success"></i>
+              <span>Meilleurs (Top)</span>
+            </button>
+          </div>
 
-      <Modal show={Boolean(activeStory)} onHide={() => setActiveStory(null)} centered size="md" className="story-viewer-modal">
-        <Modal.Body className="p-0 position-relative bg-dark" style={{ height: '70vh', borderRadius: '16px', overflow: 'hidden' }}>
-          {activeStory && (
-            <>
-              <div className="story-progress-bar position-absolute top-0 w-100 p-2 d-flex gap-1" style={{ zIndex: 10 }}>
-                <div className="flex-grow-1 bg-white opacity-50 rounded-pill" style={{ height: '2px' }}>
-                  <div className="bg-white h-100 rounded-pill" style={{ width: '60%' }}></div>
+          <div className="sidebar-section">
+            <div className="sidebar-title">SOUS-COMMUNAUTÉS</div>
+            {DEFAULT_SUBREDDITS.filter((s) => s.id !== "all").map((sub) => (
+              <button
+                key={sub.id}
+                className={`sidebar-nav-item ${activeSubreddit === sub.id ? "active" : ""}`}
+                onClick={() => { setActiveSubreddit(sub.id); setActiveFlair(null); }}
+              >
+                <i className={`bi ${sub.icon}`} style={{ color: sub.color }}></i>
+                <div className="sub-meta">
+                  <span className="sub-name">{sub.name}</span>
+                  <span className="sub-label">{sub.label}</span>
                 </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="sidebar-section">
+            <div className="sidebar-title">THEMES / FLAIRS</div>
+            <div className="flair-chips-wrap">
+              {FLAIRS.map((f) => (
+                <button
+                  key={f.label}
+                  className={`flair-pill-btn ${activeFlair === f.label ? "active" : ""}`}
+                  style={{ color: f.color, borderColor: f.color }}
+                  onClick={() => setActiveFlair(activeFlair === f.label ? null : f.label)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="sidebar-card rules-card">
+            <div className="rules-header">
+              <i className="bi bi-shield-check text-primary"></i>
+              <span>Charte Bienveillante</span>
+            </div>
+            <p className="rules-text">
+              Respect mutuel, secret médical, encouragements sans jugement et modération assurée par des tabacologues certifiés.
+            </p>
+          </div>
+        </aside>
+
+        {/* CENTRAL FEED: Quick Post Bar, Sort Tabs, Post Cards */}
+        <main className="reddit-main-feed">
+          {/* Quick Post Box */}
+          <div className="reddit-quick-post" onClick={() => setShowCreateModal(true)}>
+            <div className="reddit-avatar-sm">
+              {myProfile?.profilePhotoUrl ? (
+                <img src={myProfile.profilePhotoUrl} alt="Avatar" />
+              ) : (
+                <span>{getAvatarLetter(myProfile?.name, myProfile?.username)}</span>
+              )}
+            </div>
+            <input
+              type="text"
+              readOnly
+              placeholder="Une victoire, un conseil, un craving ou une photo à partager ?"
+            />
+            <div className="quick-post-actions">
+              <button className="quick-action-btn" title="Photo"><i className="bi bi-image"></i></button>
+              <button className="quick-action-btn" title="Lien"><i className="bi bi-link-45deg"></i></button>
+            </div>
+          </div>
+
+          {/* Sort Filter Bar */}
+          <div className="reddit-sort-bar">
+            <div className="sort-buttons">
+              <button
+                className={`sort-tab ${activeFilter === "hot" ? "active" : ""}`}
+                onClick={() => setActiveFilter("hot")}
+              >
+                <i className="bi bi-fire"></i>
+                <span>Populaires</span>
+              </button>
+              <button
+                className={`sort-tab ${activeFilter === "new" ? "active" : ""}`}
+                onClick={() => setActiveFilter("new")}
+              >
+                <i className="bi bi-stars"></i>
+                <span>Nouveaux</span>
+              </button>
+              <button
+                className={`sort-tab ${activeFilter === "top" ? "active" : ""}`}
+                onClick={() => setActiveFilter("top")}
+              >
+                <i className="bi bi-trophy"></i>
+                <span>Meilleurs</span>
+              </button>
+              <button
+                className={`sort-tab ${activeFilter === "discussed" ? "active" : ""}`}
+                onClick={() => setActiveFilter("discussed")}
+              >
+                <i className="bi bi-chat-left-text"></i>
+                <span>Discussions</span>
+              </button>
+            </div>
+
+            {activeFlair && (
+              <div className="active-flair-indicator">
+                <span>Filtré par : <strong>{activeFlair}</strong></span>
+                <button onClick={() => setActiveFlair(null)}><i className="bi bi-x"></i></button>
               </div>
-              <div className="story-header position-absolute top-0 w-100 p-3 d-flex align-items-center gap-2" style={{ zIndex: 10, marginTop: '8px' }}>
-                <img src={activeStory.avatar || "/icons/icon_Neural_Consult_Sevrage.png"} className="rounded-circle border border-white" style={{ width: '32px', height: '32px' }} alt="" />
-                <span className="text-white fw-bold small">{activeStory.name}</span>
-                <span className="text-white-50 small">12h</span>
-                <button type="button" className="btn-close btn-close-white ms-auto" onClick={() => setActiveStory(null)}></button>
+            )}
+          </div>
+
+          {/* Posts Stream */}
+          {loading ? (
+            <div className="reddit-loading">
+              <div className="spinner-border text-primary" role="status"></div>
+              <span>Chargement des échanges communautaires...</span>
+            </div>
+          ) : filteredPosts.length === 0 ? (
+            <div className="reddit-empty-state">
+              <div className="empty-icon">🫁</div>
+              <h4>Aucune publication trouvée</h4>
+              <p>Soyez le premier à partager une victoire ou à poser une question médicale !</p>
+              <button className="reddit-create-btn" onClick={() => setShowCreateModal(true)}>
+                <i className="bi bi-plus-lg me-1"></i> Publier maintenant
+              </button>
+            </div>
+          ) : (
+            <div className="reddit-posts-list">
+              {filteredPosts.map((post) => {
+                const isDoctor = post.author?.isDoctor || post.author?.role === "Médecin Tabacologue";
+                const netScore = (post.upvotesCount || 0) - (post.downvotesCount || 0);
+                const commentsOpen = !!expandedComments[post.id];
+                const commentsList = post.comments || [];
+
+                return (
+                  <article key={post.id} className="reddit-post-card">
+                    {/* LEFT VOTE COLUMN */}
+                    <div className="reddit-vote-column">
+                      <button
+                        className={`vote-btn upvote ${post.myReaction === "UPVOTE" ? "voted" : ""}`}
+                        title="Upvote"
+                        onClick={() => handleVote(post.id, "UPVOTE")}
+                      >
+                        <i className="bi bi-arrow-up-circle-fill"></i>
+                      </button>
+                      <span className={`vote-score ${netScore > 0 ? "positive" : netScore < 0 ? "negative" : ""}`}>
+                        {netScore}
+                      </span>
+                      <button
+                        className={`vote-btn downvote ${post.myReaction === "DOWNVOTE" ? "voted" : ""}`}
+                        title="Downvote"
+                        onClick={() => handleVote(post.id, "DOWNVOTE")}
+                      >
+                        <i className="bi bi-arrow-down-circle-fill"></i>
+                      </button>
+                    </div>
+
+                    {/* MAIN POST BODY */}
+                    <div className="reddit-post-main">
+                      {/* Post Header: Subreddit, Author (clickable to profile), Role, Time, Flair */}
+                      <div className="reddit-post-header">
+                        <span className="post-subreddit">{post.serverName || "r/victoires_sevrage"}</span>
+                        <span className="meta-dot">·</span>
+
+                        {/* Author Clickable to Profile */}
+                        <div
+                          className="post-author-wrap"
+                          onClick={() => post.author?.id && handleOpenUserProfile(post.author.id)}
+                        >
+                          <div className="author-avatar-xs">
+                            {post.author?.profilePhotoUrl ? (
+                              <img src={post.author.profilePhotoUrl} alt="Author" />
+                            ) : (
+                              <span>{getAvatarLetter(post.author?.name, post.author?.username)}</span>
+                            )}
+                          </div>
+                          <span className="author-username">@{post.author?.username || "membre"}</span>
+                        </div>
+
+                        {/* Role / Doctor Badge */}
+                        {isDoctor ? (
+                          <span className="badge-doctor" title="Médecin Tabacologue Certifié">
+                            <i className="bi bi-patch-check-fill me-1"></i>
+                            {post.author?.name || "Dr. Tabacologue"}
+                          </span>
+                        ) : (
+                          <span className="badge-patient">
+                            {post.author?.smokeFreeStatus || "Patient"}
+                          </span>
+                        )}
+
+                        <span className="meta-dot">·</span>
+                        <span className="post-time">{formatDateAgo(post.createdAt)}</span>
+
+                        {/* Flair Pill */}
+                        {post.flair && (
+                          <span className="post-flair-pill">{post.flair}</span>
+                        )}
+
+                        {/* Follow Button on Post Header */}
+                        {post.author && authUser && post.author.id !== authUser.id && (
+                          <button
+                            className={`post-follow-btn ${post.author.following ? "following" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleFollow(post.author.id);
+                            }}
+                          >
+                            {post.author.following ? "Abonné" : "+ Suivre"}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Post Title */}
+                      {post.title && (
+                        <h2 className="reddit-post-title">{post.title}</h2>
+                      )}
+
+                      {/* Post Content */}
+                      <div className="reddit-post-content">
+                        {post.content}
+                      </div>
+
+                      {/* Post Image (Click to open Lightbox) */}
+                      {post.imageUrl && (
+                        <div className="reddit-post-media" onClick={() => setImageLightboxUrl(post.imageUrl)}>
+                          <img src={post.imageUrl} alt="Média publication" loading="lazy" />
+                        </div>
+                      )}
+
+                      {/* REPOST BOX (If this post is a repost) */}
+                      {post.repostOfPost && (
+                        <div className="reddit-repost-box">
+                          <div className="repost-header">
+                            <i className="bi bi-arrow-repeat me-1 text-primary"></i>
+                            <span className="repost-origin-author" onClick={() => post.repostOfPost.author?.id && handleOpenUserProfile(post.repostOfPost.author.id)}>
+                              @{post.repostOfPost.author?.username || "membre"}
+                            </span>
+                            <span className="meta-dot">·</span>
+                            <span className="repost-sub">{post.repostOfPost.serverName}</span>
+                          </div>
+                          {post.repostOfPost.title && <div className="repost-title">{post.repostOfPost.title}</div>}
+                          <div className="repost-content">{post.repostOfPost.content}</div>
+                          {post.repostOfPost.imageUrl && (
+                            <img className="repost-image" src={post.repostOfPost.imageUrl} alt="Repost média" />
+                          )}
+                        </div>
+                      )}
+
+                      {/* Post Footer Actions */}
+                      <div className="reddit-post-footer">
+                        {/* Comments Toggle */}
+                        <button
+                          className={`footer-action-btn ${commentsOpen ? "active" : ""}`}
+                          onClick={() => setExpandedComments((prev) => ({ ...prev, [post.id]: !prev[post.id] }))}
+                        >
+                          <i className="bi bi-chat-square-text-fill"></i>
+                          <span>{commentsList.length} Commentaires</span>
+                        </button>
+
+                        {/* Repost Button */}
+                        <button
+                          className="footer-action-btn"
+                          title="Republier ce témoignage"
+                          onClick={() => {
+                            setTargetRepostPost(post);
+                            setShowRepostModal(true);
+                          }}
+                        >
+                          <i className="bi bi-arrow-repeat"></i>
+                          <span>Republier</span>
+                        </button>
+
+                        {/* Emoji Quick Reactions */}
+                        <div className="reaction-chips-wrap">
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "LOVE")} title="Soutien 💖">
+                            💖 {post.reactions?.LOVE || 0}
+                          </button>
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "FIRE")} title="Force 🔥">
+                            🔥 {post.reactions?.FIRE || 0}
+                          </button>
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "CLAP")} title="Bravo 👏">
+                            👏 {post.reactions?.CLAP || 0}
+                          </button>
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "INSIGHT")} title="Utile 💡">
+                            💡 {post.reactions?.INSIGHT || 0}
+                          </button>
+                        </div>
+
+                        {/* Share Button */}
+                        <button
+                          className="footer-action-btn ms-auto"
+                          title="Partager"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(window.location.href);
+                            showToast("Lien de la publication copié !");
+                          }}
+                        >
+                          <i className="bi bi-share"></i>
+                          <span>Partager</span>
+                        </button>
+                      </div>
+
+                      {/* EXPANDABLE COMMENTS THREAD */}
+                      {commentsOpen && (
+                        <div className="reddit-comments-section">
+                          {/* Add Comment Input */}
+                          <div className="comment-composer">
+                            <div className="reddit-avatar-xs">
+                              {myProfile?.profilePhotoUrl ? (
+                                <img src={myProfile.profilePhotoUrl} alt="Avatar" />
+                              ) : (
+                                <span>{getAvatarLetter(myProfile?.name, myProfile?.username)}</span>
+                              )}
+                            </div>
+                            <div className="comment-input-wrap">
+                              {replyingTo[post.id] && (
+                                <div className="replying-banner">
+                                  <span>Réponse en cours à un commentaire</span>
+                                  <button onClick={() => setReplyingTo((prev) => ({ ...prev, [post.id]: null }))}>
+                                    <i className="bi bi-x"></i>
+                                  </button>
+                                </div>
+                              )}
+                              <input
+                                type="text"
+                                placeholder={replyingTo[post.id] ? "Votre réponse..." : "Ajouter un commentaire constructif et bienveillant..."}
+                                value={commentInputs[post.id] || ""}
+                                onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleAddComment(post.id);
+                                  }
+                                }}
+                              />
+                              <button
+                                className="comment-submit-btn"
+                                disabled={!commentInputs[post.id]?.trim()}
+                                onClick={() => handleAddComment(post.id)}
+                              >
+                                Publier
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Comments List */}
+                          <div className="comments-tree">
+                            {commentsList.length === 0 ? (
+                              <div className="comments-empty">Aucun commentaire pour le moment. Soyez le premier à répondre !</div>
+                            ) : (
+                              commentsList.map((comm) => {
+                                const isCommDoc = comm.authorRole?.includes("Medecin") || comm.authorVerifiedBadge;
+                                const isReply = !!comm.parentCommentId;
+
+                                return (
+                                  <div key={comm.id} className={`comment-card ${isReply ? "nested-reply" : ""}`}>
+                                    {/* Author Avatar (Clickable to Profile) */}
+                                    <div
+                                      className="comment-avatar"
+                                      onClick={() => comm.authorId && handleOpenUserProfile(comm.authorId)}
+                                    >
+                                      {comm.authorPhotoUrl ? (
+                                        <img src={comm.authorPhotoUrl} alt="Avatar" />
+                                      ) : (
+                                        <span>{getAvatarLetter(comm.authorName, comm.authorUsername)}</span>
+                                      )}
+                                    </div>
+
+                                    <div className="comment-body">
+                                      <div className="comment-header">
+                                        <span
+                                          className="comment-author-name"
+                                          onClick={() => comm.authorId && handleOpenUserProfile(comm.authorId)}
+                                        >
+                                          @{comm.authorUsername || "membre"}
+                                        </span>
+
+                                        {isCommDoc && (
+                                          <span className="badge-doctor-sm">
+                                            <i className="bi bi-patch-check-fill me-1"></i> {comm.authorName}
+                                          </span>
+                                        )}
+
+                                        <span className="meta-dot">·</span>
+                                        <span className="comment-time">{formatDateAgo(comm.createdAt)}</span>
+                                      </div>
+
+                                      <div className="comment-text">{comm.content}</div>
+
+                                      {/* Comment Actions: Upvote, React, Reply */}
+                                      <div className="comment-actions">
+                                        <button
+                                          className={`comment-vote-btn ${comm.myReaction === "UPVOTE" ? "voted" : ""}`}
+                                          onClick={() => handleCommentReaction(post.id, comm.id, "UPVOTE")}
+                                        >
+                                          <i className="bi bi-arrow-up-circle me-1"></i>
+                                          <span>{comm.upvotesCount || 0}</span>
+                                        </button>
+
+                                        <button
+                                          className="comment-reply-btn"
+                                          onClick={() => {
+                                            setReplyingTo((prev) => ({ ...prev, [post.id]: comm.id }));
+                                            document.querySelector(".comment-input-wrap input")?.focus();
+                                          }}
+                                        >
+                                          <i className="bi bi-reply-fill me-1"></i> Répondre
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </main>
+
+        {/* RIGHT SIDEBAR: Widgets & Verified Tabacologues */}
+        <aside className="reddit-sidebar-right">
+          {/* Community Info Widget */}
+          <div className="sidebar-card community-about-card">
+            <div className="about-header">
+              <h6>À propos de NeuralConsult</h6>
+            </div>
+            <p className="about-desc">
+              Réseau clinique et d'entraide dédié à l'arrêt du tabac, supervisé par des médecins tabacologues et enrichi par la force du collectif.
+            </p>
+            <div className="about-stats-grid">
+              <div className="stat-box">
+                <span className="stat-val">{posts.length}+</span>
+                <span className="stat-lbl">Témoignages</span>
               </div>
-              <div className="story-content w-100 h-100 d-flex align-items-center justify-content-center">
-                {activeStory.avatar ? (
-                  <img src={activeStory.avatar} className="w-100 h-100 object-fit-cover" alt="" />
-                ) : (
-                  <div className="w-100 h-100 d-flex align-items-center justify-content-center text-white fs-1 fw-bold" style={{ background: 'linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6)' }}>
-                    {activeStory.initial}
+              <div className="stat-box">
+                <span className="stat-val">100%</span>
+                <span className="stat-lbl">Bienveillance</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-val">24/7</span>
+                <span className="stat-lbl">Soutien</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Verified Tabacologues Card */}
+          <div className="sidebar-card doctors-card">
+            <div className="widget-header">
+              <i className="bi bi-patch-check-fill text-primary"></i>
+              <h6>Tabacologues & Médecins</h6>
+            </div>
+            <div className="doctors-list">
+              {people.filter((p) => p.isDoctor || p.role?.includes("Medecin")).slice(0, 4).map((doc) => (
+                <div key={doc.id} className="doc-item">
+                  <div className="doc-avatar" onClick={() => handleOpenUserProfile(doc.id)}>
+                    {doc.profilePhotoUrl ? (
+                      <img src={doc.profilePhotoUrl} alt="Dr" />
+                    ) : (
+                      <span>{getAvatarLetter(doc.name, doc.username)}</span>
+                    )}
                   </div>
-                )}
+                  <div className="doc-info" onClick={() => handleOpenUserProfile(doc.id)}>
+                    <div className="doc-name">{doc.name || `@${doc.username}`}</div>
+                    <div className="doc-spec">{doc.bio || "Médecin Tabacologue"}</div>
+                  </div>
+                  <button
+                    className={`doc-follow-btn ${doc.following ? "following" : ""}`}
+                    onClick={() => handleToggleFollow(doc.id)}
+                  >
+                    {doc.following ? "Suivi" : "+ Suivre"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Milestones Leaderboard */}
+          <div className="sidebar-card leaderboard-card">
+            <div className="widget-header">
+              <i className="bi bi-award-fill text-warning"></i>
+              <h6>Tableau d'Honneur</h6>
+            </div>
+            <div className="leader-item">
+              <span className="badge-rank gold">1</span>
+              <div className="leader-info">
+                <span className="leader-name">@samy_zen</span>
+                <span className="leader-score">🌟 30 jours sans tabac</span>
               </div>
-              <div className="story-footer position-absolute bottom-0 w-100 p-3 d-flex gap-2" style={{ zIndex: 10 }}>
-                <input className="form-control form-control-sm bg-transparent border-white text-white rounded-pill" placeholder="Repondre a la story..." />
-                <button className="btn btn-link text-white p-0"><i className="bi bi-heart fs-4"></i></button>
-                <button className="btn btn-link text-white p-0"><i className="bi bi-send fs-4"></i></button>
+            </div>
+            <div className="leader-item">
+              <span className="badge-rank silver">2</span>
+              <div className="leader-info">
+                <span className="leader-name">@yasmine_m</span>
+                <span className="leader-score">🌟 14 jours sans tabac</span>
+              </div>
+            </div>
+            <div className="leader-item">
+              <span className="badge-rank bronze">3</span>
+              <div className="leader-info">
+                <span className="leader-name">@karim_courage</span>
+                <span className="leader-score">💪 8 jours sans tabac</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 👤 USER PROFILE MODAL (ONE-CLICK ON AVATAR OR USERNAME ANYWHERE)         */}
+      {/* ========================================================================= */}
+      <Modal
+        show={showProfileModal}
+        onHide={() => setShowProfileModal(false)}
+        centered
+        className="reddit-profile-modal"
+        size="lg"
+      >
+        <div className="profile-modal-wrap">
+          {profileLoading || !selectedUserProfile ? (
+            <div className="profile-modal-loading">
+              <div className="spinner-border text-primary"></div>
+              <span>Chargement du profil...</span>
+            </div>
+          ) : (
+            <>
+              {/* Profile Cover / Header */}
+              <div className="profile-cover-banner">
+                <button className="profile-close-btn" onClick={() => setShowProfileModal(false)}>
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              </div>
+
+              <div className="profile-body-content">
+                {/* Profile Avatar & Primary Actions */}
+                <div className="profile-avatar-row">
+                  <div className="profile-avatar-lg">
+                    {selectedUserProfile.user?.profilePhotoUrl ? (
+                      <img src={selectedUserProfile.user.profilePhotoUrl} alt="Avatar" />
+                    ) : (
+                      <span>{getAvatarLetter(selectedUserProfile.user?.name, selectedUserProfile.user?.username)}</span>
+                    )}
+                  </div>
+
+                  <div className="profile-action-buttons">
+                    {authUser && selectedUserProfile.user?.id !== authUser.id && (
+                      <>
+                        <button
+                          className={`btn-follow-lg ${selectedUserProfile.user?.following ? "following" : ""}`}
+                          onClick={() => handleToggleFollow(selectedUserProfile.user?.id)}
+                        >
+                          {selectedUserProfile.user?.following ? "Abonné" : "+ S'abonner"}
+                        </button>
+                        <button
+                          className="btn-chat-lg"
+                          onClick={() => {
+                            setShowProfileModal(false);
+                            handleOpenChatWith(selectedUserProfile.user);
+                          }}
+                        >
+                          <i className="bi bi-chat-dots-fill me-1"></i> Message Privé
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Name, Pseudonym & Confidentiality Status */}
+                <div className="profile-identity">
+                  <h3 className="profile-pseudo">@{selectedUserProfile.user?.username || "membre"}</h3>
+                  {selectedUserProfile.user?.isDoctor ? (
+                    <div className="profile-badge-doctor">
+                      <i className="bi bi-patch-check-fill me-1"></i> {selectedUserProfile.user?.name} · Médecin Tabacologue
+                    </div>
+                  ) : (
+                    <div className="profile-badge-patient">
+                      <i className="bi bi-shield-lock-fill me-1"></i> Patient Anonymisé (Identité protégée)
+                    </div>
+                  )}
+                </div>
+
+                {/* Bio & Status */}
+                <p className="profile-bio-text">
+                  {selectedUserProfile.user?.bio || "Membre engagé dans la communauté NeuralConsult."}
+                </p>
+
+                {/* Stats Grid: Karma, Followers, Posts, Smoke-Free Milestone */}
+                <div className="profile-stats-grid">
+                  <div className="pstat-item">
+                    <span className="pstat-val">{selectedUserProfile.karmaScore || 15}</span>
+                    <span className="pstat-lbl">Karma Entraide</span>
+                  </div>
+                  <div className="pstat-item">
+                    <span className="pstat-val">{selectedUserProfile.followersCount || 0}</span>
+                    <span className="pstat-lbl">Abonnés</span>
+                  </div>
+                  <div className="pstat-item">
+                    <span className="pstat-val">{selectedUserProfile.followingCount || 0}</span>
+                    <span className="pstat-lbl">Abonnements</span>
+                  </div>
+                  <div className="pstat-item">
+                    <span className="pstat-val">{selectedUserProfile.posts?.length || 0}</span>
+                    <span className="pstat-lbl">Publications</span>
+                  </div>
+                </div>
+
+                {/* User's Public Posts Stream */}
+                <div className="profile-posts-section">
+                  <h5>Publications partagées</h5>
+                  {(selectedUserProfile.posts || []).length === 0 ? (
+                    <div className="profile-no-posts">Cet utilisateur n'a pas encore partagé de publications.</div>
+                  ) : (
+                    <div className="profile-posts-list">
+                      {selectedUserProfile.posts.map((p) => (
+                        <div key={p.id} className="profile-post-card">
+                          <div className="pcard-header">
+                            <span className="pcard-sub">{p.serverName}</span>
+                            <span className="meta-dot">·</span>
+                            <span className="pcard-time">{formatDateAgo(p.createdAt)}</span>
+                            {p.flair && <span className="pcard-flair">{p.flair}</span>}
+                          </div>
+                          {p.title && <div className="pcard-title">{p.title}</div>}
+                          <div className="pcard-text">{p.content}</div>
+                          {p.imageUrl && (
+                            <img className="pcard-img" src={p.imageUrl} alt="Média" />
+                          )}
+                          <div className="pcard-footer">
+                            <span><i className="bi bi-arrow-up-circle-fill text-warning me-1"></i> {p.upvotesCount || 0} upvotes</span>
+                            <span><i className="bi bi-chat-fill text-primary ms-3 me-1"></i> {p.comments?.length || 0} commentaires</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
-        </Modal.Body>
+        </div>
       </Modal>
 
-      <Modal show={showBlockedModal} onHide={() => setShowBlockedModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Comptes bloqués</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="text-center text-muted p-4">
-            <i className="bi bi-shield-check fs-1 mb-2"></i>
-            <p>Vous n'avez bloqué aucun compte pour le moment.</p>
+      {/* ========================================================================= */}
+      {/* 📝 CREATE POST MODAL (REDDIT STYLE)                                      */}
+      {/* ========================================================================= */}
+      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered size="lg" className="reddit-modal">
+        <div className="modal-content-reddit">
+          <div className="modal-header-reddit">
+            <h5 className="modal-title"><i className="bi bi-pencil-square me-2 text-primary"></i>Créer une publication</h5>
+            <button className="btn-close-reddit" onClick={() => setShowCreateModal(false)}><i className="bi bi-x-lg"></i></button>
           </div>
-        </Modal.Body>
-      </Modal>
 
-      {/* Mobile Post Composer Modal */}
-      <Modal show={showComposerModal} onHide={() => setShowComposerModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>✨ Créer une publication</Modal.Title>
-        </Modal.Header>
-        <form onSubmit={(e) => { publishPost(e); setShowComposerModal(false); }}>
-          <Modal.Body>
-            <p className="text-muted small mb-3">Partagez vos victoires, vos progrès ou posez une question au groupe.</p>
-            <textarea
-              className="form-control mb-3"
-              rows="4"
-              placeholder={getActiveServer() ? `Écrire dans #${getActiveServer()?.name}...` : "Qu'est-ce qui mérite d'être partagé aujourd'hui ?"}
-              value={composer.content}
-              onChange={(event) => setComposer((previous) => ({ ...previous, content: event.target.value, serverId: getActiveServer()?.id || "" }))}
-              style={{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', padding: '12px', resize: 'none' }}
-              required
-            />
-            {composer.imageUrl && (
-              <div className="position-relative mb-3 rounded overflow-hidden" style={{ maxHeight: '200px' }}>
-                <img src={composer.imageUrl} alt="Aperçu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button type="button" className="btn btn-danger btn-sm position-absolute top-2 right-2 rounded-circle" onClick={() => setComposer((previous) => ({ ...previous, imageUrl: "" }))} style={{ width: '30px', height: '30px', padding: 0 }}>
-                  <i className="bi bi-trash" />
+          <form onSubmit={handleCreatePostSubmit}>
+            <div className="modal-body-reddit">
+              {/* Select Subreddit */}
+              <div className="form-group-reddit">
+                <label>Choisir la sous-communauté</label>
+                <select
+                  value={postDraft.serverId}
+                  onChange={(e) => setPostDraft({ ...postDraft, serverId: e.target.value })}
+                >
+                  <option value="">r/tous · Fil Général</option>
+                  {servers.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} · {s.description}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Select Flair */}
+              <div className="form-group-reddit">
+                <label>Étiquette / Flair de sujet</label>
+                <div className="flair-select-row">
+                  {FLAIRS.map((f) => (
+                    <button
+                      type="button"
+                      key={f.label}
+                      className={`flair-btn ${postDraft.flair === f.label ? "selected" : ""}`}
+                      style={{ color: f.color }}
+                      onClick={() => setPostDraft({ ...postDraft, flair: f.label })}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Title Input */}
+              <div className="form-group-reddit">
+                <label>Titre de votre publication *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Un titre clair et accrocheur (ex: 30 jours sans fumer ! Mon astuce du matin...)"
+                  value={postDraft.title}
+                  onChange={(e) => setPostDraft({ ...postDraft, title: e.target.value })}
+                />
+              </div>
+
+              {/* Post Tabs: Text or Media */}
+              <div className="post-tabs-nav">
+                <button
+                  type="button"
+                  className={`tab-btn ${postTab === "text" ? "active" : ""}`}
+                  onClick={() => setPostTab("text")}
+                >
+                  <i className="bi bi-card-text me-1"></i> Texte & Récit
+                </button>
+                <button
+                  type="button"
+                  className={`tab-btn ${postTab === "media" ? "active" : ""}`}
+                  onClick={() => setPostTab("media")}
+                >
+                  <i className="bi bi-image me-1"></i> Image / Photo
                 </button>
               </div>
-            )}
-            <label className="d-flex align-items-center gap-2 justify-content-center p-3 rounded-3 w-100" style={{ border: '1px dashed rgba(37, 99, 235, 0.3)', cursor: 'pointer', background: 'rgba(37, 99, 235, 0.03)' }}>
-              <i className="bi bi-image text-primary fs-5" />
-              <span className="text-primary fw-semibold small">Ajouter une photo</span>
-              <input type="file" accept="image/*" className="d-none" onChange={(event) => handleProfilePhoto(event, "composer")} />
-            </label>
-          </Modal.Body>
-          <Modal.Footer>
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowComposerModal(false)}>Fermer</button>
-            <button type="submit" className="btn btn-primary" disabled={publishing || !composer.content.trim()}>
-              {publishing ? "Publication..." : "Publier"}
-            </button>
-          </Modal.Footer>
-        </form>
+
+              {/* Content Textarea */}
+              <div className="form-group-reddit">
+                <label>Corps du message</label>
+                <textarea
+                  rows="5"
+                  placeholder="Partagez vos sentiments, difficultés surmontées, conseils ou questionnements..."
+                  value={postDraft.content}
+                  onChange={(e) => setPostDraft({ ...postDraft, content: e.target.value })}
+                ></textarea>
+              </div>
+
+              {/* Image Input if tab is media */}
+              {postTab === "media" && (
+                <div className="form-group-reddit">
+                  <label>URL de l'image / Photo</label>
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/..."
+                    value={postDraft.imageUrl}
+                    onChange={(e) => setPostDraft({ ...postDraft, imageUrl: e.target.value })}
+                  />
+                  {postDraft.imageUrl && (
+                    <div className="img-preview-wrap mt-2">
+                      <img src={postDraft.imageUrl} alt="Prévisualisation" style={{ maxHeight: "200px", borderRadius: "8px" }} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer-reddit">
+              <button type="button" className="btn-cancel" onClick={() => setShowCreateModal(false)}>Annuler</button>
+              <button type="submit" className="btn-submit" disabled={actionLoading}>
+                {actionLoading ? "Publication en cours..." : "Publier"}
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
+
+      {/* ========================================================================= */}
+      {/* 🔄 REPOST MODAL                                                           */}
+      {/* ========================================================================= */}
+      <Modal show={showRepostModal} onHide={() => setShowRepostModal(false)} centered className="reddit-modal">
+        <div className="modal-content-reddit">
+          <div className="modal-header-reddit">
+            <h5 className="modal-title"><i className="bi bi-arrow-repeat me-2 text-primary"></i>Republier ce témoignage</h5>
+            <button className="btn-close-reddit" onClick={() => setShowRepostModal(false)}><i className="bi bi-x-lg"></i></button>
+          </div>
+
+          <div className="modal-body-reddit">
+            <div className="form-group-reddit">
+              <label>Votre mot d'accompagnement</label>
+              <textarea
+                rows="3"
+                placeholder="Pourquoi cette publication vous inspire-t-elle ?"
+                value={repostComment}
+                onChange={(e) => setRepostComment(e.target.value)}
+              ></textarea>
+            </div>
+
+            {targetRepostPost && (
+              <div className="reddit-repost-box mt-3">
+                <div className="repost-header">
+                  <span>@{targetRepostPost.author?.username}</span>
+                  <span className="meta-dot">·</span>
+                  <span>{targetRepostPost.serverName}</span>
+                </div>
+                <div className="repost-title">{targetRepostPost.title}</div>
+                <div className="repost-content">{targetRepostPost.content}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="modal-footer-reddit">
+            <button className="btn-cancel" onClick={() => setShowRepostModal(false)}>Annuler</button>
+            <button className="btn-submit" onClick={handleRepostSubmit} disabled={actionLoading}>
+              {actionLoading ? "Republication..." : "Republier"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* 💬 REDDIT FLOATING DOCKED CHAT WIDGET                                     */}
+      {/* ========================================================================= */}
+      {chatDockOpen && (
+        <div className="reddit-chat-dock">
+          {/* Chat Header */}
+          <div className="chat-dock-header">
+            <div className="chat-title-wrap">
+              <i className="bi bi-chat-dots-fill text-primary me-2"></i>
+              <span>{activeChatTarget ? `@${activeChatTarget.username}` : "Discussions NeuralConsult"}</span>
+            </div>
+            <div className="chat-header-actions">
+              {activeChatTarget && (
+                <button className="chat-btn-back" onClick={() => setActiveChatTarget(null)} title="Liste des discussions">
+                  <i className="bi bi-arrow-left"></i>
+                </button>
+              )}
+              <button className="chat-btn-close" onClick={() => setChatDockOpen(false)} title="Fermer le chat">
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          {/* Chat Body */}
+          <div className="chat-dock-body">
+            {!activeChatTarget ? (
+              /* Conversations List & User Search */
+              <div className="chat-contacts-view">
+                <div className="chat-search-input">
+                  <i className="bi bi-search"></i>
+                  <input
+                    type="text"
+                    placeholder="Rechercher un membre pour chatter..."
+                    value={chatSearchQuery}
+                    onChange={(e) => setChatSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                <div className="contacts-list">
+                  {people
+                    .filter((p) => !chatSearchQuery || p.username?.toLowerCase().includes(chatSearchQuery.toLowerCase()))
+                    .map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="contact-item"
+                        onClick={() => handleOpenChatWith(contact)}
+                      >
+                        <div className="contact-avatar">
+                          {contact.profilePhotoUrl ? (
+                            <img src={contact.profilePhotoUrl} alt="Avatar" />
+                          ) : (
+                            <span>{getAvatarLetter(contact.name, contact.username)}</span>
+                          )}
+                        </div>
+                        <div className="contact-info">
+                          <div className="contact-name">@{contact.username}</div>
+                          <div className="contact-role">{contact.isDoctor ? "🩺 Médecin" : "Patient"}</div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ) : (
+              /* Active Message Stream */
+              <div className="chat-stream-view">
+                <div className="messages-scroll-area">
+                  {chatMessages.length === 0 ? (
+                    <div className="chat-empty">Démarrez votre conversation bienveillante avec @{activeChatTarget.username} !</div>
+                  ) : (
+                    chatMessages.map((msg) => {
+                      const isMe = msg.senderUsername === myProfile?.username || msg.outgoing;
+                      return (
+                        <div key={msg.id} className={`chat-bubble-wrap ${isMe ? "me" : "them"}`}>
+                          <div className="chat-bubble">
+                            <div className="chat-text">{msg.content}</div>
+                            <div className="chat-time">{formatDateAgo(msg.createdAt)}</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Message Input Bar */}
+                <form className="chat-input-bar" onSubmit={handleSendChatMessage}>
+                  <input
+                    type="text"
+                    placeholder="Écrire un message..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                  />
+                  <button type="submit" disabled={!chatInput.trim()}>
+                    <i className="bi bi-send-fill"></i>
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 🔍 IMAGE LIGHTBOX MODAL                                                   */}
+      {/* ========================================================================= */}
+      {imageLightboxUrl && (
+        <div className="image-lightbox-overlay" onClick={() => setImageLightboxUrl(null)}>
+          <button className="lightbox-close"><i className="bi bi-x-lg"></i></button>
+          <img src={imageLightboxUrl} alt="Zoom Média" />
+        </div>
+      )}
     </div>
   );
-};
-
-export default Communities;
+}

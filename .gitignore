@@ -1,4 +1,4 @@
-﻿# Java
+# Java
 /target/
 *.class
 *.log
@@ -42,4 +42,4 @@ implement_zones.js
 remove_filters.js
 final_css_overrides.js
 update_app.js
-
+antigravity_chat_history.md

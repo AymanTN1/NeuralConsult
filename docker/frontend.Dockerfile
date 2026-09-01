@@ -1,4 +1,4 @@
-﻿# ============= BUILD STAGE =============
+# ============= BUILD STAGE =============
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -6,9 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY frontend/package.json frontend/package-lock.json* ./
 
-# Install dependencies (including Tesseract.js for OCR)
-# - tesseract.js: Required for Identity OCR verification
-# - pdfjs-dist: Required for PDF support in OCR
+# Install dependencies
 RUN npm install --legacy-peer-deps
 
 # Copy frontend source code
@@ -39,7 +37,5 @@ RUN echo 'server { \
 
 EXPOSE 80
 
-# Health check for container orchestration
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/index.html || exit 1
-
+  CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
