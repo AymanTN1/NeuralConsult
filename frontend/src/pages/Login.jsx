@@ -68,7 +68,11 @@ const Login = () => {
         });
         return;
       }
-      setError(apiError?.message || "La connexion a été refusée. Vérifiez l'email et le mot de passe.");
+      if (err?.code === "ECONNABORTED" || err?.message?.includes("timeout") || !err?.response) {
+        setError("Impossible de joindre le serveur API (délai d'attente dépassé ou serveur en réveil). Veuillez réessayer dans quelques instants.");
+      } else {
+        setError(apiError?.message || "La connexion a été refusée. Vérifiez l'email et le mot de passe.");
+      }
     } finally {
       setLoading(false);
       setDemoLoadingKey(null);
