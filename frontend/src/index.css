@@ -318,28 +318,29 @@ body.dark-theme .public-nav-landing,
 }
 
 .public-brand-mark {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 0.85rem;
+  width: auto;
+  height: auto;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(14, 165, 233, 0.15));
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.1);
-  overflow: hidden;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .public-brand:hover .public-brand-mark {
-  transform: scale(1.05) rotate(2deg);
+  transform: scale(1.05);
 }
 
 .public-brand-img {
-  width: 32px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 6px;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: transparent !important;
 }
 
 .public-brand-eyebrow {
@@ -7156,8 +7157,6 @@ body.light-theme .sidebar-link:hover {
 
 body.light-theme .sidebar-link.active,
 body.light-theme .btn-dark,
-body.light-theme .public-brand-mark,
-body.light-theme .brand-mark,
 body.light-theme .community-avatar,
 body.light-theme .evaluation-timeline-row-node,
 body.light-theme .landing-roadmap-row-node {
@@ -7524,8 +7523,6 @@ body.dark-theme .sidebar-link-icon {
 }
 
 body.dark-theme .btn-dark,
-body.dark-theme .public-brand-mark,
-body.dark-theme .brand-mark,
 body.dark-theme .community-avatar,
 body.dark-theme .evaluation-timeline-row-node,
 body.dark-theme .landing-roadmap-row-node {
@@ -11190,13 +11187,16 @@ body.dark-theme .authority-pill-text span,
 }
 
 .brand-mark {
-  width: 38px;
-  height: 38px;
+  width: auto;
+  height: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   transition: transform 0.2s ease;
 }
 
@@ -11205,11 +11205,11 @@ body.dark-theme .authority-pill-text span,
 }
 
 .brand-mark img {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
-  object-fit: cover;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  object-fit: contain;
+  background: transparent !important;
 }
 
 .brand-text {
