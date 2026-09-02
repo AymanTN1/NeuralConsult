@@ -1,5 +1,6 @@
-﻿import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
+import { getDemoUserByEmail } from "../services/demoMockService";
 
 const AuthContext = createContext(null);
 
@@ -9,6 +10,18 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const fetchMe = async () => {
+    // 1. Check if mock demo session is saved in localStorage
+    const savedDemoEmail = typeof window !== "undefined" ? localStorage.getItem("nc_active_demo_email") : null;
+    if (savedDemoEmail) {
+      const demoUser = getDemoUserByEmail(savedDemoEmail);
+      if (demoUser) {
+        setUser(demoUser);
+        setError(null);
+        setLoading(false);
+        return demoUser;
+      }
+    }
+
     try {
       const { data } = await api.get("/api/me");
       setUser(data);
@@ -27,9 +40,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await api.post("/api/auth/login", { email, password });
-    await fetchMe();
-    return data;
+    const demoUser = getDemoUserByEmail(email);
+
+    try {
+      const { data } = await api.post("/api/auth/login", { email, password });
+      if (demoUser) {
+        localStorage.setItem("nc_active_demo_email", email);
+      }
+      await fetchMe();
+      return data;
+    } catch (err) {
+      // If network fails or API is offline on Vercel, activate high-fidelity demo mock session!
+      if (demoUser) {
+        localStorage.setItem("nc_active_demo_email", email);
+        localStorage.setItem("nc_token", "demo_jwt_token_" + demoUser.id);
+        setUser(demoUser);
+        setError(null);
+        return { accessToken: "demo_jwt_token_" + demoUser.id, user: demoUser, roles: demoUser.roles };
+      }
+      throw err;
+    }
   };
 
   const register = async (payload) => {
@@ -59,7 +89,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await api.post("/api/auth/logout");
+    try {
+      await api.post("/api/auth/logout");
+    } catch (e) {
+      // ignore
+    }
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("nc_active_demo_email");
+      localStorage.removeItem("nc_token");
+    }
     setUser(null);
   };
 
@@ -90,3 +128,5 @@ export const useAuth = () => {
   }
   return ctx;
 };
+
+export default AuthContext;

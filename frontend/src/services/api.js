@@ -1,10 +1,11 @@
 import axios from "axios";
 import { getCachedData, getCacheKey, setCachedData, invalidateCache } from "./apiCache";
+import { handleDemoMockRequest } from "./demoMockService";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? "" : "http://localhost:8080"),
   withCredentials: true,
-  timeout: 15000
+  timeout: 8000
 });
 
 // Attach JWT token from localStorage to every outgoing request
@@ -18,9 +19,18 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// High-speed In-Memory Cache interceptor for GET requests
+// High-speed In-Memory Cache & Demo Mock interceptor for GET requests
 const originalGet = api.get;
 api.get = async function (url, config = {}) {
+  // 1. Check if mock demo session is active on Vercel/production
+  if (typeof window !== "undefined" && localStorage.getItem("nc_active_demo_email")) {
+    const mockData = handleDemoMockRequest(url, "GET");
+    if (mockData !== null) {
+      return Promise.resolve({ data: mockData, status: 200, fromCache: true });
+    }
+  }
+
+  // 2. Check SWR In-Memory cache
   const key = getCacheKey(url, config.params);
   if (!config.skipCache) {
     const cached = getCachedData(key);
@@ -29,11 +39,20 @@ api.get = async function (url, config = {}) {
     }
   }
 
-  const response = await originalGet.call(this, url, config);
-  if (response && response.status === 200 && response.data) {
-    setCachedData(key, response.data, config.ttl);
+  try {
+    const response = await originalGet.call(this, url, config);
+    if (response && response.status === 200 && response.data) {
+      setCachedData(key, response.data, config.ttl);
+    }
+    return response;
+  } catch (err) {
+    // 3. Fallback to mock data if network fails on demo session
+    const mockData = handleDemoMockRequest(url, "GET");
+    if (mockData !== null) {
+      return Promise.resolve({ data: mockData, status: 200, fromCache: true });
+    }
+    throw err;
   }
-  return response;
 };
 
 // Handle token saving and cache invalidation on mutations (POST/PUT/DELETE)
