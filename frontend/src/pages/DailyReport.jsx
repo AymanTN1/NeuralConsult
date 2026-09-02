@@ -92,72 +92,81 @@ const DailyReport = () => {
 
   return (
     <div className="container py-4 app-shell">
-      <div className="d-flex justify-content-between align-items-center mb-3" data-guide-id="journal-header">
-        <h2 className="fw-bold mb-0">Journal quotidien</h2>
-        <span className="badge text-bg-light">7 derniers jours</span>
+      <div className="d-flex justify-content-between align-items-center mb-4" data-guide-id="journal-header">
+        <div>
+          <div className="hero-kicker">Suivi Quotidien de Santé</div>
+          <h2 className="fw-bold mb-0">Journal de Bord du Sevrage</h2>
+        </div>
+        <span className="nc-badge-pill bg-primary-subtle text-primary border border-primary-subtle">
+          <i className="bi bi-calendar-check me-1" />
+          7 derniers jours
+        </span>
       </div>
-      {message && <div className="alert alert-success">{message}</div>}
-        <form onSubmit={handleSubmit} className="card form-card p-3 mb-4" data-guide-id="journal-form">
+      {message && <div className="alert alert-success rounded-4 shadow-sm border-0">{message}</div>}
+      <form onSubmit={handleSubmit} className="nc-glass-card p-4 mb-4" data-guide-id="journal-form">
+        <h5 className="fw-bold mb-3 d-flex align-items-center gap-2">
+          <i className="bi bi-pencil-square text-primary" />
+          {editingId ? "Modifier l'entrée sélectionnée" : "Nouvelle saisie d'aujourd'hui"}
+        </h5>
         <div className="row g-3">
           <div className="col-12 col-md-4">
-            <label className="form-label">Date</label>
-            <input className="form-control" type="date" name="reportDate" value={form.reportDate} onChange={handleChange} />
+            <label className="form-label fw-semibold">Date</label>
+            <input className="form-control rounded-3" type="date" name="reportDate" value={form.reportDate} onChange={handleChange} />
           </div>
           <div className="col-6 col-md-4">
-            <label className="form-label">Cigarettes fumees</label>
-            <input className="form-control" type="number" name="cigarettesSmoked" value={form.cigarettesSmoked} onChange={handleChange} />
+            <label className="form-label fw-semibold">Cigarettes fumées</label>
+            <input className="form-control rounded-3" type="number" placeholder="0" name="cigarettesSmoked" value={form.cigarettesSmoked} onChange={handleChange} />
           </div>
           <div className="col-6 col-md-4">
-            <label className="form-label">Envies (0-10)</label>
-            <input className="form-control" type="number" name="cravingsIntensity" value={form.cravingsIntensity} onChange={handleChange} min="0" max="10" />
+            <label className="form-label fw-semibold">Envies de fumer (0-10)</label>
+            <input className="form-control rounded-3" type="number" name="cravingsIntensity" value={form.cravingsIntensity} onChange={handleChange} min="0" max="10" />
           </div>
           <div className="col-6 col-md-4">
-            <label className="form-label">Humeur (0-10)</label>
-            <input className="form-control" type="number" name="moodScore" value={form.moodScore} onChange={handleChange} min="0" max="10" />
+            <label className="form-label fw-semibold">Humeur générale (0-10)</label>
+            <input className="form-control rounded-3" type="number" name="moodScore" value={form.moodScore} onChange={handleChange} min="0" max="10" />
           </div>
           <div className="col-6 col-md-4">
-            <label className="form-label">Stress (0-10)</label>
-            <input className="form-control" type="number" name="stressScore" value={form.stressScore} onChange={handleChange} min="0" max="10" />
+            <label className="form-label fw-semibold">Niveau de stress (0-10)</label>
+            <input className="form-control rounded-3" type="number" name="stressScore" value={form.stressScore} onChange={handleChange} min="0" max="10" />
           </div>
-          <div className="col-12 col-md-4 d-flex align-items-end gap-3">
+          <div className="col-12 col-md-4 d-flex align-items-center gap-3 pt-md-4">
             <div className="form-check">
-              <input className="form-check-input" type="checkbox" name="usedNrt" checked={!!form.usedNrt} onChange={handleChange} />
-              <label className="form-check-label">NRT utilisee</label>
+              <input className="form-check-input" type="checkbox" id="usedNrtCheck" name="usedNrt" checked={!!form.usedNrt} onChange={handleChange} />
+              <label className="form-check-label fw-semibold" htmlFor="usedNrtCheck">Substituts TSN utilisés</label>
             </div>
             <div className="form-check">
-              <input className="form-check-input" type="checkbox" name="relapseEvent" checked={!!form.relapseEvent} onChange={handleChange} />
-              <label className="form-check-label">Rechute</label>
+              <input className="form-check-input" type="checkbox" id="relapseCheck" name="relapseEvent" checked={!!form.relapseEvent} onChange={handleChange} />
+              <label className="form-check-label fw-semibold text-danger" htmlFor="relapseCheck">Épisode de rechute</label>
             </div>
           </div>
           <div className="col-12">
-            <label className="form-label">Notes</label>
-            <textarea className="form-control" rows="3" name="notes" value={form.notes} onChange={handleChange} />
+            <label className="form-label fw-semibold">Notes & ressentis</label>
+            <textarea className="form-control rounded-3" rows="3" placeholder="Événements marquants, déclencheurs évités, pensées positives..." name="notes" value={form.notes} onChange={handleChange} />
           </div>
         </div>
-        <div className="d-flex gap-2 mt-3">
-          <button className="btn btn-dark">{editingId ? "Mettre a jour" : "Enregistrer"}</button>
+        <div className="d-flex gap-2 mt-4">
+          <button className="btn btn-emerald-gradient px-4">{editingId ? "Mettre à jour" : "Enregistrer mon Journal"}</button>
           {editingId && (
-            <button type="button" className="btn btn-outline-dark" onClick={handleCancel}>
+            <button type="button" className="btn btn-outline-secondary rounded-pill px-4" onClick={handleCancel}>
               Annuler
             </button>
           )}
         </div>
       </form>
 
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <h5 className="card-title mb-0">Historique</h5>
-          </div>
-          {reports.length === 0 && <div className="text-muted">Aucun journal pour le moment.</div>}
-          {reports.length > 0 && (
-            <div className="table-responsive">
-              <table className="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Cigarettes</th>
-                    <th>Envies</th>
+      <div className="nc-glass-card p-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="fw-bold mb-0">Historique des entrées</h5>
+        </div>
+        {reports.length === 0 && <div className="text-muted py-3">Aucun journal pour le moment. Remplissez votre première entrée ci-dessus !</div>}
+        {reports.length > 0 && (
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Cigarettes</th>
+                  <th>Envies</th>
                     <th>Humeur</th>
                     <th>Stress</th>
                     <th>NRT</th>

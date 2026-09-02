@@ -703,10 +703,19 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <td>
                     <div className="appointment-cell-copy">{appointment.reason || "Aucun motif specifie."}</div>
                     {appointment.status === "CONFIRMED" && (
-                      <div className="doctor-table-subcopy mt-2">
-                        {appointment.meetingLinkSentAt
-                          ? `Salle visio ${appointment.meetingProvider || "JITSI"} prete.`
-                          : "Lien visio Jitsi Meet programme pour un envoi automatique environ 10 minutes avant la seance."}
+                      <div className="mt-2">
+                        <a
+                          href={`https://meet.jit.si/NeuralConsult-Sevrage-${appointment.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-primary-gradient btn-sm d-inline-flex align-items-center"
+                        >
+                          <i className="bi bi-camera-video-fill me-1.5" />
+                          Lancer la Téléconsultation Visio (Jitsi)
+                        </a>
+                        <div className="doctor-table-subcopy mt-1">
+                          Salle médicale chiffrée de bout en bout prête.
+                        </div>
                       </div>
                     )}
                     {editingAppointment?.id === appointment.id ? (
@@ -840,10 +849,19 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <td>
                     <div className="appointment-cell-copy">{appointment.reason || "Aucun motif specifie."}</div>
                     {appointment.status === "CONFIRMED" && (
-                      <div className="doctor-table-subcopy mt-2">
-                        {appointment.meetingLinkSentAt
-                          ? `Salle visio ${appointment.meetingProvider || "JITSI"} prete.`
-                          : "Le lien visio Jitsi Meet sera envoye automatiquement par email environ 10 minutes avant la seance."}
+                      <div className="mt-2">
+                        <a
+                          href={`https://meet.jit.si/NeuralConsult-Sevrage-${appointment.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-primary-gradient btn-sm d-inline-flex align-items-center"
+                        >
+                          <i className="bi bi-camera-video-fill me-1.5" />
+                          Rejoindre la Téléconsultation Visio (Jitsi)
+                        </a>
+                        <div className="doctor-table-subcopy mt-1">
+                          Salle sécurisée avec votre médecin tabacologue.
+                        </div>
                       </div>
                     )}
                     {editingAppointment?.id === appointment.id ? (

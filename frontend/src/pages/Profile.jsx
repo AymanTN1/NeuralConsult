@@ -218,29 +218,31 @@ const Profile = () => {
             </p>
           </div>
         </div>
-        <div className="profile-header-actions">
-          <Link className="btn btn-outline-dark btn-sm" to="/evaluation">
-            Ouvrir l'evaluation
+        <div className="profile-header-actions d-flex gap-2">
+          <Link className="btn btn-outline-primary btn-sm rounded-pill px-3" to="/evaluation">
+            <i className="bi bi-journal-medical me-1" />
+            Ouvrir l'évaluation
           </Link>
           {!isEditing && (
-            <button className="btn btn-dark btn-sm" onClick={() => setIsEditing(true)}>
-              Editer le profil
+            <button className="btn btn-primary-gradient btn-sm" onClick={() => setIsEditing(true)}>
+              <i className="bi bi-pencil-fill me-1" />
+              Éditer le profil
             </button>
           )}
         </div>
       </div>
 
       {message && (
-        <div className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} mt-3`}>
+        <div className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} rounded-4 shadow-sm border-0 mt-3`}>
           {message.text}
         </div>
       )}
 
       <div className="profile-layout-grid mt-4">
-        <section className="card form-card profile-summary-panel">
-          <div className="profile-summary-header">
+        <section className="nc-glass-card p-4 profile-summary-panel">
+          <div className="profile-summary-header mb-3">
             <div>
-              <div className="section-title-sm">Synthese d'identite clinique</div>
+              <div className="section-title-sm">Synthèse d'identité clinique</div>
               <p className="muted-text mb-0">Lecture rapide du dossier patient avant revue clinique.</p>
             </div>
             <span className={`profile-status-badge ${profile?.onboardingComplete ? "is-complete" : "is-pending"}`}>

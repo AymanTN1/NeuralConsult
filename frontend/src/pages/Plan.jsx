@@ -46,20 +46,27 @@ const Plan = () => {
 
   return (
     <div className="app-page" data-guide-id="plan-main">
-      <section className="dashboard-command" data-guide-id="plan-header">
-        <div className="dashboard-command-copy">
-          <div className="hero-kicker">Therapeutic pathway</div>
-          <h2 className="dashboard-title">Le plan doit paraitre prescrit, pas simplement affiche.</h2>
-          <p className="muted-text">
-            Cette zone regroupe l'intensite, la strategie NRT, les recommandations comportementales et le protocole anti-rechute.
-          </p>
-        </div>
+      <section className="dashboard-command nc-glass-card p-4 mb-4" data-guide-id="plan-header">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div className="dashboard-command-copy">
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <span className="pulse-dot-live" />
+              <span className="nc-badge-pill bg-primary-subtle text-primary border border-primary-subtle">
+                Protocole Clinique Personnalisé
+              </span>
+            </div>
+            <h2 className="dashboard-title mb-1 fw-bold">Feuille de Route Thérapeutique</h2>
+            <p className="muted-text mb-0">
+              Stratégie de substitution nicotinique (TNS), étapes comportementales et plan d'urgence anti-rechute.
+            </p>
+          </div>
 
-        <div className="dashboard-command-actions">
-          <button className="btn btn-dark" onClick={generatePlan}>
-            <i className="bi bi-stars me-1" />
-            Generer
-          </button>
+          <div className="dashboard-command-actions">
+            <button className="btn btn-primary-gradient" onClick={generatePlan}>
+              <i className="bi bi-stars me-2" />
+              Régénérer le Plan IA
+            </button>
+          </div>
         </div>
       </section>
 

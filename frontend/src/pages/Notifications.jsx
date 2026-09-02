@@ -74,12 +74,12 @@ const Notifications = () => {
 
   return (
     <div className="container py-4 app-shell">
-      <div className="profile-page-header">
+      <div className="profile-page-header mb-4">
         <div>
-          <div className="hero-kicker">Boite de notifications</div>
-          <h2 className="fw-bold mb-1">Messages cliniques, rappels et alertes</h2>
+          <div className="hero-kicker">Centre de Messagerie & Alertes</div>
+          <h2 className="fw-bold mb-1">Notifications Cliniques & Rappels</h2>
           <p className="muted-text mb-0">
-            Ici, le patient et le medecin retrouvent les confirmations de rendez-vous, les rappels journal/tests et les alertes importantes.
+            Retrouvez les confirmations de rendez-vous, rappels de bilans journaliers et alertes du protocole de sevrage.
           </p>
         </div>
       </div>
@@ -87,17 +87,25 @@ const Notifications = () => {
       {message && (
         <div className={`floating-feedback-toast ${message.type === "error" ? "is-error" : "is-success"}`}>
           <div>
-            <strong>{message.type === "error" ? "Action non terminee" : "Action confirmee"}</strong>
+            <strong>{message.type === "error" ? "Action non terminée" : "Action confirmée"}</strong>
             <p className="mb-0">{message.text}</p>
           </div>
           <button type="button" className="btn btn-link btn-sm" onClick={() => setMessage(null)}>Fermer</button>
         </div>
       )}
 
-      <section className="card form-card mt-4">
-        <div className="section-title-sm">Boite de reception</div>
+      <section className="nc-glass-card p-4 mt-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-bell-fill text-primary" />
+            Boîte de réception
+          </h5>
+          <span className="nc-badge-pill bg-primary-subtle text-primary border border-primary-subtle">
+            {notifications.filter(n => n.status === "UNREAD").length} non lues
+          </span>
+        </div>
         {loading ? (
-          <p className="muted-text mt-3 mb-0">Chargement des notifications...</p>
+          <p className="muted-text mt-3 mb-0">Chargement des notifications en temps réel...</p>
         ) : notifications.length === 0 ? (
           <div className="doctor-dossier-empty-state mt-3">
             <p className="mb-0">Aucune notification pour le moment.</p>

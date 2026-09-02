@@ -119,6 +119,144 @@ body.dark-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator,
   cursor: pointer;
 }
 
+/* ── 🌟 MODERN MEDTECH DESIGN SYSTEM (2026 PREMIUM TOKENS) ── */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #0284c7 0%, #3b82f6 50%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-emerald {
+  background: linear-gradient(135deg, #059669 0%, #10b981 60%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-rose {
+  background: linear-gradient(135deg, #e11d48 0%, #f43f5e 60%, #fb7185 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nc-glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 1.35rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.dark-theme .nc-glass-card,
+[data-theme="dark"] .nc-glass-card {
+  background: rgba(17, 30, 46, 0.78);
+  border-color: rgba(56, 189, 248, 0.16);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.nc-glass-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+body.dark-theme .nc-glass-card:hover,
+[data-theme="dark"] .nc-glass-card:hover {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.nc-metric-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  padding: 1.4rem 1.35rem;
+  background: var(--nc-panel);
+  border: 1px solid var(--nc-panel-border);
+  box-shadow: var(--nc-card-shadow);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nc-metric-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--nc-glow);
+  box-shadow: 0 14px 32px rgba(2, 132, 199, 0.15);
+}
+
+.nc-metric-icon {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.nc-metric-card:hover .nc-metric-icon {
+  transform: scale(1.1) rotate(4deg);
+}
+
+.nc-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.btn-primary-gradient {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  border-radius: 0.85rem !important;
+  padding: 0.65rem 1.4rem !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-primary-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.45) !important;
+}
+
+.btn-emerald-gradient {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  border-radius: 0.85rem !important;
+  padding: 0.65rem 1.4rem !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.28) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-emerald-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(16, 185, 129, 0.45) !important;
+}
+
+.pulse-dot-live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 rgba(16, 185, 129, 0.6);
+  animation: pulseLive 2s infinite;
+}
+
+@keyframes pulseLive {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
 body.dark-theme .modal-content,
 [data-theme="dark"] .modal-content {
   background-color: #111e2e !important;
@@ -15407,3 +15545,55 @@ body.dark-theme .support-msg-bubble.ai-bubble {
   justify-content: center;
 }
 
+/* ── 💎 2026 UNIVERSAL FINISHING TOUCHES (ALL MODULES) ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.45);
+}
+
+.btn:active {
+  transform: scale(0.97) !important;
+}
+
+.table-hover tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+body.dark-theme .table-hover tbody tr:hover,
+[data-theme="dark"] .table-hover tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.06) !important;
+}
+
+body.light-theme .table-hover tbody tr:hover,
+[data-theme="light"] .table-hover tbody tr:hover {
+  background-color: rgba(37, 99, 235, 0.04) !important;
+}
+
+.form-control, .form-select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2) !important;
+}

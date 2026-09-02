@@ -489,10 +489,14 @@ const Landing = () => {
                   Le patient débute par son bilan initial guidé. Le médecin configure son profil clinique certifié et accède à la console d'évaluation diagnostique.
                 </p>
 
-                <div className="landing-auth-actions">
+                <div className="landing-auth-actions d-flex flex-wrap gap-2.5">
                   <Link to="/login" className="btn btn-primary-gradient btn-lg">
                     <i className="bi bi-box-arrow-in-right me-2" />
                     Se connecter
+                  </Link>
+                  <Link to="/login" className="btn btn-emerald-gradient btn-lg">
+                    <i className="bi bi-stars me-2" />
+                    Tester la Démo (1-Clic)
                   </Link>
                   <Link to="/register" className="btn btn-ghost-nav btn-lg">
                     <i className="bi bi-person-plus-fill me-2" />

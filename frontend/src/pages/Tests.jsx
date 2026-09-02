@@ -294,30 +294,37 @@ const Tests = () => {
 
   return (
     <div className="container py-4 app-shell">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2 className="fw-bold mb-0">Tests cliniques</h2>
-        <span className="badge text-bg-light">INPES 2007</span>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <div className="hero-kicker">Évaluations Médicales Recommandées</div>
+          <h2 className="fw-bold mb-0">Bilans Cliniques Fagerström & HAD</h2>
+        </div>
+        <span className="nc-badge-pill bg-info-subtle text-info border border-info-subtle">
+          <i className="bi bi-shield-check me-1" />
+          Normes HAS & INPES
+        </span>
       </div>
 
-      {error && <div className="alert alert-danger mb-4">{error}</div>}
+      {error && <div className="alert alert-danger rounded-4 shadow-sm border-0 mb-4">{error}</div>}
 
-
-      <div className="card form-card mb-4">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <h5 className="card-title mb-0">Test de Fagerstrom</h5>
-            {editingFagerId && <span className="badge text-bg-warning">Edition</span>}
+      <div className="nc-glass-card p-4 mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-lungs-fill text-primary" />
+            Test de Dépendance Nicotinique (Fagerström)
+          </h5>
+          {editingFagerId && <span className="badge bg-warning text-dark">Mode Édition</span>}
+        </div>
+        <form onSubmit={submitFagerstrom} className="row g-3">
+          <div className="col-12">
+            <label className="form-label fw-semibold">Délai avant la 1ère cigarette après le réveil</label>
+            <select className="form-select rounded-3" name="timeToFirstCigarette" value={fagerstromForm.timeToFirstCigarette} onChange={handleFagerstromChange}>
+              <option value="WITHIN_5_MIN">Moins de 5 minutes (Forte dépendance)</option>
+              <option value="MIN_6_TO_30">6 à 30 minutes</option>
+              <option value="MIN_31_TO_60">31 à 60 minutes</option>
+              <option value="AFTER_60">Plus de 60 minutes (Dépendance modérée)</option>
+            </select>
           </div>
-          <form onSubmit={submitFagerstrom} className="row g-3">
-            <div className="col-12">
-              <label className="form-label">Temps avant la 1ere cigarette</label>
-              <select className="form-select" name="timeToFirstCigarette" value={fagerstromForm.timeToFirstCigarette} onChange={handleFagerstromChange}>
-                <option value="WITHIN_5_MIN">Moins de 5 minutes</option>
-                <option value="MIN_6_TO_30">6 a 30 minutes</option>
-                <option value="MIN_31_TO_60">31 a 60 minutes</option>
-                <option value="AFTER_60">Plus de 60 minutes</option>
-              </select>
-            </div>
             <div className="col-12">
               <label className="form-label">Cigarette la plus difficile a abandonner</label>
               <select className="form-select" name="mostDifficultCigarette" value={fagerstromForm.mostDifficultCigarette} onChange={handleFagerstromChange}>

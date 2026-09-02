@@ -223,22 +223,37 @@ const Dashboard = () => {
 
   return (
     <div className={`app-page dashboard-stage dashboard-stage-${stage}`}>
-      <section className="dashboard-command" data-guide-id="dashboard-command">
-        <div className="dashboard-command-copy">
-          <div className="hero-kicker">Tableau de bord clinique</div>
-          <h2 className="dashboard-title">Un espace plus calme pour lire la trajectoire du patient sans surcharge visuelle.</h2>
-          <p className="muted-text">
-            Les scores, le journal quotidien et les notes cliniques restent visibles, mais dans une interface plus douce et plus rassurante.
-          </p>
-        </div>
+      <section className="dashboard-command nc-glass-card p-4 mb-4" data-guide-id="dashboard-command">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div className="dashboard-command-copy">
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <span className="pulse-dot-live" />
+              <span className="nc-badge-pill bg-success-subtle text-success border border-success-subtle">
+                Suivi Actif — J+{diffDays} Sans Tabac
+              </span>
+            </div>
+            <h2 className="dashboard-title mb-1 fw-bold">
+              Bonjour, {user?.firstName || user?.fullName || "Youssef"} 👋
+            </h2>
+            <p className="muted-text mb-0">
+              Votre santé pulmonaire s'améliore chaque jour. Consultez vos biomarqueurs et maintenez votre progression.
+            </p>
+          </div>
 
-        <div className="dashboard-command-actions">
-          <Link to="/tests" className="btn btn-dark">
-            Mettre a jour les scores
-          </Link>
-          <Link to="/plan" className="btn btn-outline-dark">
-            Ouvrir le plan
-          </Link>
+          <div className="d-flex flex-wrap gap-2">
+            <Link to="/daily-report" className="btn btn-emerald-gradient btn-sm d-inline-flex align-items-center">
+              <i className="bi bi-journal-plus me-1.5" />
+              Journal du Jour
+            </Link>
+            <Link to="/support" className="btn btn-primary-gradient btn-sm d-inline-flex align-items-center">
+              <i className="bi bi-heart-pulse-fill me-1.5" />
+              SOS Soutien 24/7
+            </Link>
+            <Link to="/tests" className="btn btn-outline-primary btn-sm rounded-pill fw-semibold px-3 d-inline-flex align-items-center">
+              <i className="bi bi-activity me-1.5" />
+              Bilans Fagerström & HAD
+            </Link>
+          </div>
         </div>
       </section>
 
