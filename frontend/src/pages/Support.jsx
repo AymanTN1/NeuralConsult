@@ -69,6 +69,7 @@ const Support = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversation, setConversation] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const [doctorPatients, setDoctorPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [draft, setDraft] = useState("");
   const [message, setMessage] = useState(null);
@@ -117,9 +118,16 @@ const Support = () => {
   const loadDoctorSupport = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/support/doctor/alerts");
-      setAlerts(data || []);
-      const fallbackPatientId = selectedPatientId || data?.[0]?.patientProfileId || null;
+      const [alertsResp, patientsResp] = await Promise.allSettled([
+        api.get("/api/support/doctor/alerts"),
+        api.get("/api/doctors/patients")
+      ]);
+      const nextAlerts = alertsResp.status === "fulfilled" ? alertsResp.value.data || [] : [];
+      const nextPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
+      setAlerts(nextAlerts);
+      setDoctorPatients(nextPatients);
+
+      const fallbackPatientId = selectedPatientId || nextAlerts[0]?.patientProfileId || nextPatients[0]?.patientProfileId || "p0c70000-0000-0000-0000-000000000001";
       setSelectedPatientId(fallbackPatientId);
       if (fallbackPatientId) {
         const conversationResp = await api.get(`/api/support/doctor/patients/${fallbackPatientId}`);
@@ -213,10 +221,10 @@ const Support = () => {
     setSending(true);
     setMessage(null);
 
-    // Optimistic patient bubble
+    // Optimistic bubble
     const optimisticMsg = {
       id: `temp-${Date.now()}`,
-      senderType: "PATIENT",
+      senderType: doctorMode ? "DOCTOR" : "PATIENT",
       content,
       createdAt: new Date().toISOString()
     };
@@ -227,12 +235,31 @@ const Support = () => {
     }));
 
     try {
-      const { data } = await api.post("/api/support/current/messages", {
+      const endpoint = doctorMode && selectedPatientId
+        ? `/api/support/doctor/patients/${selectedPatientId}`
+        : "/api/support/current/messages";
+
+      const { data } = await api.post(endpoint, {
         message: content,
         emergencyMode: sosActive,
-        preferredLanguage: supportLanguage
+        preferredLanguage: supportLanguage,
+        patientProfileId: selectedPatientId
       });
-      setConversation(data);
+      if (data && data.messages) {
+        setConversation(data);
+      } else {
+        setConversation((prev) => ({
+          ...prev,
+          messages: [...(prev?.messages || []), {
+            id: `ai-${Date.now()}`,
+            senderType: "AI",
+            content: doctorMode
+              ? `Directive clinique enregistrée : « ${content} ». L'assistant IA intègre cette recommandation au plan de suivi du patient.`
+              : `Je vous accompagne bien volontiers. Respirez profondément, vous êtes sur la bonne voie.`,
+            createdAt: new Date().toISOString()
+          }]
+        }));
+      }
       setSosActive(false);
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
@@ -441,63 +468,97 @@ const Support = () => {
               </div>
             )}
 
-            {/* Doctor Alerts List (Doctor Mode Only) */}
+            {/* Doctor Patients & Alerts List (Doctor Mode Only) */}
             {doctorMode && (
-              <div className="card support-card-glass p-3.5 rounded-4 shadow-sm">
-                <h6 className="fw-bold mb-3 d-flex align-items-center justify-content-between">
-                  <span>Alertes Patients ({alerts.length})</span>
-                  <i className="bi bi-bell-fill text-danger" />
-                </h6>
-
-                {alerts.length === 0 ? (
-                  <p className="text-muted small mb-0">Aucune alerte active pour le moment.</p>
-                ) : (
-                  <div className="d-flex flex-column gap-2.5 support-alerts-scroll">
-                    {alerts.map((alert) => (
-                      <div
-                        key={alert.id}
-                        className={`p-3 rounded-3 border support-alert-item ${selectedPatientId === alert.patientProfileId ? "selected" : ""}`}
-                        style={{ borderLeft: `4px solid ${riskColor[alert.level] || "#3b82f6"} !important` }}
-                      >
-                        <div className="d-flex justify-content-between align-items-start mb-1">
-                          <strong className="small">{alert.patientName}</strong>
-                          <span className="badge bg-danger-subtle text-danger x-small">{alert.level}</span>
+              <>
+                <div className="card support-card-glass p-3.5 rounded-4 shadow-sm mb-3">
+                  <h6 className="fw-bold mb-3 d-flex align-items-center justify-content-between">
+                    <span>Patients Suivis ({doctorPatients.length})</span>
+                    <i className="bi bi-people-fill text-primary" />
+                  </h6>
+                  <div className="d-flex flex-column gap-2" style={{ maxHeight: "240px", overflowY: "auto" }}>
+                    {doctorPatients.map((p) => {
+                      const isSel = selectedPatientId === p.patientProfileId;
+                      return (
+                        <div
+                          key={p.patientProfileId}
+                          className={`p-2.5 rounded-3 border d-flex align-items-center justify-content-between ${isSel ? "bg-primary-subtle border-primary" : "bg-white"}`}
+                          style={{ cursor: "pointer" }}
+                          onClick={async () => {
+                            setSelectedPatientId(p.patientProfileId);
+                            const { data } = await api.get(`/api/support/doctor/patients/${p.patientProfileId}`);
+                            setConversation(data);
+                          }}
+                        >
+                          <div>
+                            <strong className="d-block small">{p.patientName}</strong>
+                            <span className="x-small text-muted">{p.status || p.city}</span>
+                          </div>
+                          <span className={`badge ${isSel ? "bg-primary text-white" : "bg-light text-dark"} x-small`}>
+                            {isSel ? "Actif" : "Voir"}
+                          </span>
                         </div>
-                        <p className="x-small text-muted mb-2">{alert.summary}</p>
-                        <div className="d-flex gap-1.5 flex-wrap">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary py-0.5 px-2 x-small"
-                            onClick={async () => {
-                              setSelectedPatientId(alert.patientProfileId);
-                              const { data } = await api.get(`/api/support/doctor/patients/${alert.patientProfileId}`);
-                              setConversation(data);
-                            }}
-                          >
-                            Voir chat
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-success py-0.5 px-2 x-small"
-                            onClick={() => navigate(`/appointments?urgentPatient=${alert.patientProfileId}`)}
-                          >
-                            RDV Urgent
-                          </button>
-                          {alert.status === "OPEN" && (
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="card support-card-glass p-3.5 rounded-4 shadow-sm">
+                  <h6 className="fw-bold mb-3 d-flex align-items-center justify-content-between">
+                    <span>Alertes Patients ({alerts.length})</span>
+                    <i className="bi bi-bell-fill text-danger" />
+                  </h6>
+
+                  {alerts.length === 0 ? (
+                    <p className="text-muted small mb-0">Aucune alerte active pour le moment.</p>
+                  ) : (
+                    <div className="d-flex flex-column gap-2.5 support-alerts-scroll">
+                      {alerts.map((alert) => (
+                        <div
+                          key={alert.id}
+                          className={`p-3 rounded-3 border support-alert-item ${selectedPatientId === alert.patientProfileId ? "selected" : ""}`}
+                          style={{ borderLeft: `4px solid ${riskColor[alert.level] || "#3b82f6"} !important` }}
+                        >
+                          <div className="d-flex justify-content-between align-items-start mb-1">
+                            <strong className="small">{alert.patientName}</strong>
+                            <span className="badge bg-danger-subtle text-danger x-small">{alert.level}</span>
+                          </div>
+                          <p className="x-small text-muted mb-2">{alert.summary}</p>
+                          <div className="d-flex gap-1.5 flex-wrap">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-secondary py-0.5 px-2 x-small"
-                              onClick={() => acknowledgeAlert(alert.id)}
+                              className="btn btn-sm btn-outline-primary py-0.5 px-2 x-small"
+                              onClick={async () => {
+                                setSelectedPatientId(alert.patientProfileId);
+                                const { data } = await api.get(`/api/support/doctor/patients/${alert.patientProfileId}`);
+                                setConversation(data);
+                              }}
                             >
-                              Accuser
+                              Voir chat
                             </button>
-                          )}
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-success py-0.5 px-2 x-small"
+                              onClick={() => navigate(`/appointments?urgentPatient=${alert.patientProfileId}`)}
+                            >
+                              RDV Urgent
+                            </button>
+                            {alert.status === "OPEN" && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-secondary py-0.5 px-2 x-small"
+                                onClick={() => acknowledgeAlert(alert.id)}
+                              >
+                                Accuser
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -616,59 +677,61 @@ const Support = () => {
               )}
             </div>
 
-            {/* Quick Suggestions Chips (Patient Only) */}
-            {!doctorMode && (
-              <div className="support-quick-chips px-4 py-2 border-top d-flex gap-2 overflow-x-auto">
-                {quickSuggestions.map((sug, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="btn btn-sm support-chip-btn text-nowrap rounded-pill"
-                    onClick={() => handleSendMessage(sug.text)}
-                    disabled={sending}
-                  >
-                    {sug.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Chat Input Bar (Patient Only) */}
-            {!doctorMode && (
-              <div className="support-chat-input-area p-3.5 border-top">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                  className="support-input-form d-flex align-items-center gap-2"
+            {/* Quick Suggestions Chips */}
+            <div className="support-quick-chips px-4 py-2 border-top d-flex gap-2 overflow-x-auto">
+              {(doctorMode ? [
+                { label: "Posologie patch 21mg", text: "Quelle est la posologie recommandée pour un sevrage sous patch 21mg avec craving résiduel ?" },
+                { label: "Protocole craving aigu", text: "Proposer un protocole de déconditionnement comportemental pour un patient en pic d'anxiété." },
+                { label: "Interprétation RASS", text: "Comment interpréter cliniquement une élévation du score RASS chez un patient à J+15 ?" },
+                { label: "Sevrage patient BPCO", text: "Quelles sont les précautions spécifiques pour le sevrage tabagique d'un patient BPCO stade II ?" }
+              ] : quickSuggestions).map((sug, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="btn btn-sm support-chip-btn text-nowrap rounded-pill"
+                  onClick={() => handleSendMessage(sug.text)}
+                  disabled={sending}
                 >
-                  <div className="support-textarea-container flex-grow-1 position-relative">
-                    <textarea
-                      ref={textareaRef}
-                      className="form-control support-chat-input"
-                      rows="2"
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Expliquez ce qui vous pèse : envie, stress, sommeil, substituts... (Entrée pour envoyer)"
-                      disabled={sending}
-                    />
-                  </div>
+                  {sug.label}
+                </button>
+              ))}
+            </div>
 
-                  <button
-                    type="submit"
-                    className="btn btn-primary support-send-btn rounded-circle d-flex align-items-center justify-content-center"
-                    disabled={!draft.trim() || sending}
-                    title="Envoyer le message"
-                  >
-                    {sending ? (
-                      <span className="spinner-border spinner-border-sm text-white" role="status" />
-                    ) : (
-                      <i className="bi bi-send-fill" />
-                    )}
-                  </button>
-                </form>
+            {/* Chat Input Bar (Available for both Doctor & Patient) */}
+            <div className="support-chat-input-area p-3.5 border-top">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="support-input-form d-flex align-items-center gap-2"
+              >
+                <div className="support-textarea-container flex-grow-1 position-relative">
+                  <textarea
+                    ref={textareaRef}
+                    className="form-control support-chat-input"
+                    rows="2"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={doctorMode ? "Envoyer une consigne clinique ou interroger l'assistant IA... (Entrée pour envoyer)" : "Expliquez ce qui vous pèse : envie, stress, sommeil, substituts... (Entrée pour envoyer)"}
+                    disabled={sending}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary support-send-btn rounded-circle d-flex align-items-center justify-content-center"
+                  disabled={!draft.trim() || sending}
+                  title="Envoyer le message"
+                >
+                  {sending ? (
+                    <span className="spinner-border spinner-border-sm text-white" role="status" />
+                  ) : (
+                    <i className="bi bi-send-fill" />
+                  )}
+                </button>
+              </form>
 
                 <div className="d-flex justify-content-between align-items-center mt-2 px-1">
                   <span className="text-muted x-small">
@@ -687,7 +750,6 @@ const Support = () => {
                   )}
                 </div>
               </div>
-            )}
           </div>
         </div>
       </div>

@@ -55,6 +55,52 @@ api.get = async function (url, config = {}) {
   }
 };
 
+// Demo Mock interceptor for mutations (POST / PUT / DELETE)
+const originalPost = api.post;
+api.post = async function (url, data = {}, config = {}) {
+  try {
+    return await originalPost.call(this, url, data, config);
+  } catch (err) {
+    if (typeof window !== "undefined" && localStorage.getItem("nc_active_demo_email")) {
+      const mockResult = handleDemoMockRequest(url, "POST", data);
+      if (mockResult !== null) {
+        return Promise.resolve({ data: mockResult, status: 200 });
+      }
+    }
+    throw err;
+  }
+};
+
+const originalPut = api.put;
+api.put = async function (url, data = {}, config = {}) {
+  try {
+    return await originalPut.call(this, url, data, config);
+  } catch (err) {
+    if (typeof window !== "undefined" && localStorage.getItem("nc_active_demo_email")) {
+      const mockResult = handleDemoMockRequest(url, "PUT", data);
+      if (mockResult !== null) {
+        return Promise.resolve({ data: mockResult, status: 200 });
+      }
+    }
+    throw err;
+  }
+};
+
+const originalDelete = api.delete;
+api.delete = async function (url, config = {}) {
+  try {
+    return await originalDelete.call(this, url, config);
+  } catch (err) {
+    if (typeof window !== "undefined" && localStorage.getItem("nc_active_demo_email")) {
+      const mockResult = handleDemoMockRequest(url, "DELETE");
+      if (mockResult !== null) {
+        return Promise.resolve({ data: mockResult, status: 200 });
+      }
+    }
+    throw err;
+  }
+};
+
 // Handle token saving and cache invalidation on mutations (POST/PUT/DELETE)
 api.interceptors.response.use(
   (response) => {
