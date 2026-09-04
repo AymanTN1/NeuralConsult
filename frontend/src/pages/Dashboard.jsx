@@ -241,7 +241,7 @@ const Dashboard = () => {
           </div>
 
           <div className="d-flex flex-wrap gap-2">
-            <Link to="/daily-report" className="btn btn-emerald-gradient btn-sm d-inline-flex align-items-center">
+            <Link to="/journal" className="btn btn-emerald-gradient btn-sm d-inline-flex align-items-center">
               <i className="bi bi-journal-plus me-1.5" />
               Journal du Jour
             </Link>
@@ -257,6 +257,29 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {/* Bannière informative si l'évaluation initiale n'est pas encore complétée */}
+      {!user?.profile?.onboardingComplete && (
+        <section className="card p-3 mb-4 border-0 shadow-sm rounded-4" style={{ background: "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)", border: "1px solid rgba(59, 130, 246, 0.2)" }}>
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div className="d-flex align-items-center gap-3">
+              <div className="p-2 rounded-circle bg-primary bg-opacity-10 text-primary fs-4">
+                <i className="bi bi-diagram-3-fill" />
+              </div>
+              <div>
+                <div className="fw-bold text-dark">Évaluation initiale en cours</div>
+                <div className="text-secondary small">
+                  Vous avez accès libre à tous les modules. Vous pouvez aussi compléter votre consultation initiale à tout moment.
+                </div>
+              </div>
+            </div>
+            <Link to="/evaluation" className="btn btn-primary rounded-pill px-4 btn-sm fw-semibold shadow-sm">
+              <i className="bi bi-pencil-square me-1" />
+              Accéder à l'évaluation
+            </Link>
+          </div>
+        </section>
+      )}
+
       {currentRass !== null && currentRass > 6 && (
         <section className="card p-4 mb-4 border-0 shadow-sm" style={{ background: "linear-gradient(135deg, #fffcf6 0%, #fff3e0 100%)", borderRadius: "24px", borderLeft: "6px solid #f59e0b" }}>
           <div className="d-flex align-items-start gap-3">
@@ -269,7 +292,7 @@ const Dashboard = () => {
                 Nous ressentons une légère tension émotionnelle ou une envie de fumer plus forte aujourd'hui. C'est tout à fait normal dans votre parcours, et chaque étape vous renforce. Prenez une grande inspiration et accordez-vous une pause bienveillante.
               </p>
               <div className="d-flex flex-wrap gap-2">
-                <Link to="/chat" className="btn btn-warning text-dark fw-semibold px-4 rounded-pill">
+                <Link to="/support" className="btn btn-warning text-dark fw-semibold px-4 rounded-pill">
                   Parler à l'Assistant IA de soutien
                 </Link>
                 <button type="button" className="btn btn-outline-warning text-dark fw-semibold px-4 rounded-pill" onClick={() => alert("Pratiquez la cohérence cardiaque : Inspirez pendant 5 secondes... Expirez pendant 5 secondes... Répétez 3 fois. Vous êtes sur la bonne voie !")}>

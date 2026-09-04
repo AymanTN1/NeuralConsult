@@ -372,7 +372,7 @@ const Onboarding = () => {
     <div className="container py-4 app-shell">
       <div className="evaluation-page-header" data-guide-id="evaluation-header">
         <div>
-          <div className="hero-kicker">Timeline d'evaluation obligatoire</div>
+          <div className="hero-kicker">Parcours d'évaluation clinique</div>
           <h2 className="fw-bold mb-1">Consultation initiale du patient</h2>
           <div className="muted-text">
             Le profil personnel reste distinct. Toute la matiere clinique, tabagique et sociale vit dans cette timeline.
@@ -387,6 +387,48 @@ const Onboarding = () => {
             <span>Parcours</span>
             <strong>{user?.profile?.onboardingComplete ? "Complet" : `${progressPercent}%`}</strong>
           </div>
+        </div>
+      </div>
+
+      {/* Barre de navigation libre vers les autres modules */}
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 mb-4 rounded-4 shadow-sm" style={{ background: "var(--nc-panel, #ffffff)", border: "1px solid var(--nc-border, #e5e7eb)" }}>
+        <div className="d-flex align-items-center gap-2">
+          <i className="bi bi-compass text-primary fs-5" />
+          <span className="small fw-semibold text-secondary">Accès direct aux modules de la plateforme :</span>
+        </div>
+        <div className="d-flex flex-wrap gap-2">
+          <button 
+            type="button" 
+            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            onClick={() => navigate("/dashboard")}
+          >
+            <i className="bi bi-activity" />
+            <span>Tableau de bord</span>
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            onClick={() => navigate("/tests")}
+          >
+            <i className="bi bi-clipboard-data" />
+            <span>Tests cliniques</span>
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            onClick={() => navigate("/journal")}
+          >
+            <i className="bi bi-journal-medical" />
+            <span>Journal</span>
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            onClick={() => navigate("/plan")}
+          >
+            <i className="bi bi-diagram-3" />
+            <span>Plan thérapeutique</span>
+          </button>
         </div>
       </div>
 
@@ -1115,13 +1157,16 @@ const Onboarding = () => {
         </div>
       )}
 
-      {user?.profile?.onboardingComplete && (
-        <div className="mt-3 text-end">
-          <button className="btn btn-outline-dark" onClick={() => navigate("/tests")}>
-            Continuer vers les tests
-          </button>
-        </div>
-      )}
+      <div className="mt-4 d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 rounded-4 bg-light">
+        <button className="btn btn-outline-secondary rounded-pill px-4" onClick={() => navigate("/dashboard")}>
+          <i className="bi bi-arrow-left me-1" />
+          Aller au Tableau de bord
+        </button>
+        <button className="btn btn-primary rounded-pill px-4 shadow-sm" onClick={() => navigate("/tests")}>
+          Passer aux tests cliniques
+          <i className="bi bi-arrow-right ms-1" />
+        </button>
+      </div>
 
       <QuestionAssistantModal
         open={assistantOpen}

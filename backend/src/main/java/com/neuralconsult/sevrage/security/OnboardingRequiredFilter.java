@@ -30,28 +30,8 @@ public class OnboardingRequiredFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication != null && authentication.isAuthenticated()
-        && !(authentication instanceof AnonymousAuthenticationToken)) {
-      String email = authentication.getName();
-      User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
-      if (user != null && isPatient(user)) {
-        PatientProfile profile = patientProfileService.getOrCreate(user);
-        if (!profile.isOnboardingComplete()) {
-          writePrecondition(response, "ONBOARDING_REQUIRED");
-          return;
-        }
-        if (!profile.isTestsComplete()) {
-          writePrecondition(response, "TESTS_REQUIRED");
-          return;
-        }
-        if (!profile.isJournalComplete()) {
-          writePrecondition(response, "JOURNAL_REQUIRED");
-          return;
-        }
-      }
-    }
-
+    // Permet un acces libre a tous les modules (Tableau de bord, Tests, Plan, etc.)
+    // sans bloquer le patient si l'evaluation initiale n'est pas encore finalisee.
     filterChain.doFilter(request, response);
   }
 

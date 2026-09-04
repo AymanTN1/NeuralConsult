@@ -1,11 +1,9 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { isAdmin, isDoctor, isPatient } from "../utils/roles";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) {
     return (
@@ -20,28 +18,7 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (isAdmin(user) || isDoctor(user)) {
-    return children;
-  }
-
-  if (isPatient(user)) {
-    const onboardingComplete = !!user?.profile?.onboardingComplete;
-    const testsComplete = !!user?.profile?.testsComplete;
-    const journalComplete = !!user?.profile?.journalComplete;
-
-    if (!onboardingComplete && location.pathname !== "/evaluation") {
-      return <Navigate to="/evaluation" replace />;
-    }
-
-    if (onboardingComplete && !testsComplete && location.pathname !== "/tests") {
-      return <Navigate to="/tests" replace />;
-    }
-
-    if (onboardingComplete && testsComplete && !journalComplete && location.pathname !== "/journal") {
-      return <Navigate to="/journal" replace />;
-    }
-  }
-
+  // Authenticated users (admin, doctor, patient) have full access to modules
   return children;
 };
 
