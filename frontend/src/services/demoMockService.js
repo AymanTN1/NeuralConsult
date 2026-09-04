@@ -746,6 +746,826 @@ export const DEMO_SUPPORT_ALERTS = [
   }
 ];
 
+// ─── DEMO COMMUNITY MOCK DATA & PERSISTENCE ───
+export const DEMO_COMMUNITY_SERVERS = [
+  {
+    "id": "all",
+    "name": "r/tous",
+    "label": "Accueil Global",
+    "icon": "bi-globe2",
+    "color": "#3b82f6",
+    "description": "Toutes les publications de la communauté NeuralConsult"
+  },
+  {
+    "id": "victoires",
+    "name": "r/victoires_sevrage",
+    "label": "Victoires & Étapes",
+    "icon": "bi-trophy-fill",
+    "color": "#10b981",
+    "description": "Partagez vos jours sans tabac, économies et fiertés !"
+  },
+  {
+    "id": "entraide",
+    "name": "r/entraide_urgences",
+    "label": "SOS & Urgences Craving",
+    "icon": "bi-shield-fill-exclamation",
+    "color": "#ef4444",
+    "description": "Pics d'envie, moments difficiles et soutien immédiat 24/7."
+  },
+  {
+    "id": "conseils",
+    "name": "r/conseils_tabacologues",
+    "label": "Conseils Médicaux",
+    "icon": "bi-heart-pulse-fill",
+    "color": "#8b5cf6",
+    "description": "Conseils validés par les médecins tabacologues et pneumologues."
+  },
+  {
+    "id": "tns",
+    "name": "r/substituts_tns",
+    "label": "Substituts & Traitements",
+    "icon": "bi-capsule",
+    "color": "#f59e0b",
+    "description": "Avis et questions sur les patchs, gommes, sprays et posologies."
+  },
+  {
+    "id": "sport",
+    "name": "r/sport_et_bienetre",
+    "label": "Sport & Respiration",
+    "icon": "bi-lungs-fill",
+    "color": "#06b6d4",
+    "description": "Cohérence cardiaque, reprise du souffle, course et nutrition."
+  }
+];
+
+export const DEMO_COMMUNITY_PEOPLE = [
+  {
+    "id": "user-tantani",
+    "name": "Dr. Ayman Tantani",
+    "username": "dr_tantani",
+    "email": "ayman.tantani@uit.ac.ma",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+    "role": "Médecin Tabacologue & Addictologue",
+    "isDoctor": true,
+    "city": "Rabat",
+    "smokeFreeStatus": "Médecin Référent",
+    "bio": "Médecin spécialiste en addictologie clinique et sevrage tabagique. Accompagnement bienveillant basé sur les preuves.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 0,
+      "savedAmount": 0,
+      "postsCount": 18
+    }
+  },
+  {
+    "id": "user-benjelloun",
+    "name": "Dr. Leila Benjelloun",
+    "username": "dr_benjelloun",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1594824813576-a4c4a40733a1?w=150&auto=format&fit=crop&q=80",
+    "role": "Pneumologue Spécialiste",
+    "isDoctor": true,
+    "city": "Casablanca",
+    "smokeFreeStatus": "Médecin Spécialiste",
+    "bio": "Pneumologue hospitalière, spécialiste de la régénération pulmonaire post-sevrage et de la BPCO.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 0,
+      "savedAmount": 0,
+      "postsCount": 12
+    }
+  },
+  {
+    "id": "user-lahlou",
+    "name": "Dr. Mehdi Lahlou",
+    "username": "dr_lahlou_tabac",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80",
+    "role": "Médecin Généraliste & Praticien TCC",
+    "isDoctor": true,
+    "city": "Marrakech",
+    "smokeFreeStatus": "Médecin Praticien",
+    "bio": "Thérapies comportementales et cognitives (TCC) appliquées au conditionnement tabagique.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 0,
+      "savedAmount": 0,
+      "postsCount": 9
+    }
+  },
+  {
+    "id": "user-fassi",
+    "name": "Youssef El Fassi",
+    "username": "youssef_fassi",
+    "email": "tantaniayman0@gmail.com",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    "role": "Patient Sevré J+30",
+    "isDoctor": false,
+    "city": "Rabat",
+    "smokeFreeStatus": "30 jours sans tabac",
+    "bio": "Architecte logiciel à Rabat. 15 cigarettes/jour pendant 10 ans. 100% sevré et libéré !",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 30,
+      "savedAmount": 280,
+      "postsCount": 5
+    }
+  },
+  {
+    "id": "user-karim",
+    "name": "Karim Benali",
+    "username": "karim_courage",
+    "email": "aymantantani18@gmail.com",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+    "role": "Patient en Sevrage (J+4)",
+    "isDoctor": false,
+    "city": "Casablanca",
+    "smokeFreeStatus": "4 jours sans tabac",
+    "bio": "Cadre financier à Casa. En plein combat contre la dépendance avec l'aide du Dr. Tantani.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 4,
+      "savedAmount": 45,
+      "postsCount": 8
+    }
+  },
+  {
+    "id": "user-sara",
+    "name": "Sara Mansour",
+    "username": "sara_resilience",
+    "email": "projetfinetude4@gmail.com",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    "role": "Patiente en Progression (J+14)",
+    "isDoctor": false,
+    "city": "Marrakech",
+    "smokeFreeStatus": "14 jours sans tabac",
+    "bio": "Enseignante passionnée. 2 semaines d'abstinence totale grâce aux patchs et à la sophrologie.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 14,
+      "savedAmount": 135,
+      "postsCount": 6
+    }
+  },
+  {
+    "id": "user-alaoui",
+    "name": "Said Alaoui",
+    "username": "said_senior_libre",
+    "email": "saidpa1969@gmail.com",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    "role": "Senior Sevré Consolidé (J+60)",
+    "isDoctor": false,
+    "city": "Fès",
+    "smokeFreeStatus": "60 jours sans tabac",
+    "bio": "Commerçant à Fès. 30 ans de tabac derrière moi. La preuve vivante qu'il n'est jamais trop tard !",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 60,
+      "savedAmount": 620,
+      "postsCount": 11
+    }
+  },
+  {
+    "id": "user-simo",
+    "name": "Mohamed Chraibi",
+    "username": "simo_nouveau_souffle",
+    "email": "testaccsimo@gmail.com",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    "role": "Patient Début de Sevrage (J+2)",
+    "isDoctor": false,
+    "city": "Tanger",
+    "smokeFreeStatus": "2 jours sans tabac",
+    "bio": "Ingénieur logistique à Tanger. Détermination maximale malgré les insomnies des premiers jours.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 2,
+      "savedAmount": 20,
+      "postsCount": 4
+    }
+  },
+  {
+    "id": "user-tazi",
+    "name": "Nadia Tazi",
+    "username": "nadia_zen",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+    "role": "Patiente Sevrée (J+90)",
+    "isDoctor": false,
+    "city": "Rabat",
+    "smokeFreeStatus": "90 jours sans tabac",
+    "bio": "90 jours sans fumée. Passionnée de yoga, thé vert et vie saine sans tabac.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 90,
+      "savedAmount": 910,
+      "postsCount": 14
+    }
+  },
+  {
+    "id": "user-kabbaj",
+    "name": "Amine Kabbaj",
+    "username": "amine_runner",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    "role": "Patient Sevré & Runner (J+45)",
+    "isDoctor": false,
+    "city": "Casablanca",
+    "smokeFreeStatus": "45 jours sans tabac",
+    "bio": "La course à pied a remplacé la cigarette. Préparation du 10km de Casa !",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 45,
+      "savedAmount": 450,
+      "postsCount": 7
+    }
+  },
+  {
+    "id": "user-berrada",
+    "name": "Sofia Berrada",
+    "username": "sofia_sans_tabac",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    "role": "Patiente Sevrée (J+21)",
+    "isDoctor": false,
+    "city": "Rabat",
+    "smokeFreeStatus": "21 jours sans tabac",
+    "bio": "Sevrage réussi avec la cohérence cardiaque 4-7-8 et le soutien de la communauté.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 21,
+      "savedAmount": 210,
+      "postsCount": 5
+    }
+  },
+  {
+    "id": "user-naciri",
+    "name": "Hassan Naciri",
+    "username": "hassan_focus",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+    "role": "Patient Sevré (J+15)",
+    "isDoctor": false,
+    "city": "Casablanca",
+    "smokeFreeStatus": "15 jours sans tabac",
+    "bio": "Développeur fullstack. Mes astuces pour survivre aux pauses café au bureau sans replonger.",
+    "following": false,
+    "stats": {
+      "daysSmokeFree": 15,
+      "savedAmount": 150,
+      "postsCount": 4
+    }
+  }
+];
+
+export const DEMO_COMMUNITY_POSTS = [
+  {
+    "id": "post-1",
+    "serverId": "victoires",
+    "serverName": "r/victoires_sevrage",
+    "title": "Aujourd'hui cela fait exactement 30 jours sans aucune cigarette ! Mon souffle et mon énergie sont de retour 🫁",
+    "content": "Il y a un mois jour pour jour, j'écrasais ma dernière cigarette après 10 ans à 1 paquet par jour. Les premiers jours étaient rudes, mais en combinant les patchs 14mg prescrits par le Dr. Tantani, la cohérence cardiaque 4-7-8 sur l'application et les encouragements du groupe, j'ai passé le cap fatidique.\n\nBilan : 280€ économisés, fréquence cardiaque au repos passée de 84 à 66 bpm et je monte enfin les escaliers sans essoufflement. Courage à tous, la liberté n'a pas de prix !",
+    "flair": "🏆 Victoire J+30",
+    "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-09-04T12:30:00.000Z",
+    "upvotesCount": 94,
+    "downvotesCount": 1,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 38,
+      "FIRE": 28,
+      "CLAP": 22,
+      "INSIGHT": 6
+    },
+    "commentsCount": 3,
+    "author": {
+      "id": "user-fassi",
+      "name": "Youssef El Fassi",
+      "username": "youssef_fassi",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "role": "Patient Sevré J+30",
+      "isDoctor": false,
+      "smokeFreeStatus": "30 jours sans tabac",
+      "following": false
+    },
+    "comments": [
+      {
+        "id": "c-101",
+        "content": "Félicitations Youssef ! Le cap du premier mois valide la chute radicale du risque d'infarctus et le début du remodelage épithélial bronchique. Bravo pour votre rigueur clinique !",
+        "createdAt": "2026-09-04T12:45:00.000Z",
+        "author": {
+          "id": "user-tantani",
+          "name": "Dr. Ayman Tantani",
+          "username": "dr_tantani",
+          "profilePhotoUrl": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+          "role": "Médecin Tabacologue",
+          "isDoctor": true
+        }
+      },
+      {
+        "id": "c-102",
+        "content": "Bravo Youssef ! Tu es un exemple pour moi qui suis à J+4. Ton témoignage me redonne du courage pour la soirée.",
+        "createdAt": "2026-09-04T13:10:00.000Z",
+        "author": {
+          "id": "user-karim",
+          "name": "Karim Benali",
+          "username": "karim_courage",
+          "profilePhotoUrl": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+          "role": "Patient en Sevrage",
+          "isDoctor": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "post-2",
+    "serverId": "conseils",
+    "serverName": "r/conseils_tabacologues",
+    "title": "Craving matinal et café : pourquoi cette envie est la plus féroce et comment la désamorcer ☕",
+    "content": "Le pic d'envie au réveil résulte de la clairance nocturne de la nicotine (chute plasmatique de 80%) conjuguée au réflexe pavlovien café-cigarette ancré dans les ganglions de la base cérébrale.\n\n💡 **Mon conseil pratique :** Prenez votre substitut oral (gomme ou pastille 2mg) 10 minutes AVANT votre café. Si l'envie persiste, remplacez temporairement le café par du thé vert matcha ou une infusion citron-gingembre pendant 15 jours. Le cerveau réécrit ce réflexe en moins de 3 semaines !",
+    "flair": "🩺 Conseil Médecin",
+    "imageUrl": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-09-04T09:15:00.000Z",
+    "upvotesCount": 142,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 44,
+      "FIRE": 31,
+      "CLAP": 29,
+      "INSIGHT": 38
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-tantani",
+      "name": "Dr. Ayman Tantani",
+      "username": "dr_tantani",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+      "role": "Médecin Tabacologue",
+      "isDoctor": true,
+      "smokeFreeStatus": "Médecin Référent",
+      "following": false
+    },
+    "comments": [
+      {
+        "id": "c-201",
+        "content": "Merci Docteur ! C'était mon point faible numéro un. La pastille 10 min avant fonctionne à merveille.",
+        "createdAt": "2026-09-04T09:40:00.000Z",
+        "author": {
+          "id": "user-sara",
+          "name": "Sara Mansour",
+          "username": "sara_resilience",
+          "profilePhotoUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+          "role": "Patiente en Progression",
+          "isDoctor": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "post-3",
+    "serverId": "entraide",
+    "serverName": "r/entraide_urgences",
+    "title": "Grosse envie soudaine après une journée de travail stressante... J'ai besoin de force 🚨",
+    "content": "La journée au bureau a été particulièrement tendue. Mon réflexe d'avant était d'allumer 3 cigarettes d'affilée sur le parking en partant. Là je suis dans ma voiture, les mains moites, la gorge serrée. J'ai déclenché le mode SOS avec l'IA psychologue et je viens écrire ici pour occuper mon esprit et ne pas bifurquer vers le bureau de tabac.",
+    "flair": "🆘 Urgence Craving",
+    "imageUrl": null,
+    "createdAt": "2026-09-04T14:10:00.000Z",
+    "upvotesCount": 48,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 26,
+      "FIRE": 12,
+      "CLAP": 5,
+      "INSIGHT": 5
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-karim",
+      "name": "Karim Benali",
+      "username": "karim_courage",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+      "role": "Patient en Sevrage",
+      "isDoctor": false,
+      "smokeFreeStatus": "4 jours sans tabac",
+      "following": false
+    },
+    "comments": [
+      {
+        "id": "c-301",
+        "content": "Karim, tiens bon ! Une vague d'envie ne dure JAMAIS plus de 180 secondes biologiquement. Respire lentement en 4-7-8, prends une gomme et démarre ta voiture pour rentrer directement. On est tous avec toi !",
+        "createdAt": "2026-09-04T14:15:00.000Z",
+        "author": {
+          "id": "user-alaoui",
+          "name": "Said Alaoui",
+          "username": "said_senior_libre",
+          "profilePhotoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+          "role": "Senior Sevré",
+          "isDoctor": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "post-4",
+    "serverId": "victoires",
+    "serverName": "r/victoires_sevrage",
+    "title": "À 55 ans et après 30 ans de tabagisme lourd (1 paquet et demi/jour), je fête mes 60 jours sans fumée. Il n'est JAMAIS trop tard ! 🏆",
+    "content": "Je pensais que mes poumons étaient fichus et qu'à mon âge arrêter ne changerait plus grand chose. Erreur totale ! Mon médecin m'a confirmé ce matin que mon taux de monoxyde de carbone expiré est redescendu au niveau d'un non-fumeur strict (2 ppm). Je retrouve le goût des tajines de mon épouse et je dors d'un sommeil profond comme je n'en avais pas connu depuis 20 ans.",
+    "flair": "🏆 Victoire J+30",
+    "imageUrl": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-09-03T16:00:00.000Z",
+    "upvotesCount": 126,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 52,
+      "FIRE": 36,
+      "CLAP": 32,
+      "INSIGHT": 6
+    },
+    "commentsCount": 1,
+    "author": {
+      "id": "user-alaoui",
+      "name": "Said Alaoui",
+      "username": "said_senior_libre",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "role": "Senior Sevré Consolidé",
+      "isDoctor": false,
+      "smokeFreeStatus": "60 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-5",
+    "serverId": "tns",
+    "serverName": "r/substituts_tns",
+    "title": "Patchs 21mg + spray buccal : le combo qui a sauvé mes 2 premières semaines 💊",
+    "content": "Au début j'avais très peur du surdosage avec les patchs. Mon tabacologue m'a rassurée : le sous-dosage est la cause n°1 de rechute précoce. Le patch 21mg diffuse un plateau nicotinique continu toute la journée, et 1 pulvérisation de spray oral coupe un pic d'angoisse en 60 secondes. N'ayez pas peur des substituts, ils sont nos alliés pour sevrer le cerveau en douceur !",
+    "flair": "💊 Substituts & TNS",
+    "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-09-03T11:20:00.000Z",
+    "upvotesCount": 78,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 24,
+      "FIRE": 16,
+      "CLAP": 18,
+      "INSIGHT": 20
+    },
+    "commentsCount": 1,
+    "author": {
+      "id": "user-sara",
+      "name": "Sara Mansour",
+      "username": "sara_resilience",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "role": "Patiente en Progression",
+      "isDoctor": false,
+      "smokeFreeStatus": "14 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-6",
+    "serverId": "sport",
+    "serverName": "r/sport_et_bienetre",
+    "title": "Reprise de la course à pied à J+45 : premiers 5 km sans m'arrêter ! 🏃‍♂️",
+    "content": "Quand je fumais, courir 500 mètres me brûlait la trachée. Aujourd'hui à J+45 de sevrage, j'ai bouclé ma première boucle de 5 km à 6:10/km sans cracher mes poumons. La régénération des cils bronchiques est une réalité biologique spectaculaire. Quand une envie monte, chaussez vos baskets : l'endorphine naturelle terrasse la dopamine nicotinique en 15 minutes.",
+    "flair": "🧘 Sport & Bien-être",
+    "imageUrl": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-09-03T08:45:00.000Z",
+    "upvotesCount": 89,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 30,
+      "FIRE": 35,
+      "CLAP": 20,
+      "INSIGHT": 4
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-kabbaj",
+      "name": "Amine Kabbaj",
+      "username": "amine_runner",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+      "role": "Runner Sevré",
+      "isDoctor": false,
+      "smokeFreeStatus": "45 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-7",
+    "serverId": "conseils",
+    "serverName": "r/conseils_tabacologues",
+    "title": "Pourquoi vous ressentez une faim accrue au début du sevrage et comment éviter la prise de poids 🥗",
+    "content": "La nicotine est un coupe-faim artificiel qui augmente la dépense énergétique de base d'environ 200 kcal/jour. À l'arrêt, le métabolisme se normalise et la recherche de récompense orale incite au grignotage.\n\n🥦 **Mes recommandations cliniques :**\n1. Prévoyez des bâtonnets de carottes, concombres et quelques amandes prêtes au frigo.\n2. Buvez une infusion cannelle-menthe (régule naturellement les fringales de glycémie).\n3. Fractionnez vos repas et buvez un grand verre d'eau 10 minutes avant chaque repas.",
+    "flair": "💡 Astuce du Jour",
+    "imageUrl": null,
+    "createdAt": "2026-09-02T17:30:00.000Z",
+    "upvotesCount": 115,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 38,
+      "FIRE": 22,
+      "CLAP": 25,
+      "INSIGHT": 30
+    },
+    "commentsCount": 3,
+    "author": {
+      "id": "user-benjelloun",
+      "name": "Dr. Leila Benjelloun",
+      "username": "dr_benjelloun",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1594824813576-a4c4a40733a1?w=150&auto=format&fit=crop&q=80",
+      "role": "Pneumologue Spécialiste",
+      "isDoctor": true,
+      "smokeFreeStatus": "Médecin Spécialiste",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-8",
+    "serverId": "entraide",
+    "serverName": "r/entraide_urgences",
+    "title": "J+2 : Nuit blanche, sueurs froides et angoisse... Est-ce que cela va s'atténuer ? 😰",
+    "content": "48 heures sans fumer. La nuit passée a été terrifiante : insomnie totale, sueurs et un cerveau qui me supplie d'allumer une cigarette. J'ai le patch collé sur le bras, mais le manque psychologique me torture. Dites-moi que le pic diminue bientôt...",
+    "flair": "🔄 Rechute & Courage",
+    "imageUrl": null,
+    "createdAt": "2026-09-04T07:15:00.000Z",
+    "upvotesCount": 52,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 30,
+      "FIRE": 10,
+      "CLAP": 6,
+      "INSIGHT": 6
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-simo",
+      "name": "Mohamed Chraibi",
+      "username": "simo_nouveau_souffle",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "role": "Patient en Sevrage",
+      "isDoctor": false,
+      "smokeFreeStatus": "2 jours sans tabac",
+      "following": false
+    },
+    "comments": [
+      {
+        "id": "c-801",
+        "content": "Mohamed, vous êtes exactement au pic des 72 heures : le corps élimine les derniers métabolites de nicotine. Dès demain après-midi, l'intensité des sueurs va chuter de 50%. Tenez bon, ce n'est pas vous qui souffrez, c'est l'addiction qui meurt !",
+        "createdAt": "2026-09-04T07:30:00.000Z",
+        "author": {
+          "id": "user-tantani",
+          "name": "Dr. Ayman Tantani",
+          "username": "dr_tantani",
+          "profilePhotoUrl": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+          "role": "Médecin Tabacologue",
+          "isDoctor": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "post-9",
+    "serverId": "victoires",
+    "serverName": "r/victoires_sevrage",
+    "title": "3 mois sans fumer : 900€ économisés et un voyage aux Canaries financé grâce au sevrage ! ✈️🌴",
+    "content": "Chaque matin, je mettais 10€ dans une tirelire transparente au lieu de les laisser au bureau de tabac. Hier, pour mes 90 jours d'abstinence totale, j'ai compté : 910€ ! J'ai réservé un séjour d'une semaine au soleil pour respirer le grand air marin. La plus belle décision de toute ma vie.",
+    "flair": "🏆 Victoire J+30",
+    "imageUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-09-02T10:00:00.000Z",
+    "upvotesCount": 167,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 65,
+      "FIRE": 42,
+      "CLAP": 45,
+      "INSIGHT": 15
+    },
+    "commentsCount": 3,
+    "author": {
+      "id": "user-tazi",
+      "name": "Nadia Tazi",
+      "username": "nadia_zen",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+      "role": "Patiente Sevrée",
+      "isDoctor": false,
+      "smokeFreeStatus": "90 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-10",
+    "serverId": "sport",
+    "serverName": "r/sport_et_bienetre",
+    "title": "3 minutes de cohérence cardiaque 4-7-8 : la méthode infaillible contre les crises d'irritabilité 🧘‍♀️",
+    "content": "Pendant la deuxième semaine, j'étais d'une humeur massacrante avec mes proches. L'IA psychologue de l'application m'a initiée à la cohérence cardiaque 4-7-8 : inspirer par le nez 4s, retenir l'air 7s, expirer lentement par la bouche 8s. Trois cycles suffisent à stimuler le nerf vague et calmer le système nerveux parasympathique. Ça m'a sauvée !",
+    "flair": "🧘 Sport & Bien-être",
+    "imageUrl": null,
+    "createdAt": "2026-09-01T14:20:00.000Z",
+    "upvotesCount": 72,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 25,
+      "FIRE": 18,
+      "CLAP": 15,
+      "INSIGHT": 14
+    },
+    "commentsCount": 1,
+    "author": {
+      "id": "user-berrada",
+      "name": "Sofia Berrada",
+      "username": "sofia_sans_tabac",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "role": "Patiente Sevrée",
+      "isDoctor": false,
+      "smokeFreeStatus": "21 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-11",
+    "serverId": "conseils",
+    "serverName": "r/conseils_tabacologues",
+    "title": "La règle des 3D face au craving : Délai, Distraction, Décompression 🛡️",
+    "content": "Une pulsion nicotinique ressemble à une vague : elle monte en 90 secondes, culmine pendant 2 minutes, puis décline inévitablement.\n\n🌊 **Appliquez la règle des 3D :**\n- **Délai :** Accordez-vous 5 minutes avant toute décision impulsive.\n- **Distraction :** Changez de pièce, buvez un verre d'eau, lancez un jeu sur votre téléphone.\n- **Décompression :** Respirez profondément. 9 fois sur 10, le cerveau a déjà oublié l'envie.",
+    "flair": "🩺 Conseil Médecin",
+    "imageUrl": null,
+    "createdAt": "2026-09-01T11:00:00.000Z",
+    "upvotesCount": 138,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 40,
+      "FIRE": 30,
+      "CLAP": 32,
+      "INSIGHT": 36
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-lahlou",
+      "name": "Dr. Mehdi Lahlou",
+      "username": "dr_lahlou_tabac",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80",
+      "role": "Médecin Praticien TCC",
+      "isDoctor": true,
+      "smokeFreeStatus": "Médecin Praticien",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-12",
+    "serverId": "tns",
+    "serverName": "r/substituts_tns",
+    "title": "Astuce pour les pauses professionnelles : remplacer le geste par une paille ou un stylo ☕",
+    "content": "En tant que développeur, la pause clope était mon rituel de réflexion et de socialisation. Depuis 15 jours, je descends toujours avec les collègues pour prendre l'air, mais avec une gourde d'eau gazeuse fraîche et un bâton de cannelle. Aucun sentiment d'exclusion et mes poumons me remercient !",
+    "flair": "💡 Astuce du Jour",
+    "imageUrl": null,
+    "createdAt": "2026-08-31T15:40:00.000Z",
+    "upvotesCount": 63,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 18,
+      "FIRE": 14,
+      "CLAP": 20,
+      "INSIGHT": 11
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-naciri",
+      "name": "Hassan Naciri",
+      "username": "hassan_focus",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+      "role": "Patient Sevré",
+      "isDoctor": false,
+      "smokeFreeStatus": "15 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-13",
+    "serverId": "victoires",
+    "serverName": "r/victoires_sevrage",
+    "title": "Félicitations à l'ensemble de la communauté : plus de 1 200 jours sans tabac cumulés ce mois-ci sur NeuralConsult ! 👏",
+    "content": "En tant que médecin coordonnateur, je suis chaque jour ému par la solidarité et le courage déployés sur cet espace. Le sevrage n'est pas une épreuve solitaire : chaque conseil partagé, chaque mot d'encouragement sous une alerte SOS sauve concrètement un parcours. Continuez à vous soutenir mutuellement !",
+    "flair": "🌟 Victoire J+14",
+    "imageUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80",
+    "createdAt": "2026-08-30T10:00:00.000Z",
+    "upvotesCount": 210,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 80,
+      "FIRE": 55,
+      "CLAP": 60,
+      "INSIGHT": 15
+    },
+    "commentsCount": 3,
+    "author": {
+      "id": "user-tantani",
+      "name": "Dr. Ayman Tantani",
+      "username": "dr_tantani",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+      "role": "Médecin Tabacologue",
+      "isDoctor": true,
+      "smokeFreeStatus": "Médecin Référent",
+      "following": false
+    },
+    "comments": []
+  },
+  {
+    "id": "post-14",
+    "serverId": "entraide",
+    "serverName": "r/entraide_urgences",
+    "title": "Soirée mariage réussie sans fumer une seule taffe malgré 50 fumeurs autour de moi ! 🎉",
+    "content": "J'avais une angoisse terrible à l'idée d'aller à ce mariage hier soir. Ma stratégie : j'avais prévenu 2 amies proches de ma démarche, j'ai gardé mon spray nicotinique dans mon sac et j'ai dansé toute la nuit. Résultat : réveil ce matin sans gueule de bois de fumée, les vêtements qui sentent le propre et une fierté incommensurable !",
+    "flair": "🏆 Victoire J+30",
+    "imageUrl": null,
+    "createdAt": "2026-08-29T18:20:00.000Z",
+    "upvotesCount": 99,
+    "downvotesCount": 0,
+    "myReaction": null,
+    "reactions": {
+      "LOVE": 42,
+      "FIRE": 28,
+      "CLAP": 25,
+      "INSIGHT": 4
+    },
+    "commentsCount": 2,
+    "author": {
+      "id": "user-sara",
+      "name": "Sara Mansour",
+      "username": "sara_resilience",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "role": "Patiente en Progression",
+      "isDoctor": false,
+      "smokeFreeStatus": "14 jours sans tabac",
+      "following": false
+    },
+    "comments": []
+  }
+];
+
+export const getDemoCommunityData = () => {
+  let storedPosts = [];
+  try {
+    storedPosts = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+  } catch (e) {}
+
+  const storedIds = new Set(storedPosts.map(p => p.id));
+  const mergedPosts = [
+    ...storedPosts,
+    ...DEMO_COMMUNITY_POSTS.filter(p => !storedIds.has(p.id))
+  ];
+
+  const activeDemoEmail = typeof window !== "undefined" ? localStorage.getItem("nc_active_demo_email") : null;
+  const user = (activeDemoEmail ? getDemoUserByEmail(activeDemoEmail) : null) || DEMO_COMMUNITY_PEOPLE[3];
+
+  return {
+    posts: mergedPosts,
+    servers: DEMO_COMMUNITY_SERVERS,
+    people: DEMO_COMMUNITY_PEOPLE,
+    viewer: {
+      id: user.id || "user-viewer",
+      name: user.fullName || user.name || "Membre NeuralConsult",
+      username: user.username || (user.email ? user.email.split("@")[0] : "membre_nc"),
+      profilePhotoUrl: user.profilePhotoUrl || user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      role: user.role || (user.isDoctor ? "Médecin Tabacologue" : "Patient en Sevrage"),
+      isDoctor: Boolean(user.isDoctor),
+      smokeFreeStatus: user.smokeFreeStatus || "Suivi actif",
+      stats: { daysSmokeFree: 30, savedAmount: 280, postsCount: mergedPosts.filter(p => p.author?.username === user.username).length, badgesCount: 4 },
+      badges: ["🏆 Sevrage Actif", "🌟 Membre Vérifié", "🫁 Capacité Restaurée", "🤝 Entraide Pro"]
+    },
+    conversations: [
+      {
+        id: "chat-1",
+        peer: DEMO_COMMUNITY_PEOPLE[0],
+        lastMessage: "Ravi de voir votre régularité dans les bilans, continuez ainsi !",
+        unread: false,
+        updatedAt: new Date(Date.now() - 3600000 * 2).toISOString()
+      },
+      {
+        id: "chat-2",
+        peer: DEMO_COMMUNITY_PEOPLE[4],
+        lastMessage: "Merci pour ton conseil sous mon post, ça m'a évité de craquer hier soir !",
+        unread: true,
+        updatedAt: new Date(Date.now() - 3600000 * 5).toISOString()
+      }
+    ]
+  };
+};
+
 // Mock handler for api.js (Supports GET, POST, PUT, DELETE)
 export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   const activeDemoEmail = typeof window !== "undefined" ? localStorage.getItem("nc_active_demo_email") : null;
@@ -754,6 +1574,148 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
 
   // ─── MUTATIONS (POST / PUT / DELETE) ───
   if (upperMethod !== "GET") {
+
+    // 4. Communities Social Posts Creation
+    if (url.includes("/api/communities/social/posts") && !url.includes("/reactions") && !url.includes("/comments") && upperMethod === "POST") {
+      const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
+      const newPost = {
+        id: `post-user-${Date.now()}`,
+        serverId: payload?.serverId || "victoires",
+        serverName: DEMO_COMMUNITY_SERVERS.find(s => s.id === payload?.serverId)?.name || "r/victoires_sevrage",
+        title: payload?.title || "Témoignage de sevrage",
+        content: payload?.content || "",
+        flair: payload?.flair || "🏆 Victoire J+30",
+        imageUrl: payload?.imageUrl || null,
+        createdAt: new Date().toISOString(),
+        upvotesCount: 1,
+        downvotesCount: 0,
+        myReaction: "UPVOTE",
+        reactions: { LOVE: 1, FIRE: 1, CLAP: 0, INSIGHT: 0 },
+        commentsCount: 0,
+        comments: [],
+        author: {
+          id: activeUser.id || "user-viewer",
+          name: activeUser.fullName || activeUser.name || "Membre NeuralConsult",
+          username: activeUser.username || "membre_actif",
+          profilePhotoUrl: activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          role: activeUser.role || (activeUser.isDoctor ? "Médecin Tabacologue" : "Patient en Sevrage"),
+          isDoctor: Boolean(activeUser.isDoctor),
+          smokeFreeStatus: activeUser.smokeFreeStatus || "Suivi actif",
+          following: false
+        }
+      };
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        stored.unshift(newPost);
+        localStorage.setItem("nc_demo_community_posts", JSON.stringify(stored));
+      } catch (e) {}
+      return newPost;
+    }
+
+    // 5. Communities Social Post Reactions & Votes
+    if (url.includes("/api/communities/social/posts/") && url.includes("/reactions") && upperMethod === "POST") {
+      const postId = url.split("/posts/")[1].split("/reactions")[0];
+      const type = payload?.type;
+      const data = getDemoCommunityData();
+      let target = data.posts.find(p => p.id === postId) || DEMO_COMMUNITY_POSTS[0];
+      const updated = { ...target };
+
+      if (type === "UPVOTE") {
+        if (updated.myReaction === "UPVOTE") {
+          updated.myReaction = null;
+          updated.upvotesCount = Math.max(0, (updated.upvotesCount || 1) - 1);
+        } else {
+          if (updated.myReaction === "DOWNVOTE") {
+            updated.downvotesCount = Math.max(0, (updated.downvotesCount || 1) - 1);
+          }
+          updated.myReaction = "UPVOTE";
+          updated.upvotesCount = (updated.upvotesCount || 0) + 1;
+        }
+      } else if (type === "DOWNVOTE") {
+        if (updated.myReaction === "DOWNVOTE") {
+          updated.myReaction = null;
+          updated.downvotesCount = Math.max(0, (updated.downvotesCount || 1) - 1);
+        } else {
+          if (updated.myReaction === "UPVOTE") {
+            updated.upvotesCount = Math.max(0, (updated.upvotesCount || 1) - 1);
+          }
+          updated.myReaction = "DOWNVOTE";
+          updated.downvotesCount = (updated.downvotesCount || 0) + 1;
+        }
+      } else if (type) {
+        updated.reactions = { ...(updated.reactions || {}) };
+        updated.reactions[type] = (updated.reactions[type] || 0) + 1;
+      }
+
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        const idx = stored.findIndex(p => p.id === postId);
+        if (idx >= 0) {
+          stored[idx] = updated;
+        } else {
+          stored.unshift(updated);
+        }
+        localStorage.setItem("nc_demo_community_posts", JSON.stringify(stored));
+      } catch (e) {}
+
+      return updated;
+    }
+
+    // 6. Communities Social Post Comments
+    if (url.includes("/api/communities/social/posts/") && url.includes("/comments") && upperMethod === "POST") {
+      const postId = url.split("/posts/")[1].split("/comments")[0];
+      const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
+      const data = getDemoCommunityData();
+      let target = data.posts.find(p => p.id === postId) || DEMO_COMMUNITY_POSTS[0];
+      const updated = { ...target };
+
+      const newComment = {
+        id: `c-${Date.now()}`,
+        content: payload?.content || "Excellent message, merci pour ce partage !",
+        createdAt: new Date().toISOString(),
+        author: {
+          id: activeUser.id || "user-viewer",
+          name: activeUser.fullName || activeUser.name || "Membre NeuralConsult",
+          username: activeUser.username || "membre_actif",
+          profilePhotoUrl: activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          role: activeUser.role || (activeUser.isDoctor ? "Médecin Tabacologue" : "Patient en Sevrage"),
+          isDoctor: Boolean(activeUser.isDoctor),
+          smokeFreeStatus: activeUser.smokeFreeStatus || "Suivi actif"
+        },
+        replies: []
+      };
+
+      if (payload?.parentCommentId) {
+        updated.comments = (updated.comments || []).map(c => {
+          if (c.id === payload.parentCommentId) {
+            return { ...c, replies: [...(c.replies || []), newComment] };
+          }
+          return c;
+        });
+      } else {
+        updated.comments = [...(updated.comments || []), newComment];
+      }
+      updated.commentsCount = (updated.commentsCount || 0) + 1;
+
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        const idx = stored.findIndex(p => p.id === postId);
+        if (idx >= 0) {
+          stored[idx] = updated;
+        } else {
+          stored.unshift(updated);
+        }
+        localStorage.setItem("nc_demo_community_posts", JSON.stringify(stored));
+      } catch (e) {}
+
+      return updated;
+    }
+
+    // 7. Follow user toggle
+    if (url.includes("/api/communities/social/users/") && url.includes("/follow")) {
+      return { success: true, message: "Statut d'abonnement mis à jour." };
+    }
+
     // 1. Appointments decisions (complete / confirm / refuse / cancel)
     if (url.includes("/api/appointments/")) {
       const parts = url.split("/");
@@ -856,6 +1818,30 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   }
 
   // ─── QUERIES (GET) ───
+
+  if (url.includes("/api/communities/social/profile")) {
+    const commData = getDemoCommunityData();
+    return commData.viewer;
+  }
+  if (url.includes("/api/communities/social/users/")) {
+    const userId = url.split("/users/")[1].split("?")[0];
+    const person = DEMO_COMMUNITY_PEOPLE.find(p => p.id === userId) || DEMO_COMMUNITY_PEOPLE[0];
+    const userPosts = DEMO_COMMUNITY_POSTS.filter(p => p.author?.id === userId || p.author?.username === person.username);
+    return {
+      user: person,
+      posts: userPosts,
+      followersCount: 42,
+      followingCount: 15,
+      isFollowing: false
+    };
+  }
+  if (url.includes("/api/communities/social")) {
+    return getDemoCommunityData();
+  }
+  if (url.includes("/api/communities/servers")) {
+    return DEMO_COMMUNITY_SERVERS;
+  }
+
   if (url.includes("/api/me")) {
     if (isDoctor) return DEMO_USERS.doctor;
     const p = getDemoUserByEmail(activeDemoEmail);

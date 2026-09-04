@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { getDemoCommunityData } from "../services/demoMockService";
 
 // Fallback initial subreddits
 const DEFAULT_SUBREDDITS = [
@@ -121,19 +122,32 @@ export default function Communities() {
         api.get("/api/notifications/summary").catch(() => ({ data: { unreadCount: 0 } }))
       ]);
 
-      if (socialRes?.data) {
-        const data = socialRes.data;
-        setPosts(data.posts || []);
-        setServers(data.servers || []);
+      const data = socialRes?.data;
+      if (data && data.posts && data.posts.length > 0) {
+        setPosts(data.posts);
+        setServers(data.servers && data.servers.length > 0 ? data.servers : DEFAULT_SUBREDDITS);
         setPeople(data.people || []);
         setMyProfile(data.viewer || null);
         setConversations(data.conversations || []);
+      } else {
+        const fallback = getDemoCommunityData();
+        setPosts(fallback.posts || []);
+        setServers(fallback.servers && fallback.servers.length > 0 ? fallback.servers : DEFAULT_SUBREDDITS);
+        setPeople(fallback.people || []);
+        setMyProfile(fallback.viewer || null);
+        setConversations(fallback.conversations || []);
       }
 
       setNotifications(notifRes?.data || []);
       setUnreadNotifsCount(summaryRes?.data?.unreadCount || 0);
     } catch (err) {
       console.error("Error loading community:", err);
+      const fallback = getDemoCommunityData();
+      setPosts(fallback.posts || []);
+      setServers(fallback.servers && fallback.servers.length > 0 ? fallback.servers : DEFAULT_SUBREDDITS);
+      setPeople(fallback.people || []);
+      setMyProfile(fallback.viewer || null);
+      setConversations(fallback.conversations || []);
     } finally {
       setLoading(false);
     }
