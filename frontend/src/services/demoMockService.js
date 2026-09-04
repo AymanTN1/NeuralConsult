@@ -678,29 +678,19 @@ export const createDemoDossier = (patientProfileId) => {
   };
 };
 
+const nowTime = Date.now();
+const oneHour = 3600000;
+const oneDay = 86400000;
+
 // Demo Appointments (in-memory state)
 export let DEMO_APPOINTMENTS = [
-  {
-    id: "apt-demo-01",
-    startsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
-    durationMinutes: 30,
-    status: "CONFIRMED",
-    reason: "Consultation de suivi M+1 : Bilan biologique, contrôle du monoxyde de carbone et consolidation du sevrage.",
-    doctorName: "Dr. Ayman Tantani",
-    doctorSpecialty: "Tabacologue & Médecin Référent",
-    patientName: "Youssef El Fassi",
-    patientProfileId: "p0c70000-0000-0000-0000-000000000001",
-    meetingProvider: "JITSI",
-    meetingRoomName: "NeuralConsult-Sevrage-Suivi-Youssef-Tantani",
-    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Sevrage-Suivi-Youssef-Tantani",
-    triggeredByAiAlert: false
-  },
+  // --- CONFIRMED (Confirmées à venir) ---
   {
     id: "apt-demo-02",
-    startsAt: new Date(Date.now() + 3600000 * 2).toISOString(),
+    startsAt: new Date(nowTime + oneHour * 2).toISOString(),
     durationMinutes: 30,
     status: "CONFIRMED",
-    reason: "🚨 Consultation Urgente : Suite à l'alerte SOS Envie du patient Karim Benali (Casablanca).",
+    reason: "🚨 Consultation Urgente : Suite à l'alerte SOS Envie du patient Karim Benali (Casablanca). Pic de craving aigu et risque de rechute.",
     doctorName: "Dr. Ayman Tantani",
     doctorSpecialty: "Tabacologue & Médecin Référent",
     patientName: "Karim Benali",
@@ -708,7 +698,190 @@ export let DEMO_APPOINTMENTS = [
     meetingProvider: "JITSI",
     meetingRoomName: "NeuralConsult-Urgence-Karim-Benali",
     meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Urgence-Karim-Benali",
-    triggeredByAiAlert: true
+    triggeredByAiAlert: true,
+    doctorNote: "Protocole d'urgence activé : cohérence cardiaque et substituts oraux d'appoint recommandés."
+  },
+  {
+    id: "apt-demo-01",
+    startsAt: new Date(nowTime + oneDay * 2 + oneHour * 4).toISOString(),
+    durationMinutes: 30,
+    status: "CONFIRMED",
+    reason: "Consultation de suivi M+1 : Bilan biologique, contrôle du monoxyde de carbone (CO expiré) et consolidation du sevrage.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Youssef El Fassi",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000001",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Sevrage-Suivi-Youssef-Tantani",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Sevrage-Suivi-Youssef-Tantani",
+    triggeredByAiAlert: false,
+    doctorNote: "Préparer la réduction de dose des patchs si CO < 5 ppm."
+  },
+  {
+    id: "apt-conf-03",
+    startsAt: new Date(nowTime + oneDay * 4 + oneHour * 2).toISOString(),
+    durationMinutes: 20,
+    status: "CONFIRMED",
+    reason: "Séance de renforcement motivationnel : Gestion des déclencheurs sociaux et du stress en milieu professionnel.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Sara Mansour",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000003",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Motivation-Sara-Mansour",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Motivation-Sara-Mansour",
+    triggeredByAiAlert: false,
+    doctorNote: "Focus sur les techniques cognitives de restructuration face aux pauses café."
+  },
+
+  // --- REQUESTED (Demandes en attente de validation) ---
+  {
+    id: "apt-req-01",
+    startsAt: new Date(nowTime + oneDay * 1 + oneHour * 2).toISOString(),
+    durationMinutes: 20,
+    status: "REQUESTED",
+    reason: "Demande de suivi S+2 : Bilan d'adaptation aux substituts nicotiniques (TSN 14mg), persistance d'envies matinales.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Sara Mansour",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000003",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Suivi-Sara-Mansour",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Suivi-Sara-Mansour",
+    triggeredByAiAlert: false,
+    createdAt: new Date(nowTime - oneHour * 2).toISOString()
+  },
+  {
+    id: "apt-req-02",
+    startsAt: new Date(nowTime + oneDay * 3 + oneHour * 1).toISOString(),
+    durationMinutes: 20,
+    status: "REQUESTED",
+    reason: "Première téléconsultation tabacologique : Dépendance sévère (Fagerström 7/10), anxiété réactionnelle et demande de prescription combinée.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Mohamed Chraibi",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000005",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Inclusion-Mohamed-Chraibi",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Inclusion-Mohamed-Chraibi",
+    triggeredByAiAlert: false,
+    createdAt: new Date(nowTime - oneHour * 5).toISOString()
+  },
+  {
+    id: "apt-req-03",
+    startsAt: new Date(nowTime + oneDay * 5 + oneHour * 3).toISOString(),
+    durationMinutes: 20,
+    status: "REQUESTED",
+    reason: "Point d'étape M+2 : Contrôle respiratoire, maintien de l'abstinence et sevrage progressif des pastilles 2mg.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Said Alaoui",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000004",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Controle-Said-Alaoui",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Controle-Said-Alaoui",
+    triggeredByAiAlert: false,
+    createdAt: new Date(nowTime - oneDay * 1).toISOString()
+  },
+
+  // --- COMPLETED (Consultations passées & terminées) ---
+  {
+    id: "apt-comp-01",
+    startsAt: new Date(nowTime - oneDay * 14 - oneHour * 2).toISOString(),
+    durationMinutes: 30,
+    status: "COMPLETED",
+    reason: "Consultation initiale d'inclusion : Diagnostic clinique de dépendance, fixation de la date cible d'arrêt et prescription TSN.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Youssef El Fassi",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000001",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Initiale-Youssef-ElFassi",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Initiale-Youssef-ElFassi",
+    triggeredByAiAlert: false,
+    doctorNote: "Patient très coopératif. CO expiré initial : 19 ppm. Plan validé : Patch Nicopatch 21mg/24h + inhaleur 15mg si besoin. Prochain contrôle M+1 fixé."
+  },
+  {
+    id: "apt-comp-02",
+    startsAt: new Date(nowTime - oneDay * 8 + oneHour * 1).toISOString(),
+    durationMinutes: 30,
+    status: "COMPLETED",
+    reason: "Bilan médical M+1 : Évaluation de la fonction respiratoire, amélioration du sommeil et observance thérapeutique.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Said Alaoui",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000004",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Bilan-Said-Alaoui",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Bilan-Said-Alaoui",
+    triggeredByAiAlert: false,
+    doctorNote: "Abstinence totale maintenue sans faux-pas. Nette amélioration du souffle au repos. Pastilles réduites de 4mg à 2mg."
+  },
+  {
+    id: "apt-comp-03",
+    startsAt: new Date(nowTime - oneDay * 4 + oneHour * 3).toISOString(),
+    durationMinutes: 25,
+    status: "COMPLETED",
+    reason: "Téléconsultation d'évaluation pré-sevrage : Analyse des stimuli conditionnés et mise en place des routines d'évitement.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Karim Benali",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000002",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Presevrage-Karim-Benali",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Presevrage-Karim-Benali",
+    triggeredByAiAlert: false,
+    doctorNote: "Explication de la neurobiologie du craving (pic de dopamine). Règle des 3 minutes et exercices de cohérence cardiaque 4-7-8 assimilés."
+  },
+  {
+    id: "apt-comp-04",
+    startsAt: new Date(nowTime - oneDay * 2 - oneHour * 1).toISOString(),
+    durationMinutes: 20,
+    status: "COMPLETED",
+    reason: "Séance de soutien précoce : Gestion des troubles du sommeil et de l'irritabilité au J+3 du sevrage.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Sara Mansour",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000003",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Soutien-Sara-Mansour",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Soutien-Sara-Mansour",
+    triggeredByAiAlert: false,
+    doctorNote: "Insomnie d'endormissement résolue en retirant le patch 1h avant le coucher. Prescription de mélatonine végétale. Moral rehaussé."
+  },
+
+  // --- CANCELLED & REFUSED (Historique des refus et annulations) ---
+  {
+    id: "apt-canc-01",
+    startsAt: new Date(nowTime - oneDay * 3 + oneHour * 2).toISOString(),
+    durationMinutes: 20,
+    status: "CANCELLED",
+    reason: "Téléconsultation de cadrage : Déplacement professionnel imprévu du patient.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Mohamed Chraibi",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000005",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Annule-Mohamed-Chraibi",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Annule-Mohamed-Chraibi",
+    triggeredByAiAlert: false,
+    doctorNote: "Annulé par le patient en raison d'un déplacement à Tanger. Reporté à la semaine suivante."
+  },
+  {
+    id: "apt-canc-02",
+    startsAt: new Date(nowTime - oneDay * 6 + oneHour * 4).toISOString(),
+    durationMinutes: 20,
+    status: "REFUSED",
+    reason: "Demande de téléconsultation externe sans questionnaire d'évaluation médicale préalable.",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Tarik Amrani",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000099",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Refus-Tarik-Amrani",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Refus-Tarik-Amrani",
+    triggeredByAiAlert: false,
+    doctorNote: "Demande refusée : Patient redirigé vers le questionnaire d'évaluation initiale avant validation de rendez-vous clinique."
   }
 ];
 
@@ -718,10 +891,18 @@ export const getDemoAppointments = () => {
       const stored = localStorage.getItem("nc_demo_appointments");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length >= 6) {
+          const statuses = new Set(parsed.map(a => a.status));
+          if (statuses.has("REQUESTED") && statuses.has("COMPLETED")) {
+            return parsed;
+          }
         }
       }
+    } catch (e) {}
+  }
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("nc_demo_appointments", JSON.stringify(DEMO_APPOINTMENTS));
     } catch (e) {}
   }
   return DEMO_APPOINTMENTS;

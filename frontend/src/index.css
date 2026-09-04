@@ -15597,3 +15597,254 @@ body.light-theme .table-hover tbody tr:hover,
 .form-control:focus, .form-select:focus {
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2) !important;
 }
+
+/* ==========================================================================
+   NEURALCONSULT DOCTOR APPOINTMENTS UI / UX OVERHAUL
+   ========================================================================== */
+
+.nc-appointment-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 1rem;
+  background: var(--nc-surface, #ffffff);
+  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.8));
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.nc-appointment-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  border-color: rgba(14, 165, 233, 0.4);
+}
+
+.nc-appointment-kpi-card .kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.nc-appointment-kpi-card .kpi-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--nc-copy, #0f172a);
+}
+
+.nc-appointment-kpi-card .kpi-label {
+  font-size: 0.82rem;
+  color: var(--nc-copy-muted, #64748b);
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+/* Segmented Doctor Navigation Pills */
+.nc-doctor-nav-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: var(--nc-surface-subtle, rgba(241, 245, 249, 0.8));
+  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.8));
+  border-radius: 1rem;
+}
+
+.nc-doctor-nav-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.nc-doctor-nav-btn {
+  border: none;
+  background: transparent;
+  color: var(--nc-copy-muted, #64748b);
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.nc-doctor-nav-btn:hover {
+  color: var(--nc-copy, #0f172a);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.nc-doctor-nav-btn.is-active {
+  background: var(--nc-surface, #ffffff);
+  color: #0284c7;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+body.dark-theme .nc-doctor-nav-btn.is-active,
+[data-theme="dark"] .nc-doctor-nav-btn.is-active {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* Status Filter Buttons */
+.nc-status-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.nc-status-filter-btn {
+  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.9));
+  background: var(--nc-surface, #ffffff);
+  color: var(--nc-copy-muted, #64748b);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+
+.nc-status-filter-btn:hover {
+  background: var(--nc-surface-subtle, #f8fafc);
+  border-color: rgba(14, 165, 233, 0.4);
+  color: var(--nc-copy, #0f172a);
+}
+
+.nc-status-filter-btn.is-active {
+  background: #0284c7;
+  color: #ffffff !important;
+  border-color: #0284c7;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.nc-status-filter-btn.is-active .badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* Patient Avatar Initials */
+.nc-patient-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  letter-spacing: -0.5px;
+}
+
+/* Visio Launcher Button */
+.nc-visio-launcher-btn {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600;
+  padding: 0.48rem 0.95rem;
+  border-radius: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  font-size: 0.85rem;
+}
+
+.nc-visio-launcher-btn:hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.42) !important;
+  color: #ffffff !important;
+}
+
+.nc-visio-launcher-btn i {
+  animation: pulse-camera 2s infinite ease-in-out;
+}
+
+@keyframes pulse-camera {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Horizontal Action Bar for Table */
+.nc-appointment-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.nc-appointment-action-bar .btn {
+  font-size: 0.78rem;
+  padding: 0.32rem 0.65rem;
+  border-radius: 0.55rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+/* Note Preview Box */
+.nc-clinical-note-box {
+  background: var(--nc-surface-subtle, rgba(248, 250, 252, 0.9));
+  border-left: 3px solid #0284c7;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--nc-copy, #334155);
+  margin-top: 0.45rem;
+}
+
+body.dark-theme .nc-clinical-note-box,
+[data-theme="dark"] .nc-clinical-note-box {
+  background: rgba(15, 23, 42, 0.55);
+  border-left-color: #38bdf8;
+  color: #cbd5e1;
+}
+
+/* Urgency Pulse Indicator */
+.nc-urgent-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+body.dark-theme .nc-urgent-indicator,
+[data-theme="dark"] .nc-urgent-indicator {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
