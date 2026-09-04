@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import Modal from "react-bootstrap/Modal";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -171,6 +171,10 @@ export default function Communities() {
     serverId: ""
   });
   const [postTab, setPostTab] = useState("text"); // text, media, link
+  const [imageUploadMode, setImageUploadMode] = useState("local"); // "local" | "url"
+  const [localImageMeta, setLocalImageMeta] = useState(null); // { name, size, originalSize }
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const fileInputRef = useRef(null);
   const [repostComment, setRepostComment] = useState("");
 
   // Comments Inline Management
@@ -376,18 +380,163 @@ export default function Communities() {
     }
   };
 
+  // Image Compression & Processing Helpers
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes <= 0) return "";
+    if (bytes < 1024) return `${bytes} o`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  };
+
+  const compressImageFile = (file) => {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith("image/")) {
+        reject(new Error("Fichier non reconnu comme image."));
+        return;
+      }
+
+      // Preserve animated GIF, SVG, or small image (< 180 Ko)
+      if (file.type === "image/gif" || file.type === "image/svg+xml" || file.size < 180 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            dataUrl: e.target.result,
+            size: file.size,
+            originalSize: file.size,
+            name: file.name
+          });
+        };
+        reader.onerror = () => reject(new Error("Erreur de lecture du fichier."));
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_WIDTH = 1280;
+          const MAX_HEIGHT = 1280;
+          let { width, height } = img;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.82 quality
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          const head = "data:image/jpeg;base64,";
+          const approxBytes = Math.round((dataUrl.length - head.length) * 0.75);
+
+          resolve({
+            dataUrl,
+            size: approxBytes,
+            originalSize: file.size,
+            name: file.name
+          });
+        };
+        img.onerror = () => {
+          resolve({
+            dataUrl: e.target.result,
+            size: file.size,
+            originalSize: file.size,
+            name: file.name
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Erreur de lecture du fichier."));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleProcessImageFile = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast("Veuillez choisir un fichier image (JPG, PNG, WebP, GIF...)", "warning");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      showToast("Cette image est trop volumineuse (max 20 Mo)", "warning");
+      return;
+    }
+
+    try {
+      const result = await compressImageFile(file);
+      setPostDraft((prev) => ({ ...prev, imageUrl: result.dataUrl }));
+      setLocalImageMeta({
+        name: result.name,
+        size: result.size,
+        originalSize: result.originalSize
+      });
+      setImageUploadMode("local");
+      showToast("📸 Photo importée et optimisée avec succès !");
+    } catch (err) {
+      showToast("Erreur lors du traitement de l'image.", "danger");
+    }
+  };
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleProcessImageFile(file);
+    }
+    if (e.target) e.target.value = "";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDraggingFile) setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleDropImage = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      handleProcessImageFile(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setPostDraft((prev) => ({ ...prev, imageUrl: "" }));
+    setLocalImageMeta(null);
+  };
+
   // Create Post Submit
   const handleCreatePostSubmit = async (e) => {
     e?.preventDefault();
-    if (!postDraft.title.trim() && !postDraft.content.trim()) {
-      showToast("Veuillez saisir un titre ou un contenu.", "warning");
+    if (!postDraft.title.trim() && !postDraft.content.trim() && !postDraft.imageUrl.trim()) {
+      showToast("Veuillez saisir un titre, un message ou ajouter une photo.", "warning");
       return;
     }
 
     try {
       setActionLoading(true);
       const payload = {
-        title: postDraft.title.trim(),
+        title: postDraft.title.trim() || "Photo partagée",
         flair: postDraft.flair || (isDoc ? "🩺 Conseil Médecin" : "🏆 Victoire J+30"),
         content: postDraft.content.trim(),
         imageUrl: postDraft.imageUrl.trim() || null,
@@ -416,6 +565,7 @@ export default function Communities() {
           imageUrl: "",
           serverId: ""
         });
+        setLocalImageMeta(null);
         showToast("🎉 Publication créée avec succès !");
       }
     } catch (err) {
@@ -868,7 +1018,11 @@ export default function Communities() {
                 className="quick-chip-btn media"
                 onClick={() => {
                   setPostTab("media");
+                  setImageUploadMode("local");
                   setShowCreateModal(true);
+                  setTimeout(() => {
+                    fileInputRef.current?.click();
+                  }, 250);
                 }}
               >
                 <i className="bi bi-image-fill text-info"></i>
@@ -1640,16 +1794,146 @@ export default function Communities() {
               {/* Image Input if tab is media */}
               {postTab === "media" && (
                 <div className="form-group-reddit">
-                  <label>URL de l'image / Photo</label>
+                  <div className="media-source-selector">
+                    <label className="mb-2 d-block">Source de la photo</label>
+                    <div className="media-mode-toggle-row">
+                      <button
+                        type="button"
+                        className={`media-mode-btn ${imageUploadMode === "local" ? "active" : ""}`}
+                        onClick={() => setImageUploadMode("local")}
+                      >
+                        <i className="bi bi-folder-fill me-1.5 text-primary"></i>
+                        <span>Fichier sur mon appareil</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`media-mode-btn ${imageUploadMode === "url" ? "active" : ""}`}
+                        onClick={() => setImageUploadMode("url")}
+                      >
+                        <i className="bi bi-link-45deg me-1 text-info"></i>
+                        <span>Lien URL web</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Hidden file input for local uploads */}
                   <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/..."
-                    value={postDraft.imageUrl}
-                    onChange={(e) => setPostDraft({ ...postDraft, imageUrl: e.target.value })}
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleFileInputChange}
                   />
-                  {postDraft.imageUrl && (
-                    <div className="img-preview-wrap mt-2">
-                      <img src={postDraft.imageUrl} alt="Prévisualisation" style={{ maxHeight: "200px", borderRadius: "8px" }} />
+
+                  {/* Mode 1: Local upload */}
+                  {imageUploadMode === "local" ? (
+                    <div className="local-upload-container mt-2">
+                      {postDraft.imageUrl ? (
+                        <div className="local-image-preview-card">
+                          <div className="preview-img-container">
+                            <img src={postDraft.imageUrl} alt="Prévisualisation" />
+                            <button
+                              type="button"
+                              className="btn-overlay-remove"
+                              onClick={handleRemoveImage}
+                              title="Retirer la photo"
+                            >
+                              <i className="bi bi-x-lg"></i>
+                            </button>
+                          </div>
+                          <div className="preview-details-bar">
+                            <div className="preview-file-info">
+                              <i className="bi bi-image text-primary me-2"></i>
+                              <span className="file-name text-truncate">
+                                {localImageMeta?.name || "Photo importée"}
+                              </span>
+                              {localImageMeta?.size && (
+                                <span className="file-badge">
+                                  {formatFileSize(localImageMeta.size)}
+                                  {localImageMeta.originalSize > localImageMeta.size && (
+                                    <span className="file-opt-badge ms-1.5">
+                                      <i className="bi bi-lightning-charge-fill me-0.5 text-warning"></i>
+                                      optimisée
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                            <div className="preview-actions">
+                              <button
+                                type="button"
+                                className="btn-change-photo"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <i className="bi bi-arrow-repeat me-1"></i> Remplacer
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-remove-photo"
+                                onClick={handleRemoveImage}
+                              >
+                                <i className="bi bi-trash3 me-1"></i> Supprimer
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`image-dropzone ${isDraggingFile ? "dragover" : ""}`}
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDropImage}
+                        >
+                          <div className="dropzone-icon-circle">
+                            <i className="bi bi-cloud-arrow-up-fill"></i>
+                          </div>
+                          <h6 className="dropzone-title">Glissez-déposez votre photo ici</h6>
+                          <p className="dropzone-subtitle">ou cliquez pour parcourir vos fichiers locaux</p>
+                          <div className="dropzone-hints">
+                            <span className="hint-pill">JPG, PNG, WebP, GIF</span>
+                            <span className="hint-pill">Compression HD automatique</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Mode 2: Web URL */
+                    <div className="url-upload-container mt-2">
+                      <div className="url-input-wrap">
+                        <input
+                          type="url"
+                          placeholder="https://images.unsplash.com/..."
+                          value={postDraft.imageUrl}
+                          onChange={(e) => {
+                            setPostDraft({ ...postDraft, imageUrl: e.target.value });
+                            setLocalImageMeta(null);
+                          }}
+                        />
+                        {postDraft.imageUrl && (
+                          <button
+                            type="button"
+                            className="btn-clear-url"
+                            onClick={handleRemoveImage}
+                            title="Effacer"
+                          >
+                            <i className="bi bi-x-circle-fill"></i>
+                          </button>
+                        )}
+                      </div>
+                      {postDraft.imageUrl && (
+                        <div className="img-preview-wrap mt-2">
+                          <img
+                            src={postDraft.imageUrl}
+                            alt="Prévisualisation"
+                            style={{ maxHeight: "200px", borderRadius: "8px", objectFit: "cover", width: "100%" }}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              showToast("Impossible de charger l'image depuis cette URL.", "warning");
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
