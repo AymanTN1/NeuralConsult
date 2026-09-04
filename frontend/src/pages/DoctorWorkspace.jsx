@@ -528,7 +528,14 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       : DEMO_DOCTOR_PATIENTS;
 
     const enrichedPatients = rawPatients.map((patient, index) => {
-      const fallback = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0];
+      const fallback = DEMO_DOCTOR_PATIENTS.find(
+        dp => dp.email === patient.patientEmail ||
+              dp.email === patient.email ||
+              dp.patientProfileId === patient.patientProfileId ||
+              dp.id === patient.patientProfileId ||
+              dp.id === patient.id
+      ) || DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0];
+
       const pid = patient.patientProfileId || patient.id || fallback.patientProfileId;
       const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne")
         ? patient.patientName
@@ -565,7 +572,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         fagerstromScore: fScore,
         hadAnxietyScore: hAnx,
         hadDepressionScore: hDep,
-        dependenceLevel: depLevel
+        dependenceLevel: depLevel,
+        onboardingComplete: true,
+        testsComplete: true,
+        journalComplete: true
       };
     });
 

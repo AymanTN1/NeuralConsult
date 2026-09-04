@@ -303,24 +303,42 @@ public class DoctorController {
     User user = userRepository.findByEmailIgnoreCase(principal.getUsername()).orElseThrow();
     return requestService.listAssignments(user).stream()
         .sorted((left, right) -> right.getAssignedAt().compareTo(left.getAssignedAt()))
-        .map(assignment -> new DoctorPatientSummaryResponse(
-            assignment.getPatientProfile().getId(),
-            assignment.getPatientProfile().getUser().getFullName(),
-            assignment.getPatientProfile().getUser().getEmail(),
-            assignment.getPatientProfile().getDateOfBirth(),
-            assignment.getPatientProfile().getCity(),
-            assignment.getPatientProfile().getOccupation(),
-            assignment.getPatientProfile().getFagerstromScore(),
-            assignment.getPatientProfile().getHadAnxietyScore(),
-            assignment.getPatientProfile().getHadDepressionScore(),
-            assignment.getPatientProfile().isOnboardingComplete(),
-            assignment.getPatientProfile().isTestsComplete(),
-            assignment.getPatientProfile().isJournalComplete(),
-            assignment.getPatientProfile().getDependenceLevel() != null
-                ? assignment.getPatientProfile().getDependenceLevel().name()
-                : null,
-            assignment.getAssignedAt()
-        ))
+        .map(assignment -> {
+            User pUser = assignment.getPatientProfile().getUser();
+            String resolvedName = pUser.getFullName();
+            if (resolvedName == null || resolvedName.isBlank()) {
+                String f = pUser.getFirstName();
+                String l = pUser.getLastName();
+                if (f != null || l != null) {
+                    resolvedName = ((f != null ? f : "") + " " + (l != null ? l : "")).trim();
+                }
+                if (resolvedName == null || resolvedName.isBlank()) {
+                    resolvedName = pUser.getEmail() != null ? pUser.getEmail() : "Patient Inconnu";
+                }
+            }
+            LocalDate resolvedDob = assignment.getPatientProfile().getDateOfBirth() != null
+                ? assignment.getPatientProfile().getDateOfBirth()
+                : pUser.getDateOfBirth();
+
+            return new DoctorPatientSummaryResponse(
+                assignment.getPatientProfile().getId(),
+                resolvedName,
+                pUser.getEmail(),
+                resolvedDob,
+                assignment.getPatientProfile().getCity(),
+                assignment.getPatientProfile().getOccupation(),
+                assignment.getPatientProfile().getFagerstromScore(),
+                assignment.getPatientProfile().getHadAnxietyScore(),
+                assignment.getPatientProfile().getHadDepressionScore(),
+                assignment.getPatientProfile().isOnboardingComplete(),
+                assignment.getPatientProfile().isTestsComplete(),
+                assignment.getPatientProfile().isJournalComplete(),
+                assignment.getPatientProfile().getDependenceLevel() != null
+                    ? assignment.getPatientProfile().getDependenceLevel().name()
+                    : null,
+                assignment.getAssignedAt()
+            );
+        })
         .toList();
   }
 

@@ -15,18 +15,65 @@ const DEMO_ACCOUNTS = {
     icon: "bi bi-hospital-fill",
     btnColor: "#0284c7"
   },
-  patient: {
+  patient1: {
     email: "tantaniayman0@gmail.com",
     password: "password",
     role: "Patient en Sevrage (J+30)",
-    name: "Youssef El Fassi (@samy_zen)",
+    name: "Youssef El Fassi",
     targetPath: "/dashboard",
     badges: ["3D Poumons Interactif", "35j de Journal", "Communauté & Trophées"],
     description: "Visualisation 3D du souffle, suivi des biomarqueurs et soutien 24/7",
     icon: "bi bi-lungs-fill",
     btnColor: "#10b981"
+  },
+  patient2: {
+    email: "aymantantani18@gmail.com",
+    password: "password",
+    role: "Patient en Risque de Rechute (J+4)",
+    name: "Karim Benali",
+    targetPath: "/dashboard",
+    badges: ["🚨 Alerte Urgence SOS", "Pic Craving Aigu", "Dialogue Psychologue IA"],
+    description: "Scénario d'urgence : Craving violent, échange avec l'IA et alerte médecin",
+    icon: "bi bi-exclamation-triangle-fill",
+    btnColor: "#f59e0b"
+  },
+  patient3: {
+    email: "projetfinetude4@gmail.com",
+    password: "password",
+    role: "Patiente en Progression (J+14)",
+    name: "Sara Mansour",
+    targetPath: "/dashboard",
+    badges: ["Substitution TSN 14mg", "Cohérence Cardiaque", "Tests Validés"],
+    description: "Parcours féminin actif : réduction progressive et gestion du stress",
+    icon: "bi bi-graph-up-arrow",
+    btnColor: "#8b5cf6"
+  },
+  patient4: {
+    email: "saidpa1969@gmail.com",
+    password: "password",
+    role: "Patient Senior Sevré (J+60)",
+    name: "Said Alaoui",
+    targetPath: "/dashboard",
+    badges: ["Abstinence 60 jours", "Capacité +35%", "Sevrage Consolidé"],
+    description: "Ancien fumeur de 30 ans : suivi biologique et rémission tabagique",
+    icon: "bi bi-check-circle-fill",
+    btnColor: "#059669"
+  },
+  patient5: {
+    email: "testaccsimo@gmail.com",
+    password: "password",
+    role: "Patient Dépendance Sévère (J+2)",
+    name: "Mohamed Chraibi",
+    targetPath: "/dashboard",
+    badges: ["HAD Anxiété 12/21", "Fagerström 7/10", "SOS Déclenché"],
+    description: "Scénario crise de sevrage : insomnie, anxiété aiguë et suivi prioritaire",
+    icon: "bi bi-lightning-charge-fill",
+    btnColor: "#ef4444"
   }
 };
+
+// Backwards compatibility alias
+DEMO_ACCOUNTS.patient = DEMO_ACCOUNTS.patient1;
 
 const Login = () => {
   const { login } = useAuth();
@@ -131,7 +178,7 @@ const Login = () => {
 
         <div className="row g-2.5">
           {/* Doctor Demo Button */}
-          <div className="col-12 col-sm-6">
+          <div className="col-12">
             <button
               type="button"
               className={`demo-card-btn w-100 p-3 text-start rounded-3 d-flex flex-column justify-content-between ${
@@ -140,18 +187,19 @@ const Login = () => {
               onClick={() => handleDemoLogin("doctor")}
               disabled={loading}
               title="Connexion 1-clic Médecin"
+              style={{ borderLeft: "4px solid #0284c7" }}
             >
               <div>
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <div className="demo-role-pill doctor">
                     <i className="bi bi-hospital-fill me-1.5 text-primary" />
-                    <strong>Démo Médecin</strong>
+                    <strong>Espace Médecin Tabacologue</strong>
                   </div>
-                  <span className="badge bg-primary text-white rounded-pill x-small px-2 py-0.5">
-                    1-Clic →
+                  <span className="badge bg-primary text-white rounded-pill x-small px-2.5 py-1">
+                    1-Clic Médecin →
                   </span>
                 </div>
-                <strong className="d-block small text-dark mb-0.5">{DEMO_ACCOUNTS.doctor.name}</strong>
+                <strong className="d-block small text-dark mb-0.5">{DEMO_ACCOUNTS.doctor.name} ({DEMO_ACCOUNTS.doctor.email})</strong>
                 <span className="text-muted x-small d-block mb-2">{DEMO_ACCOUNTS.doctor.description}</span>
               </div>
               <div className="demo-badges-row d-flex flex-wrap gap-1">
@@ -164,39 +212,58 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Patient Demo Button */}
-          <div className="col-12 col-sm-6">
-            <button
-              type="button"
-              className={`demo-card-btn w-100 p-3 text-start rounded-3 d-flex flex-column justify-content-between ${
-                demoLoadingKey === "patient" ? "loading" : ""
-              }`}
-              onClick={() => handleDemoLogin("patient")}
-              disabled={loading}
-              title="Connexion 1-clic Patient"
-            >
-              <div>
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <div className="demo-role-pill patient">
-                    <i className="bi bi-lungs-fill me-1.5 text-success" />
-                    <strong>Démo Patient</strong>
-                  </div>
-                  <span className="badge bg-success text-white rounded-pill x-small px-2 py-0.5">
-                    1-Clic →
-                  </span>
-                </div>
-                <strong className="d-block small text-dark mb-0.5">{DEMO_ACCOUNTS.patient.name}</strong>
-                <span className="text-muted x-small d-block mb-2">{DEMO_ACCOUNTS.patient.description}</span>
-              </div>
-              <div className="demo-badges-row d-flex flex-wrap gap-1">
-                {DEMO_ACCOUNTS.patient.badges.map((b, i) => (
-                  <span key={i} className="demo-mini-tag">
-                    ● {b}
-                  </span>
-                ))}
-              </div>
-            </button>
+          <div className="col-12 mt-2">
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <i className="bi bi-people-fill text-success" />
+              <span className="x-small fw-bold text-uppercase text-secondary">
+                Comptes Patients Démo Associés au Dr. Tantani (1-Clic) :
+              </span>
+            </div>
           </div>
+
+          {/* 5 Patient Demo Accounts */}
+          {[
+            { key: "patient1", acc: DEMO_ACCOUNTS.patient1, color: "#10b981", badgeColor: "bg-success" },
+            { key: "patient2", acc: DEMO_ACCOUNTS.patient2, color: "#f59e0b", badgeColor: "bg-warning text-dark" },
+            { key: "patient3", acc: DEMO_ACCOUNTS.patient3, color: "#8b5cf6", badgeColor: "bg-purple text-white", style: { backgroundColor: "#8b5cf6" } },
+            { key: "patient4", acc: DEMO_ACCOUNTS.patient4, color: "#059669", badgeColor: "bg-success" },
+            { key: "patient5", acc: DEMO_ACCOUNTS.patient5, color: "#ef4444", badgeColor: "bg-danger" }
+          ].map(({ key, acc, color, badgeColor, style }) => (
+            <div key={key} className="col-12 col-md-6">
+              <button
+                type="button"
+                className={`demo-card-btn w-100 p-2.5 text-start rounded-3 d-flex flex-column justify-content-between h-100 ${
+                  demoLoadingKey === key ? "loading" : ""
+                }`}
+                onClick={() => handleDemoLogin(key)}
+                disabled={loading}
+                title={`Connexion 1-clic ${acc.name}`}
+                style={{ borderLeft: `3.5px solid ${color}` }}
+              >
+                <div>
+                  <div className="d-flex align-items-center justify-content-between mb-1.5">
+                    <div className="demo-role-pill patient" style={{ fontSize: "0.75rem" }}>
+                      <i className={`${acc.icon} me-1`} style={{ color }} />
+                      <strong>{acc.role}</strong>
+                    </div>
+                    <span className={`badge rounded-pill x-small px-2 py-0.5 ${badgeColor}`} style={style || {}}>
+                      1-Clic →
+                    </span>
+                  </div>
+                  <strong className="d-block small text-dark mb-0">{acc.name}</strong>
+                  <span className="x-small text-primary d-block mb-1 font-monospace">{acc.email}</span>
+                  <span className="text-muted x-small d-block mb-2 line-clamp-2">{acc.description}</span>
+                </div>
+                <div className="demo-badges-row d-flex flex-wrap gap-1 mt-auto">
+                  {acc.badges.map((b, i) => (
+                    <span key={i} className="demo-mini-tag" style={{ fontSize: "0.68rem" }}>
+                      ● {b}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 

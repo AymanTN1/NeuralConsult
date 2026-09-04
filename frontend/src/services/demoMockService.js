@@ -13,6 +13,7 @@ export const DEMO_USERS = {
     identityVerified: true,
     active: true,
     status: "ACTIVE",
+    isDemo: true,
     patientProfile: null,
     scores: null,
     profile: {
@@ -34,7 +35,7 @@ export const DEMO_USERS = {
     },
     roles: ["ROLE_DOCTOR", "ROLE_USER"]
   },
-  patient: {
+  patient1: {
     id: "p0c70000-0000-0000-0000-000000000001",
     email: "tantaniayman0@gmail.com",
     fullName: "Youssef El Fassi",
@@ -44,6 +45,7 @@ export const DEMO_USERS = {
     identityVerified: true,
     active: true,
     status: "ACTIVE",
+    isDemo: true,
     patientProfile: {
       id: "prof-001",
       dateOfBirth: "1994-08-22",
@@ -89,8 +91,239 @@ export const DEMO_USERS = {
       hadDepressionScore: 1
     },
     roles: ["ROLE_PATIENT", "ROLE_USER"]
+  },
+  patient2: {
+    id: "p0c70000-0000-0000-0000-000000000002",
+    email: "aymantantani18@gmail.com",
+    fullName: "Karim Benali",
+    firstName: "Karim",
+    lastName: "Benali",
+    dateOfBirth: "1984-03-15",
+    identityVerified: true,
+    active: true,
+    status: "ACTIVE",
+    isDemo: true,
+    patientProfile: {
+      id: "prof-002",
+      dateOfBirth: "1984-03-15",
+      sex: "MALE",
+      city: "Casablanca",
+      countryCode: "MA",
+      occupation: "Cadre Financier",
+      cigarettesPerDay: 25,
+      smokingStartAge: 17,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "FORTE DÉPENDANCE",
+      packPrice: 42,
+      smokeFreeStartDate: new Date(Date.now() - 4 * 86400000).toISOString().split("T")[0],
+      fagerstromScore: 6,
+      hadAnxietyScore: 9,
+      hadDepressionScore: 4
+    },
+    profile: {
+      id: "prof-002",
+      dateOfBirth: "1984-03-15",
+      sex: "MALE",
+      city: "Casablanca",
+      countryCode: "MA",
+      occupation: "Cadre Financier",
+      cigarettesPerDay: 25,
+      smokingStartAge: 17,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "FORTE DÉPENDANCE",
+      fagerstromScore: 6,
+      hadAnxietyScore: 9,
+      hadDepressionScore: 4
+    },
+    scores: {
+      fagerstrom: 6,
+      hadAnxiety: 9,
+      hadDepression: 4,
+      fagerstromScore: 6,
+      hadAnxietyScore: 9,
+      hadDepressionScore: 4
+    },
+    roles: ["ROLE_PATIENT", "ROLE_USER"]
+  },
+  patient3: {
+    id: "p0c70000-0000-0000-0000-000000000003",
+    email: "projetfinetude4@gmail.com",
+    fullName: "Sara Mansour",
+    firstName: "Sara",
+    lastName: "Mansour",
+    dateOfBirth: "1998-11-04",
+    identityVerified: true,
+    active: true,
+    status: "ACTIVE",
+    isDemo: true,
+    patientProfile: {
+      id: "prof-003",
+      dateOfBirth: "1998-11-04",
+      sex: "FEMALE",
+      city: "Marrakech",
+      countryCode: "MA",
+      occupation: "Enseignante",
+      cigarettesPerDay: 12,
+      smokingStartAge: 20,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "DÉPENDANCE FAIBLE",
+      packPrice: 35,
+      smokeFreeStartDate: new Date(Date.now() - 14 * 86400000).toISOString().split("T")[0],
+      fagerstromScore: 2,
+      hadAnxietyScore: 4,
+      hadDepressionScore: 2
+    },
+    profile: {
+      id: "prof-003",
+      dateOfBirth: "1998-11-04",
+      sex: "FEMALE",
+      city: "Marrakech",
+      countryCode: "MA",
+      occupation: "Enseignante",
+      cigarettesPerDay: 12,
+      smokingStartAge: 20,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "DÉPENDANCE FAIBLE",
+      fagerstromScore: 2,
+      hadAnxietyScore: 4,
+      hadDepressionScore: 2
+    },
+    scores: {
+      fagerstrom: 2,
+      hadAnxiety: 4,
+      hadDepression: 2,
+      fagerstromScore: 2,
+      hadAnxietyScore: 4,
+      hadDepressionScore: 2
+    },
+    roles: ["ROLE_PATIENT", "ROLE_USER"]
+  },
+  patient4: {
+    id: "p0c70000-0000-0000-0000-000000000004",
+    email: "saidpa1969@gmail.com",
+    fullName: "Said Alaoui",
+    firstName: "Said",
+    lastName: "Alaoui",
+    dateOfBirth: "1968-01-30",
+    identityVerified: true,
+    active: true,
+    status: "ACTIVE",
+    isDemo: true,
+    patientProfile: {
+      id: "prof-004",
+      dateOfBirth: "1968-01-30",
+      sex: "MALE",
+      city: "Fès",
+      countryCode: "MA",
+      occupation: "Commerçant",
+      cigarettesPerDay: 30,
+      smokingStartAge: 16,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "SEVRÉ CONSOLIDÉ",
+      packPrice: 38,
+      smokeFreeStartDate: new Date(Date.now() - 60 * 86400000).toISOString().split("T")[0],
+      fagerstromScore: 0,
+      hadAnxietyScore: 1,
+      hadDepressionScore: 1
+    },
+    profile: {
+      id: "prof-004",
+      dateOfBirth: "1968-01-30",
+      sex: "MALE",
+      city: "Fès",
+      countryCode: "MA",
+      occupation: "Commerçant",
+      cigarettesPerDay: 30,
+      smokingStartAge: 16,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "SEVRÉ CONSOLIDÉ",
+      fagerstromScore: 0,
+      hadAnxietyScore: 1,
+      hadDepressionScore: 1
+    },
+    scores: {
+      fagerstrom: 0,
+      hadAnxiety: 1,
+      hadDepression: 1,
+      fagerstromScore: 0,
+      hadAnxietyScore: 1,
+      hadDepressionScore: 1
+    },
+    roles: ["ROLE_PATIENT", "ROLE_USER"]
+  },
+  patient5: {
+    id: "p0c70000-0000-0000-0000-000000000005",
+    email: "testaccsimo@gmail.com",
+    fullName: "Mohamed Chraibi",
+    firstName: "Mohamed",
+    lastName: "Chraibi",
+    dateOfBirth: "1990-06-19",
+    identityVerified: true,
+    active: true,
+    status: "ACTIVE",
+    isDemo: true,
+    patientProfile: {
+      id: "prof-005",
+      dateOfBirth: "1990-06-19",
+      sex: "MALE",
+      city: "Tanger",
+      countryCode: "MA",
+      occupation: "Ingénieur Logistique",
+      cigarettesPerDay: 20,
+      smokingStartAge: 18,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "DÉPENDANCE SÉVÈRE",
+      packPrice: 40,
+      smokeFreeStartDate: new Date(Date.now() - 2 * 86400000).toISOString().split("T")[0],
+      fagerstromScore: 7,
+      hadAnxietyScore: 12,
+      hadDepressionScore: 6
+    },
+    profile: {
+      id: "prof-005",
+      dateOfBirth: "1990-06-19",
+      sex: "MALE",
+      city: "Tanger",
+      countryCode: "MA",
+      occupation: "Ingénieur Logistique",
+      cigarettesPerDay: 20,
+      smokingStartAge: 18,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "DÉPENDANCE SÉVÈRE",
+      fagerstromScore: 7,
+      hadAnxietyScore: 12,
+      hadDepressionScore: 6
+    },
+    scores: {
+      fagerstrom: 7,
+      hadAnxiety: 12,
+      hadDepression: 6,
+      fagerstromScore: 7,
+      hadAnxietyScore: 12,
+      hadDepressionScore: 6
+    },
+    roles: ["ROLE_PATIENT", "ROLE_USER"]
   }
 };
+
+// Aliases for backwards compatibility
+DEMO_USERS.patient = DEMO_USERS.patient1;
 
 export const getDemoUserByEmail = (email) => {
   if (!email) return null;
@@ -98,8 +331,20 @@ export const getDemoUserByEmail = (email) => {
   if (clean === "ayman.tantani@uit.ac.ma" || clean.includes("dr_tantani") || clean.includes("doctor")) {
     return DEMO_USERS.doctor;
   }
-  if (clean === "tantaniayman0@gmail.com" || clean.includes("samy_zen") || clean.includes("patient")) {
-    return DEMO_USERS.patient;
+  if (clean === "tantaniayman0@gmail.com" || clean.includes("samy_zen") || clean === "patient@demo.ma") {
+    return DEMO_USERS.patient1;
+  }
+  if (clean === "aymantantani18@gmail.com" || clean.includes("karim") || clean.includes("bennani")) {
+    return DEMO_USERS.patient2;
+  }
+  if (clean === "projetfinetude4@gmail.com" || clean.includes("sara") || clean.includes("mansour")) {
+    return DEMO_USERS.patient3;
+  }
+  if (clean === "saidpa1969@gmail.com" || clean.includes("said") || clean.includes("alaoui") || clean.includes("tazi")) {
+    return DEMO_USERS.patient4;
+  }
+  if (clean === "testaccsimo@gmail.com" || clean.includes("mohamed") || clean.includes("chraibi") || clean.includes("alami")) {
+    return DEMO_USERS.patient5;
   }
   return null;
 };
@@ -189,6 +434,7 @@ export const DEMO_DOCTOR_PATIENTS = [
     patientProfileId: "p0c70000-0000-0000-0000-000000000001",
     patientName: "Youssef El Fassi",
     name: "Youssef El Fassi",
+    fullName: "Youssef El Fassi",
     patientEmail: "tantaniayman0@gmail.com",
     email: "tantaniayman0@gmail.com",
     avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
@@ -214,12 +460,13 @@ export const DEMO_DOCTOR_PATIENTS = [
     treatment: "Patch Nicopatch 14mg/24h + Pastilles 2mg au besoin"
   },
   {
-    id: "pat-002",
-    patientProfileId: "pat-002",
-    patientName: "Karim Bennani",
-    name: "Karim Bennani",
-    patientEmail: "karim.bennani@demo.ma",
-    email: "karim.bennani@demo.ma",
+    id: "p0c70000-0000-0000-0000-000000000002",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000002",
+    patientName: "Karim Benali",
+    name: "Karim Benali",
+    fullName: "Karim Benali",
+    patientEmail: "aymantantani18@gmail.com",
+    email: "aymantantani18@gmail.com",
     avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1984-03-15",
     age: 42,
@@ -239,16 +486,17 @@ export const DEMO_DOCTOR_PATIENTS = [
     journalComplete: true,
     riskLevel: "ÉLEVÉ",
     lastReportDate: "Hier 22h",
-    aiSummary: "Pic d'anxiété professionnelle rapporté. Faux-pas de 2 cigarettes hier soir. Recommandation : adapter le dosage de nicotine et planifier une téléconsultation.",
+    aiSummary: "Pic d'anxiété professionnelle aigu rapporté. Faux-pas de 2 cigarettes hier soir. Recommandation : adapter le dosage de nicotine et planifier une téléconsultation.",
     treatment: "Patch Nicorette 21mg/24h + Spray buccal"
   },
   {
-    id: "pat-003",
-    patientProfileId: "pat-003",
-    patientName: "Fatima Zahra Mansouri",
-    name: "Fatima Zahra Mansouri",
-    patientEmail: "fatima.mansouri@demo.ma",
-    email: "fatima.mansouri@demo.ma",
+    id: "p0c70000-0000-0000-0000-000000000003",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000003",
+    patientName: "Sara Mansour",
+    name: "Sara Mansour",
+    fullName: "Sara Mansour",
+    patientEmail: "projetfinetude4@gmail.com",
+    email: "projetfinetude4@gmail.com",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1998-11-04",
     age: 28,
@@ -272,41 +520,13 @@ export const DEMO_DOCTOR_PATIENTS = [
     treatment: "Gommes à mâcher 4mg"
   },
   {
-    id: "pat-004",
-    patientProfileId: "pat-004",
-    patientName: "Mehdi Alami",
-    name: "Mehdi Alami",
-    patientEmail: "mehdi.alami@demo.ma",
-    email: "mehdi.alami@demo.ma",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    dateOfBirth: "1990-06-19",
-    age: 36,
-    city: "Tanger",
-    occupation: "Ingénieur Logistique",
-    status: "ANXIÉTÉ SÉVÈRE",
-    statusType: "danger",
-    daysSmokeFree: 2,
-    cigarettesPerDayBefore: 20,
-    currentCigarettes: 4,
-    fagerstromScore: 7,
-    hadAnxietyScore: 12,
-    hadDepressionScore: 6,
-    dependenceLevel: "DÉPENDANCE SÉVÈRE",
-    onboardingComplete: true,
-    testsComplete: true,
-    journalComplete: true,
-    riskLevel: "CRITIQUE",
-    lastReportDate: "Aujourd'hui 08h",
-    aiSummary: "Score HAD anxiété au plafond (12/21). Besoin d'un renforcement du soutien psychologique TCC d'urgence.",
-    treatment: "Patch 21mg + Thérapie TCC active"
-  },
-  {
-    id: "pat-005",
-    patientProfileId: "pat-005",
-    patientName: "Hajj Said Tazi",
-    name: "Hajj Said Tazi",
-    patientEmail: "said.tazi@demo.ma",
-    email: "said.tazi@demo.ma",
+    id: "p0c70000-0000-0000-0000-000000000004",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000004",
+    patientName: "Said Alaoui",
+    name: "Said Alaoui",
+    fullName: "Said Alaoui",
+    patientEmail: "saidpa1969@gmail.com",
+    email: "saidpa1969@gmail.com",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1968-01-30",
     age: 58,
@@ -328,13 +548,67 @@ export const DEMO_DOCTOR_PATIENTS = [
     lastReportDate: "Il y a 2 jours",
     aiSummary: "Sevrage consolidé. Amélioration respiratoire majeure (+35% de capacité spirométrique). Diminution du palier nicotinique en cours.",
     treatment: "Patch 7mg (sevrage final)"
+  },
+  {
+    id: "p0c70000-0000-0000-0000-000000000005",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000005",
+    patientName: "Mohamed Chraibi",
+    name: "Mohamed Chraibi",
+    fullName: "Mohamed Chraibi",
+    patientEmail: "testaccsimo@gmail.com",
+    email: "testaccsimo@gmail.com",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    dateOfBirth: "1990-06-19",
+    age: 36,
+    city: "Tanger",
+    occupation: "Ingénieur Logistique",
+    status: "ANXIÉTÉ SÉVÈRE",
+    statusType: "danger",
+    daysSmokeFree: 2,
+    cigarettesPerDayBefore: 20,
+    currentCigarettes: 4,
+    fagerstromScore: 7,
+    hadAnxietyScore: 12,
+    hadDepressionScore: 6,
+    dependenceLevel: "DÉPENDANCE SÉVÈRE",
+    onboardingComplete: true,
+    testsComplete: true,
+    journalComplete: true,
+    riskLevel: "CRITIQUE",
+    lastReportDate: "Aujourd'hui 08h",
+    aiSummary: "Score HAD anxiété au plafond (12/21). Besoin d'un renforcement du soutien psychologique TCC d'urgence.",
+    treatment: "Patch 21mg + Thérapie TCC active"
   }
 ];
 
 // Helper to create a complete clinical dossier for Doctor Workspace
 export const createDemoDossier = (patientProfileId) => {
-  const patient = DEMO_DOCTOR_PATIENTS.find(p => p.patientProfileId === patientProfileId) || DEMO_DOCTOR_PATIENTS[0];
+  const patient = DEMO_DOCTOR_PATIENTS.find(
+    p => p.patientProfileId === patientProfileId || p.id === patientProfileId || p.email === patientProfileId
+  ) || DEMO_DOCTOR_PATIENTS[0];
   const tests = generateDemoTests();
+
+  const isUrgent = patient.patientEmail === "aymantantani18@gmail.com" || patient.patientName?.includes("Karim");
+  const isSevere = patient.patientEmail === "testaccsimo@gmail.com" || patient.patientName?.includes("Mohamed");
+
+  const conversationMessages = isUrgent
+    ? [
+        { id: "msg-k1", senderType: "PATIENT", content: "🚨 SOS Envie : J'ai une envie de fumer incontrôlable suite à une grosse crise au travail ! Je tremble et je suis prêt à descendre acheter un paquet. Aidez-moi vite !", createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString() },
+        { id: "msg-k2", senderType: "AI", content: "🚨 Karim, asseyez-vous immédiatement et restez avec moi ! Ne bougez pas. Prenez votre spray nicotinique ou votre gomme 2mg tout de suite. Inspirez en 4 secondes... Bloquez 7 secondes... Expirez lentement par la bouche en 8 secondes. Cette tempête dopaminergique est violente mais elle va redescendre dans 180 secondes. J'ai alerté le Dr. Tantani en priorité sur votre dossier.", createdAt: new Date(Date.now() - 3600000 * 1.4).toISOString() },
+        { id: "msg-k3", senderType: "PATIENT", content: "J'ai pris la gomme et je fais les respirations... Le tremblement diminue mais le manque physique me brûle.", createdAt: new Date(Date.now() - 3600000 * 0.8).toISOString() },
+        { id: "msg-k4", senderType: "AI", content: "Bravo pour votre immense courage, Karim ! Vous tenez bon. Buvez immédiatement un grand verre d'eau glacée. Le Dr. Tantani a reçu votre alerte d'urgence et peut initier une téléconsultation si nécessaire. Continuez la respiration 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 0.7).toISOString() }
+      ]
+    : isSevere
+    ? [
+        { id: "msg-m1", senderType: "PATIENT", content: "L'anxiété est très forte ce matin, je n'ai pas dormi de la nuit. Fumer une cigarette est la seule chose qui me vient à l'esprit.", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
+        { id: "msg-m2", senderType: "AI", content: "Mohamed, l'insomnie et l'irritabilité sont les manifestations typiques du sevrage nicotinique à J+2. Cela prouve que votre corps commence déjà à éliminer les toxines. Utilisez votre patch 21mg et accordez-vous une douche tiède pour relâcher les tensions musculaires.", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
+      ]
+    : [
+        { id: "msg-1", senderType: "PATIENT", content: "Bonjour, j'ai parfois un léger craving après le repas du midi. Que me conseillez-vous ?", createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
+        { id: "msg-2", senderType: "AI", content: "Bonjour Youssef ! C'est un déclencheur classique lié au rituel post-prandial. Prenez une gomme 2mg immédiatement après le repas, buvez un grand verre d'eau fraîche et faites 2 minutes de cohérence cardiaque 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 4.9).toISOString() },
+        { id: "msg-3", senderType: "PATIENT", content: "Merci beaucoup, la respiration m'a fait énormément de bien, l'envie est passée !", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
+        { id: "msg-4", senderType: "AI", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
+      ];
 
   return {
     patientProfileId: patient.patientProfileId,
@@ -355,7 +629,7 @@ export const createDemoDossier = (patientProfileId) => {
       onboardingComplete: true,
       testsComplete: true,
       journalComplete: true,
-      medicalHistoryNotes: "Patient motivé. Aucun antécédent cardio-vasculaire majeur. Bonne réponse aux thérapies de substitution.",
+      medicalHistoryNotes: "Patient suivi avec protocole de substitution active.",
       createdAt: new Date(Date.now() - 35 * 86400000).toISOString()
     },
     assessment: {
@@ -381,30 +655,25 @@ export const createDemoDossier = (patientProfileId) => {
     validatedPlan: DEMO_SEVRAGE_PLAN,
     sevragePlans: [DEMO_SEVRAGE_PLAN],
     clinicalNote: {
-      medicalSummary: "Le patient suit rigoureusement le protocole combiné. Disparition progressive des envies réflexes du matin. Suivi très encourageant."
+      medicalSummary: "Le patient suit le protocole médical. Suivi clinique régulier en cours."
     },
     clinicalIntelligence: {
       globalSummary: {
-        summary: "Synthèse IA Clinique : Trajectoire très positive. Baisse de 100% de la consommation de cigarettes manufacturées depuis J+1. Marqueurs d'anxiété en nette régression."
+        summary: `Synthèse IA Clinique pour ${patient.patientName} : Profil ${patient.status}. Observance et biomarqueurs sous monitoring continu.`
       },
       phaseSummaries: [
-        { id: "ph-1", phaseId: 1, phaseTitle: "Bilan Initial & Dépendance", summary: "Dépendance nicotinique évaluée et protocole TNS validé.", attentionPoints: ["Surveillance du sommeil à J+3"] },
-        { id: "ph-2", phaseId: 2, phaseTitle: "Phase Aiguë (J1-J7)", summary: "Cap des 7 jours passé avec succès grâce aux gommes 2mg.", attentionPoints: ["Gestion du stress professionnel"] },
-        { id: "ph-3", phaseId: 3, phaseTitle: "Stabilisation (J8-J30)", summary: "Capacité respiratoire restaurée de 20%. Absence totale de rechute.", attentionPoints: ["Maintien de la cohérence cardiaque"] }
+        { id: "ph-1", phaseId: 1, phaseTitle: "Bilan Initial & Dépendance", summary: "Dépendance nicotinique évaluée et protocole validé.", attentionPoints: ["Surveillance du sommeil"] },
+        { id: "ph-2", phaseId: 2, phaseTitle: "Phase Aiguë (J1-J7)", summary: "Stabilisation du sevrage.", attentionPoints: ["Gestion du stress"] },
+        { id: "ph-3", phaseId: 3, phaseTitle: "Stabilisation (J8-J30)", summary: "Amélioration spirométrique continue.", attentionPoints: ["Cohérence cardiaque"] }
       ]
     },
     supportConversation: {
       latestRiskLevel: patient.riskLevel,
       latestSummary: patient.aiSummary,
-      messages: [
-        { id: "msg-1", senderType: "PATIENT", content: "Bonjour, j'ai parfois un léger craving après le repas du midi. Que me conseillez-vous ?", createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
-        { id: "msg-2", senderType: "AI", content: "Bonjour ! C'est un déclencheur classique lié au rituel post-prandial. Prenez une gomme 2mg immédiatement après le repas, buvez un grand verre d'eau fraîche et faites 2 minutes de cohérence cardiaque 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 4.9).toISOString() },
-        { id: "msg-3", senderType: "PATIENT", content: "Merci beaucoup, la respiration m'a fait énormément de bien, l'envie est passée !", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
-        { id: "msg-4", senderType: "AI", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
-      ]
+      messages: conversationMessages
     },
     supportAlerts: [
-      { id: "alt-1", alertType: "CRAVING", summary: "Craving post-prandial surmonté par le patient", level: patient.riskLevel, createdAt: new Date(Date.now() - 3600000 * 4).toISOString() }
+      { id: `alt-${patient.patientProfileId}`, alertType: isUrgent ? "SOS_CRAVING" : "CRAVING", summary: patient.aiSummary, level: patient.riskLevel, createdAt: new Date(Date.now() - 3600000 * 2).toISOString() }
     ]
   };
 };
@@ -425,6 +694,21 @@ export let DEMO_APPOINTMENTS = [
     meetingRoomName: "NeuralConsult-Sevrage-Suivi-Youssef-Tantani",
     meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Sevrage-Suivi-Youssef-Tantani",
     triggeredByAiAlert: false
+  },
+  {
+    id: "apt-demo-02",
+    startsAt: new Date(Date.now() + 3600000 * 2).toISOString(),
+    durationMinutes: 30,
+    status: "CONFIRMED",
+    reason: "🚨 Consultation Urgente : Suite à l'alerte SOS Envie du patient Karim Benali (Casablanca).",
+    doctorName: "Dr. Ayman Tantani",
+    doctorSpecialty: "Tabacologue & Médecin Référent",
+    patientName: "Karim Benali",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000002",
+    meetingProvider: "JITSI",
+    meetingRoomName: "NeuralConsult-Urgence-Karim-Benali",
+    meetingJoinUrl: "https://meet.jit.si/NeuralConsult-Urgence-Karim-Benali",
+    triggeredByAiAlert: true
   }
 ];
 
@@ -432,19 +716,21 @@ export let DEMO_APPOINTMENTS = [
 export const DEMO_SUPPORT_ALERTS = [
   {
     id: "alt-101",
-    patientProfileId: "pat-002",
-    patientName: "Karim Bennani",
-    level: "HIGH",
-    summary: "Faux-pas de 2 cigarettes après pic de stress. Demande d'ajustement du patch.",
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    patientProfileId: "p0c70000-0000-0000-0000-000000000002",
+    patientName: "Karim Benali",
+    patientEmail: "aymantantani18@gmail.com",
+    level: "CRITICAL",
+    summary: "🚨 SOS Envie : Pic d'anxiété professionnelle aigu. Faux-pas de 2 cigarettes hier soir. Protocole d'urgence activé.",
+    createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
     status: "OPEN"
   },
   {
     id: "alt-102",
-    patientProfileId: "pat-004",
-    patientName: "Mehdi Alami",
-    level: "CRITICAL",
-    summary: "Score HAD Anxiété à 12/21. Besoin d'un entretien de soutien prioritaire.",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000005",
+    patientName: "Mohamed Chraibi",
+    patientEmail: "testaccsimo@gmail.com",
+    level: "HIGH",
+    summary: "Score HAD Anxiété à 12/21. Insomnies sévères et manque physique persistant.",
     createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
     status: "OPEN"
   },
@@ -452,8 +738,9 @@ export const DEMO_SUPPORT_ALERTS = [
     id: "alt-103",
     patientProfileId: "p0c70000-0000-0000-0000-000000000001",
     patientName: "Youssef El Fassi",
+    patientEmail: "tantaniayman0@gmail.com",
     level: "LOW",
-    summary: "Bilan J+30 validé avec succès. Félicitations envoyées par l'assistant.",
+    summary: "Bilan J+30 validé avec succès. Abstinence consolidée.",
     createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
     status: "RESOLVED"
   }
@@ -512,20 +799,55 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
 
     // 3. AI Support Chat Message sending
     if (url.includes("/api/support/current/messages") || url.includes("/api/support/doctor/patients")) {
+      const activePatient = getDemoUserByEmail(activeDemoEmail) || DEMO_USERS.patient1;
       const userMessage = payload?.message || "Conseil clinique";
+      const isEmergency = Boolean(
+        payload?.emergencyMode ||
+        userMessage.toLowerCase().includes("sos") ||
+        userMessage.toLowerCase().includes("envie") ||
+        userMessage.toLowerCase().includes("craquer") ||
+        userMessage.toLowerCase().includes("fumer")
+      );
+
       const aiReply = isDoctor
         ? `Consigne médicale enregistrée : « ${userMessage} ». L'assistant IA intègre cette directive au protocole du patient.`
-        : `Je vous entends parfaitement. Vous avez déjà accompli 30 jours sans tabac : cette envie est temporaire et va disparaître dans 3 minutes. Prenez 3 inspirations lentes en cohérence cardiaque 4-7-8. Je reste à vos côtés !`;
+        : isEmergency
+        ? `🚨 ${activePatient.firstName || "Cher patient"}, asseyez-vous immédiatement et restez avec moi ! Prenez votre substitut nicotinique oral (gomme 2mg ou spray) tout de suite. Respirez lentement selon la méthode 4-7-8 : inspirez 4 secondes, bloquez 7 secondes, expirez 8 secondes. Votre pic de manque physique va chuter d'ici 3 minutes. Le Dr. Tantani a été notifié de votre alerte d'urgence en temps réel.`
+        : `Je vous entends parfaitement. Vous avez déjà accompli un beau parcours : cette envie est temporaire et va disparaître rapidement. Prenez 3 inspirations lentes en cohérence cardiaque 4-7-8. Je reste à vos côtés !`;
+
+      const newMsg = { id: `msg-${Date.now() - 50}`, senderType: isDoctor ? "DOCTOR" : "PATIENT", content: userMessage, createdAt: new Date().toISOString() };
+      const aiMsg = { id: `msg-${Date.now()}`, senderType: "AI", content: aiReply, createdAt: new Date().toISOString(), riskLevel: isEmergency ? "CRITICAL" : "LOW" };
+
+      // Persist to demo storage
+      try {
+        const storedKey = `nc_demo_conv_${activePatient.email}`;
+        const existing = JSON.parse(localStorage.getItem(storedKey) || "[]");
+        existing.push(newMsg, aiMsg);
+        localStorage.setItem(storedKey, JSON.stringify(existing));
+
+        if (isEmergency) {
+          const alert = {
+            id: `alt-${Date.now()}`,
+            patientProfileId: activePatient.id || activePatient.patientProfile?.id,
+            patientName: activePatient.fullName,
+            patientEmail: activePatient.email,
+            level: "CRITICAL",
+            summary: `🚨 SOS Envie déclenché : « ${userMessage.slice(0, 80)}... »`,
+            createdAt: new Date().toISOString(),
+            status: "OPEN"
+          };
+          const existingAlerts = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
+          existingAlerts.unshift(alert);
+          localStorage.setItem("nc_demo_alerts", JSON.stringify(existingAlerts));
+        }
+      } catch (e) {}
 
       return {
         id: "conv-live",
-        patientName: "Youssef El Fassi",
-        latestRiskLevel: "FAIBLE",
-        latestSummary: "Accompagnement continu actif",
-        messages: [
-          { id: `msg-${Date.now() - 100}`, senderType: isDoctor ? "DOCTOR" : "PATIENT", content: userMessage, createdAt: new Date().toISOString() },
-          { id: `msg-${Date.now()}`, senderType: "AI", content: aiReply, createdAt: new Date().toISOString() }
-        ]
+        patientName: activePatient.fullName,
+        latestRiskLevel: isEmergency ? "CRITICAL" : "FAIBLE",
+        latestSummary: isEmergency ? "🚨 Urgence SOS Envie en cours" : "Accompagnement continu actif",
+        messages: [newMsg, aiMsg]
       };
     }
 
@@ -535,7 +857,9 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
 
   // ─── QUERIES (GET) ───
   if (url.includes("/api/me")) {
-    return isDoctor ? DEMO_USERS.doctor : DEMO_USERS.patient;
+    if (isDoctor) return DEMO_USERS.doctor;
+    const p = getDemoUserByEmail(activeDemoEmail);
+    return p || DEMO_USERS.patient1;
   }
   if (url.includes("/api/doctors/profile/me")) {
     return {
@@ -571,15 +895,36 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     return [];
   }
   if (url.includes("/api/support/doctor/alerts")) {
-    return DEMO_SUPPORT_ALERTS;
+    let dynamicAlerts = [];
+    try {
+      dynamicAlerts = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
+    } catch (e) {}
+    return [...dynamicAlerts, ...DEMO_SUPPORT_ALERTS];
   }
   if (url.includes("/api/support/doctor/patients/")) {
     const match = url.match(/patients\/([^/]+)/);
     const patientId = match ? match[1] : "p0c70000-0000-0000-0000-000000000001";
-    return createDemoDossier(patientId).supportConversation;
+    const dossier = createDemoDossier(patientId);
+    let dynamicMsgs = [];
+    try {
+      dynamicMsgs = JSON.parse(localStorage.getItem(`nc_demo_conv_${dossier.patientEmail}`) || "[]");
+    } catch (e) {}
+    if (dynamicMsgs.length > 0) {
+      dossier.supportConversation.messages = [...dossier.supportConversation.messages, ...dynamicMsgs];
+    }
+    return dossier.supportConversation;
   }
   if (url.includes("/api/support/current")) {
-    return createDemoDossier("p0c70000-0000-0000-0000-000000000001").supportConversation;
+    const activePatient = getDemoUserByEmail(activeDemoEmail) || DEMO_USERS.patient1;
+    const dossier = createDemoDossier(activePatient.id || activePatient.patientProfile?.id);
+    let dynamicMsgs = [];
+    try {
+      dynamicMsgs = JSON.parse(localStorage.getItem(`nc_demo_conv_${activePatient.email}`) || "[]");
+    } catch (e) {}
+    if (dynamicMsgs.length > 0) {
+      dossier.supportConversation.messages = [...dossier.supportConversation.messages, ...dynamicMsgs];
+    }
+    return dossier.supportConversation;
   }
   if (url.includes("/api/sevrage-plan/current") || url.includes("/api/sevrage-plan")) {
     return DEMO_SEVRAGE_PLAN;

@@ -221,6 +221,17 @@ const Dashboard = () => {
 
   const currentLevel = Math.max(1, Math.floor(diffDays / 7) + 1);
 
+  const isDemo = Boolean(
+    user?.isDemo ||
+    user?.email?.includes("tantani") ||
+    user?.email?.includes("demo") ||
+    user?.email?.includes("saidpa") ||
+    user?.email?.includes("testaccsimo") ||
+    user?.email?.includes("projetfinetude")
+  );
+
+  const showOnboardingBanner = !isDemo && !user?.profile?.onboardingComplete;
+
   return (
     <div className={`app-page dashboard-stage dashboard-stage-${stage}`}>
       <section className="dashboard-command nc-glass-card p-4 mb-4" data-guide-id="dashboard-command">
@@ -258,7 +269,7 @@ const Dashboard = () => {
       </section>
 
       {/* Bannière informative si l'évaluation initiale n'est pas encore complétée */}
-      {!user?.profile?.onboardingComplete && (
+      {showOnboardingBanner && (
         <section className="card p-3 mb-4 border-0 shadow-sm rounded-4" style={{ background: "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)", border: "1px solid rgba(59, 130, 246, 0.2)" }}>
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="d-flex align-items-center gap-3">

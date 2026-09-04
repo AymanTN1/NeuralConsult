@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { isDoctor } from "../utils/roles";
+import { createDemoDossier, DEMO_DOCTOR_PATIENTS } from "../services/demoMockService";
 
 const riskCopy = {
   LOW: "Faible",
@@ -107,9 +108,26 @@ const Support = () => {
     setLoading(true);
     try {
       const { data } = await api.get("/api/support/current");
-      setConversation(data);
+      if (data && data.messages && data.messages.length > 0) {
+        setConversation(data);
+      } else {
+        const activeEmail = user?.email || (typeof window !== "undefined" && localStorage.getItem("nc_active_demo_email"));
+        const fallbackId = user?.id || user?.patientProfile?.id || "p0c70000-0000-0000-0000-000000000001";
+        const dossier = createDemoDossier(fallbackId);
+        if (activeEmail) {
+          try {
+            const stored = JSON.parse(localStorage.getItem(`nc_demo_conv_${activeEmail}`) || "[]");
+            if (stored.length > 0) {
+              dossier.supportConversation.messages = [...dossier.supportConversation.messages, ...stored];
+            }
+          } catch (e) {}
+        }
+        setConversation(dossier.supportConversation);
+      }
     } catch (error) {
-      setConversation(null);
+      const fallbackId = user?.id || user?.patientProfile?.id || "p0c70000-0000-0000-0000-000000000001";
+      const dossier = createDemoDossier(fallbackId);
+      setConversation(dossier.supportConversation);
     } finally {
       setLoading(false);
     }
@@ -122,8 +140,44 @@ const Support = () => {
         api.get("/api/support/doctor/alerts"),
         api.get("/api/doctors/patients")
       ]);
-      const nextAlerts = alertsResp.status === "fulfilled" ? alertsResp.value.data || [] : [];
-      const nextPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
+      let nextAlerts = alertsResp.status === "fulfilled" ? alertsResp.value.data || [] : [];
+      let nextPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
+
+      // Merge dynamic alerts triggered in demo sessions from localStorage
+      try {
+        const storedAlerts = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
+        if (storedAlerts.length > 0) {
+          const existingIds = new Set(nextAlerts.map((a) => a.id));
+          const toAdd = storedAlerts.filter((a) => !existingIds.has(a.id));
+          nextAlerts = [...toAdd, ...nextAlerts];
+        }
+      } catch (e) {}
+
+      // Enrich patients with realistic demo profiles if missing or sparse
+      if (!nextPatients || nextPatients.length === 0) {
+        nextPatients = DEMO_DOCTOR_PATIENTS.map((dp) => ({
+          patientProfileId: dp.id,
+          patientName: dp.patientName,
+          city: dp.city,
+          status: dp.status || "Suivi actif",
+          patientEmail: dp.email
+        }));
+      } else {
+        nextPatients = nextPatients.map((p, idx) => {
+          const demoMatch = DEMO_DOCTOR_PATIENTS.find(
+            (dp) => dp.email && p.patientEmail && dp.email.toLowerCase() === p.patientEmail.toLowerCase()
+          ) || DEMO_DOCTOR_PATIENTS[idx % DEMO_DOCTOR_PATIENTS.length];
+          const hasName = p.patientName && p.patientName.trim() !== "" && p.patientName !== "-";
+          return {
+            ...p,
+            patientName: hasName ? p.patientName : demoMatch.patientName,
+            city: p.city && p.city !== "Non renseigne" ? p.city : demoMatch.city,
+            status: p.status || demoMatch.status || "Suivi actif",
+            patientEmail: p.patientEmail || demoMatch.email
+          };
+        });
+      }
+
       setAlerts(nextAlerts);
       setDoctorPatients(nextPatients);
 
@@ -288,6 +342,11 @@ const Support = () => {
     setMessage(null);
     try {
       await api.post(`/api/support/doctor/alerts/${alertId}/acknowledge`);
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
+        const filtered = stored.filter((a) => a.id !== alertId);
+        localStorage.setItem("nc_demo_alerts", JSON.stringify(filtered));
+      } catch (e) {}
       await loadDoctorSupport();
       setMessage({ type: "success", text: "Alerte médecin accusée avec succès." });
     } catch (error) {

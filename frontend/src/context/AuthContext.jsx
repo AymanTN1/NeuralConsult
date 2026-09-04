@@ -24,9 +24,31 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const { data } = await api.get("/api/me");
-      setUser(data);
+      const demoFallback = data?.email ? getDemoUserByEmail(data.email) : null;
+      const finalUser = demoFallback
+        ? {
+            ...demoFallback,
+            ...data,
+            isDemo: true,
+            fullName: (data.fullName && data.fullName !== "-") ? data.fullName : demoFallback.fullName,
+            firstName: data.firstName || demoFallback.firstName,
+            lastName: data.lastName || demoFallback.lastName,
+            dateOfBirth: data.dateOfBirth || demoFallback.dateOfBirth,
+            identityVerified: true,
+            accountEnabled: true,
+            profile: {
+              ...(demoFallback.profile || {}),
+              ...(data.profile || {}),
+              onboardingComplete: true,
+              testsComplete: true,
+              journalComplete: true
+            }
+          }
+        : data;
+
+      setUser(finalUser);
       setError(null);
-      return data;
+      return finalUser;
     } catch (err) {
       setUser(null);
       return null;
