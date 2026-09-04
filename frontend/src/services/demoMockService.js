@@ -12,8 +12,26 @@ export const DEMO_USERS = {
     dateOfBirth: "1988-04-12",
     identityVerified: true,
     active: true,
+    status: "ACTIVE",
     patientProfile: null,
     scores: null,
+    profile: {
+      id: "doc-prof-01",
+      active: true,
+      status: "APPROVED",
+      fullName: "Dr. Ayman Tantani",
+      email: "ayman.tantani@uit.ac.ma",
+      specialty: "Tabacologue & Addictologue",
+      rppsNumber: "10109876543",
+      city: "Rabat",
+      countryCode: "MA",
+      yearsExperience: 12,
+      experienceYears: 12,
+      consultationPrice: 50,
+      acceptsTeleconsultation: true,
+      successScore: 98,
+      bio: "Médecin spécialiste en tabacologie clinique et addictologie comportementale. Accompagnement bienveillant et protocoles validés HAS / OMS."
+    },
     roles: ["ROLE_DOCTOR", "ROLE_USER"]
   },
   patient: {
@@ -25,12 +43,39 @@ export const DEMO_USERS = {
     dateOfBirth: "1994-08-22",
     identityVerified: true,
     active: true,
+    status: "ACTIVE",
     patientProfile: {
       id: "prof-001",
+      dateOfBirth: "1994-08-22",
+      sex: "MALE",
+      city: "Rabat",
+      countryCode: "MA",
+      occupation: "Architecte Logiciel",
+      cigarettesPerDay: 15,
+      smokingStartAge: 18,
       onboardingComplete: true,
-      cigarettesPerDay: 0,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "SEVRÉ (J+30)",
       packPrice: 38,
       smokeFreeStartDate: new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0],
+      fagerstromScore: 0,
+      hadAnxietyScore: 2,
+      hadDepressionScore: 1
+    },
+    profile: {
+      id: "prof-001",
+      dateOfBirth: "1994-08-22",
+      sex: "MALE",
+      city: "Rabat",
+      countryCode: "MA",
+      occupation: "Architecte Logiciel",
+      cigarettesPerDay: 15,
+      smokingStartAge: 18,
+      onboardingComplete: true,
+      testsComplete: true,
+      journalComplete: true,
+      dependenceLevel: "SEVRÉ (J+30)",
       fagerstromScore: 0,
       hadAnxietyScore: 2,
       hadDepressionScore: 1
@@ -496,6 +541,8 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     return {
       id: "doc-prof-01",
       active: true, // Activated by default: removes pending admin validation alert
+      status: "APPROVED",
+      accountStatus: "ACTIVE",
       user: DEMO_USERS.doctor,
       fullName: "Dr. Ayman Tantani",
       email: "ayman.tantani@uit.ac.ma",
@@ -507,6 +554,7 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       experienceYears: 12,
       consultationPrice: 50,
       acceptsTeleconsultation: true,
+      successScore: 98,
       bio: "Médecin spécialiste en tabacologie clinique et addictologie comportementale. Accompagnement bienveillant et protocoles validés HAS / OMS."
     };
   }

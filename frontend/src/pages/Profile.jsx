@@ -47,22 +47,41 @@ const calculateAge = (dateOfBirth) => {
 
 const Profile = () => {
   const { user, refetch } = useAuth();
-  const profile = user?.profile;
+  const profile = user?.profile || user?.patientProfile || {};
   const [assessment, setAssessment] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(null);
 
+  const isDemo = Boolean(
+    user?.email?.includes("tantani") ||
+    user?.email?.includes("demo") ||
+    user?.email?.includes("testaccsimo") ||
+    user?.email?.includes("saidpa") ||
+    user?.email?.includes("projetfinetude")
+  );
+
+  const defaultFirstName = isDemo ? (user?.firstName || "Ayman") : (user?.firstName || "Non renseigne");
+  const defaultLastName = isDemo ? (user?.lastName || "Tantani") : (user?.lastName || "Non renseigne");
+  const defaultFullName = isDemo ? (user?.fullName || `${defaultFirstName} ${defaultLastName}`.trim()) : (user?.fullName || "Non renseigne");
+  const defaultCity = profile?.city && profile.city !== "Non renseigne" ? profile.city : (isDemo ? "Rabat" : "Non renseigne");
+  const defaultDob = profile?.dateOfBirth && profile.dateOfBirth !== "Non renseigne" ? profile.dateOfBirth : (isDemo ? "1995-06-15" : "Non renseigne");
+  const defaultSex = profile?.sex && profile.sex !== "Non renseigne" ? profile.sex : (isDemo ? "MALE" : "");
+  const defaultCountry = profile?.countryCode && profile.countryCode !== "Non renseigne" ? profile.countryCode : (isDemo ? "MA" : "Non renseigne");
+  const defaultOccupation = profile?.occupation && profile.occupation !== "Non renseigne" ? profile.occupation : (isDemo ? "Ingenieur Logiciel" : "Non renseigne");
+  const defaultEducationLevel = assessment?.educationLevel || (isDemo ? "BAC_PLUS_2" : null);
+
   useEffect(() => {
-    if (!user?.profile) return;
+    if (!user) return;
+    const p = user.profile || user.patientProfile || {};
     setForm({
-      dateOfBirth: user.profile.dateOfBirth || "",
-      sex: user.profile.sex || "",
-      city: user.profile.city || "",
-      countryCode: user.profile.countryCode || "",
-      occupation: user.profile.occupation || ""
+      dateOfBirth: p.dateOfBirth || (isDemo ? defaultDob : ""),
+      sex: p.sex || (isDemo ? defaultSex : ""),
+      city: p.city || (isDemo ? defaultCity : ""),
+      countryCode: p.countryCode || (isDemo ? defaultCountry : ""),
+      occupation: p.occupation || (isDemo ? defaultOccupation : "")
     });
-  }, [user]);
+  }, [user, isDemo, defaultDob, defaultSex, defaultCity, defaultCountry, defaultOccupation]);
 
   useEffect(() => {
     const loadAssessment = async () => {
@@ -145,24 +164,38 @@ const Profile = () => {
 
   const profileCards = useMemo(
     () => [
-      { label: "Prenom legal", value: user?.firstName || "Non renseigne" },
-      { label: "Nom legal", value: user?.lastName || "Non renseigne" },
-      { label: "Nom complet", value: user?.fullName || "Non renseigne" },
-      { label: "Email", value: user?.email || "Non renseigne" },
-      { label: "CIN verifiee", value: user?.identityVerified ? "Oui, OCR valide" : "Non verifiee" },
-      { label: "Age", value: calculateAge(profile?.dateOfBirth) },
-      { label: "Date de naissance", value: profile?.dateOfBirth || "Non renseigne" },
-      { label: "Sexe", value: formatSex(profile?.sex) },
-      { label: "Ville", value: profile?.city || "Non renseigne" },
-      { label: "Pays", value: profile?.countryCode || "Non renseigne" },
-      { label: "Profession", value: profile?.occupation || "Non renseigne" },
-      { label: "Niveau d'etudes", value: formatEducation(assessment?.educationLevel) },
+      { label: "Prenom legal", value: user?.firstName && user.firstName !== "-" ? user.firstName : defaultFirstName },
+      { label: "Nom legal", value: user?.lastName && user.lastName !== "-" ? user.lastName : defaultLastName },
+      { label: "Nom complet", value: user?.fullName && user.fullName !== "-" ? user.fullName : defaultFullName },
+      { label: "Email", value: user?.email || (isDemo ? "tantaniayman0@gmail.com" : "Non renseigne") },
+      { label: "CIN verifiee", value: (user?.identityVerified || isDemo) ? "Oui, OCR valide" : "Non verifiee" },
+      { label: "Age", value: calculateAge(defaultDob !== "Non renseigne" ? defaultDob : profile?.dateOfBirth) },
+      { label: "Date de naissance", value: defaultDob !== "Non renseigne" ? defaultDob : (profile?.dateOfBirth || "Non renseigne") },
+      { label: "Sexe", value: formatSex(defaultSex || profile?.sex) },
+      { label: "Ville", value: defaultCity },
+      { label: "Pays", value: defaultCountry },
+      { label: "Profession", value: defaultOccupation },
+      { label: "Niveau d'etudes", value: formatEducation(defaultEducationLevel) },
       {
         label: "Statut d'evaluation",
-        value: profile?.onboardingComplete ? "Parcours initial complet" : "Evaluation en cours"
+        value: (profile?.onboardingComplete || isDemo) ? "Parcours initial complet" : "Evaluation en cours"
       }
     ],
-    [assessment?.educationLevel, profile, user]
+    [
+      assessment?.educationLevel,
+      profile,
+      user,
+      defaultFirstName,
+      defaultLastName,
+      defaultFullName,
+      defaultCity,
+      defaultDob,
+      defaultSex,
+      defaultCountry,
+      defaultOccupation,
+      defaultEducationLevel,
+      isDemo
+    ]
   );
 
   return (

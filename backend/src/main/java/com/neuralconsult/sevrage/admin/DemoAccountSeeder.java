@@ -422,18 +422,18 @@ public class DemoAccountSeeder implements ApplicationRunner {
         DoctorProfile doc = doctorProfileRepository.findByUser(user).orElseGet(() -> {
             DoctorProfile d = new DoctorProfile();
             d.setUser(user);
-            d.setSpecialty(specialty);
-            d.setCity(city);
-            d.setCountryCode("MA");
-            d.setYearsExperience(exp);
-            d.setSuccessScore(85 + random.nextInt(15));
-            d.setBio("Expertise clinique en sevrage tabagique.");
-            d.setAcceptsTeleconsultation(true);
-            d.setActive(true);
-            d.setDocumentsVerified(true);
-            return doctorProfileRepository.save(d);
+            return d;
         });
-        return doc;
+        doc.setSpecialty(specialty);
+        doc.setCity(city);
+        doc.setCountryCode("MA");
+        doc.setYearsExperience(exp);
+        doc.setSuccessScore(85 + random.nextInt(15));
+        doc.setBio("Expertise clinique en sevrage tabagique.");
+        doc.setAcceptsTeleconsultation(true);
+        doc.setActive(true);
+        doc.setDocumentsVerified(true);
+        return doctorProfileRepository.save(doc);
     }
 
     private PatientProfile createPatient(String email, String firstName, String lastName, LocalDate dob, int cigs, PatientProfile.DependenceLevel dep) {
@@ -441,33 +441,36 @@ public class DemoAccountSeeder implements ApplicationRunner {
             User u = new User();
             u.setEmail(email);
             u.setPasswordHash(passwordEncoder.encode("password"));
-            u.setFullName(firstName + " " + lastName);
-            u.setFirstName(firstName);
-            u.setLastName(lastName);
-            u.setCommunityUsername(firstName.toLowerCase() + "_" + lastName.toLowerCase() + "_" + random.nextInt(1000));
-            u.setAccountEnabled(true);
-            u.setIdentityVerified(true);
-            u.setStatus(User.UserStatus.ACTIVE);
             u.setRoles(new HashSet<>(Set.of("ROLE_PATIENT", "ROLE_USER")));
-            return userRepository.save(u);
+            return u;
         });
+        user.setFullName(firstName + " " + lastName);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        if (user.getCommunityUsername() == null) {
+            user.setCommunityUsername(firstName.toLowerCase() + "_" + lastName.toLowerCase() + "_" + random.nextInt(1000));
+        }
+        user.setAccountEnabled(true);
+        user.setIdentityVerified(true);
+        user.setStatus(User.UserStatus.ACTIVE);
+        user = userRepository.save(user);
 
         PatientProfile p = patientProfileRepository.findByUser(user).orElseGet(() -> {
             PatientProfile profile = new PatientProfile();
             profile.setUser(user);
-            profile.setDateOfBirth(dob);
-            profile.setSex(PatientProfile.Sex.MALE);
-            profile.setCity("Casablanca");
-            profile.setCountryCode("MA");
-            profile.setCigarettesPerDay(cigs);
-            profile.setSmokingStartAge(18);
-            profile.setDependenceLevel(dep);
-            profile.setOnboardingComplete(true);
-            profile.setTestsComplete(true);
-            profile.setJournalComplete(true);
-            return patientProfileRepository.save(profile);
+            return profile;
         });
-        return p;
+        p.setDateOfBirth(dob);
+        p.setSex(PatientProfile.Sex.MALE);
+        p.setCity("Casablanca");
+        p.setCountryCode("MA");
+        p.setCigarettesPerDay(cigs);
+        p.setSmokingStartAge(18);
+        p.setDependenceLevel(dep);
+        p.setOnboardingComplete(true);
+        p.setTestsComplete(true);
+        p.setJournalComplete(true);
+        return patientProfileRepository.save(p);
     }
 
     private void assignPatientToDoctor(PatientProfile p, DoctorProfile d) {
@@ -635,13 +638,95 @@ public class DemoAccountSeeder implements ApplicationRunner {
 
     private void ensureEssentialDemoDataEnriched() {
         try {
-            User patientUser = userRepository.findByEmailIgnoreCase("tantaniayman0@gmail.com").orElse(null);
             User doctorUser = userRepository.findByEmailIgnoreCase("ayman.tantani@uit.ac.ma").orElse(null);
-            if (patientUser == null || doctorUser == null) return;
+            if (doctorUser != null) {
+                doctorUser.setFullName("Dr. Ayman Tantani");
+                doctorUser.setFirstName("Ayman");
+                doctorUser.setLastName("Tantani");
+                doctorUser.setAccountEnabled(true);
+                doctorUser.setIdentityVerified(true);
+                doctorUser.setStatus(User.UserStatus.ACTIVE);
+                userRepository.save(doctorUser);
+
+                DoctorProfile doctor = doctorProfileRepository.findByUser(doctorUser).orElseGet(() -> {
+                    DoctorProfile d = new DoctorProfile();
+                    d.setUser(doctorUser);
+                    return d;
+                });
+                doctor.setActive(true);
+                doctor.setAcceptsTeleconsultation(true);
+                doctor.setSpecialty("Tabacologue & Addictologue");
+                doctor.setYearsExperience(12);
+                doctor.setCity("Rabat");
+                doctor.setCountryCode("MA");
+                doctor.setSuccessScore(98);
+                doctor.setDocumentsVerified(true);
+                doctor.setBio("Médecin spécialiste en tabacologie clinique et addictologie comportementale. Accompagnement bienveillant et protocoles validés HAS / OMS.");
+                doctor = doctorProfileRepository.save(doctor);
+
+                // Ensure all 5 demo patients exist, have rich clinical data, and are assigned to Dr. Tantani
+                record DemoPatientSeed(String email, String firstName, String lastName, LocalDate dob, String city, String occupation, int fScore, int hAnx, int hDep, PatientProfile.DependenceLevel dep) {}
+                List<DemoPatientSeed> demoPatientSeeds = List.of(
+                    new DemoPatientSeed("tantaniayman0@gmail.com", "Youssef", "El Fassi", LocalDate.of(1994, 8, 22), "Rabat", "Architecte Logiciel", 0, 2, 1, PatientProfile.DependenceLevel.LOW),
+                    new DemoPatientSeed("aymantantani18@gmail.com", "Karim", "Benali", LocalDate.of(1984, 3, 15), "Casablanca", "Cadre Financier", 6, 9, 4, PatientProfile.DependenceLevel.VERY_HIGH),
+                    new DemoPatientSeed("projetfinetude4@gmail.com", "Sara", "Mansour", LocalDate.of(1998, 11, 4), "Marrakech", "Enseignante", 2, 4, 2, PatientProfile.DependenceLevel.MODERATE),
+                    new DemoPatientSeed("saidpa1969@gmail.com", "Said", "Alaoui", LocalDate.of(1968, 1, 30), "Fès", "Commerçant", 0, 1, 1, PatientProfile.DependenceLevel.LOW),
+                    new DemoPatientSeed("testaccsimo@gmail.com", "Mohamed", "Chraibi", LocalDate.of(1990, 6, 19), "Tanger", "Ingénieur Logistique", 7, 12, 6, PatientProfile.DependenceLevel.HIGH)
+                );
+
+                for (DemoPatientSeed seed : demoPatientSeeds) {
+                    final DoctorProfile finalDoctor = doctor;
+                    User pUser = userRepository.findByEmailIgnoreCase(seed.email()).orElseGet(() -> {
+                        User u = new User();
+                        u.setEmail(seed.email());
+                        u.setPasswordHash(passwordEncoder.encode("password"));
+                        u.setRoles(new HashSet<>(Set.of("ROLE_PATIENT", "ROLE_USER")));
+                        return u;
+                    });
+                    pUser.setFullName(seed.firstName() + " " + seed.lastName());
+                    pUser.setFirstName(seed.firstName());
+                    pUser.setLastName(seed.lastName());
+                    pUser.setDateOfBirth(seed.dob());
+                    pUser.setAccountEnabled(true);
+                    pUser.setIdentityVerified(true);
+                    pUser.setStatus(User.UserStatus.ACTIVE);
+                    pUser = userRepository.save(pUser);
+
+                    PatientProfile pProf = patientProfileRepository.findByUser(pUser).orElseGet(() -> {
+                        PatientProfile pp = new PatientProfile();
+                        pp.setUser(pUser);
+                        return pp;
+                    });
+                    pProf.setDateOfBirth(seed.dob());
+                    pProf.setCity(seed.city());
+                    pProf.setCountryCode("MA");
+                    pProf.setOccupation(seed.occupation());
+                    pProf.setFagerstromScore(seed.fScore());
+                    pProf.setHadAnxietyScore(seed.hAnx());
+                    pProf.setHadDepressionScore(seed.hDep());
+                    pProf.setDependenceLevel(seed.dep());
+                    pProf.setOnboardingComplete(true);
+                    pProf.setTestsComplete(true);
+                    pProf.setJournalComplete(true);
+                    pProf = patientProfileRepository.save(pProf);
+
+                    // Ensure Assignment
+                    if (assignmentRepository.findByPatientProfileAndActiveTrue(pProf).isEmpty()) {
+                        DoctorPatientAssignment dpa = new DoctorPatientAssignment();
+                        dpa.setPatientProfile(pProf);
+                        dpa.setDoctorProfile(finalDoctor);
+                        dpa.setActive(true);
+                        assignmentRepository.save(dpa);
+                    }
+                }
+            }
+
+            User patientUser = userRepository.findByEmailIgnoreCase("tantaniayman0@gmail.com").orElse(null);
+            DoctorProfile doctor = doctorUser != null ? doctorProfileRepository.findByUser(doctorUser).orElse(null) : null;
+            if (patientUser == null || doctor == null) return;
 
             PatientProfile patient = patientProfileRepository.findByUser(patientUser).orElse(null);
-            DoctorProfile doctor = doctorProfileRepository.findByUser(doctorUser).orElse(null);
-            if (patient == null || doctor == null) return;
+            if (patient == null) return;
 
             // 1. Ensure SevragePlan exists
             if (sevragePlanRepository.findByPatientProfile(patient).isEmpty()) {

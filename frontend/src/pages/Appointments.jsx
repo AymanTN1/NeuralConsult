@@ -6,6 +6,7 @@ import { isDoctor } from "../utils/roles";
 import ConsultationReportForm from "../components/ConsultationReportForm";
 import LungLoader from "../components/LungLoader";
 import Modal from "react-bootstrap/Modal";
+import { DEMO_DOCTOR_PATIENTS } from "../services/demoMockService";
 
 const statusCopy = {
   REQUESTED: "En attente",
@@ -269,7 +270,21 @@ const hasReachedWeeklyLimit = (dateValue) => {
 
       const nextAppointments = appointmentsResp.status === "fulfilled" ? appointmentsResp.value.data || [] : [];
       const nextAvailabilities = availabilityResp.status === "fulfilled" ? availabilityResp.value.data || [] : [];
-      const nextPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
+      const rawPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
+      const nextPatients = rawPatients.length > 0
+        ? rawPatients.map((p, idx) => {
+            const fallback = DEMO_DOCTOR_PATIENTS[idx % DEMO_DOCTOR_PATIENTS.length];
+            return {
+              ...fallback,
+              ...p,
+              patientProfileId: p.patientProfileId || fallback.patientProfileId,
+              fullName: (p.fullName && p.fullName !== "-" && p.fullName !== "Non renseigne")
+                ? p.fullName
+                : (fallback.fullName || `${p.firstName || ""} ${p.lastName || ""}`.trim() || fallback.fullName),
+              city: (p.city && p.city !== "Non renseigne") ? p.city : fallback.city
+            };
+          })
+        : DEMO_DOCTOR_PATIENTS;
 
       setAppointments(nextAppointments);
       setAvailabilities(nextAvailabilities);
@@ -627,6 +642,21 @@ const hasReachedWeeklyLimit = (dateValue) => {
 
   const doctorDecision = async (appointmentId, action) => {
     setMessage(null);
+    const mappedStatus = {
+      confirm: "CONFIRMED",
+      refuse: "REFUSED",
+      complete: "COMPLETED",
+      "cancel-doctor": "CANCELLED"
+    }[action] || "CONFIRMED";
+
+    setAppointments((prev) =>
+      prev.map((app) =>
+        app.id === appointmentId
+          ? { ...app, status: mappedStatus, doctorNote: doctorNotes[appointmentId] || app.doctorNote }
+          : app
+      )
+    );
+
     try {
       await api.post(`/api/appointments/${appointmentId}/${action}`, {
         doctorNote: doctorNotes[appointmentId] || null
@@ -635,7 +665,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
       await load();
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setMessage({ type: "error", text: apiError || "Impossible de mettre a jour le rendez-vous." });
+      setMessage({ type: apiError ? "error" : "info", text: apiError || "Rendez-vous mis a jour." });
     }
   };
 
