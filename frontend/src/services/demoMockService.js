@@ -9,6 +9,12 @@ export const DEMO_USERS = {
     fullName: "Dr. Ayman Tantani",
     firstName: "Ayman",
     lastName: "Tantani",
+    username: "dr_tantani",
+    role: "Médecin Tabacologue",
+    isDoctor: true,
+    profilePhotoUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+    smokeFreeStatus: "Médecin Référent",
     dateOfBirth: "1988-04-12",
     identityVerified: true,
     active: true,
@@ -1850,9 +1856,39 @@ export const DEMO_COMMUNITY_POSTS = [
 ];
 
 export const getDemoCommunityData = () => {
+  const activeDemoEmail = typeof window !== "undefined" ? localStorage.getItem("nc_active_demo_email") : null;
+  const isDoctor = activeDemoEmail === "ayman.tantani@uit.ac.ma";
+
   let storedPosts = [];
   try {
     storedPosts = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+    if (isDoctor && storedPosts.length > 0) {
+      let changed = false;
+      storedPosts = storedPosts.map(p => {
+        if (p.author?.username === "membre_actif" || p.author?.id === "user-viewer" || !p.author?.isDoctor) {
+          changed = true;
+          return {
+            ...p,
+            serverName: (!p.serverId || p.serverId === "all" || p.serverName?.includes("victoires")) ? "r/tous · Fil Général" : p.serverName,
+            serverId: (!p.serverId || p.serverId === "all" || p.serverId === "victoires") ? "all" : p.serverId,
+            author: {
+              id: "user-tantani",
+              name: "Dr. Ayman Tantani",
+              username: "dr_tantani",
+              profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+              role: "Médecin Tabacologue & Addictologue",
+              isDoctor: true,
+              smokeFreeStatus: "Médecin Référent",
+              following: false
+            }
+          };
+        }
+        return p;
+      });
+      if (changed) {
+        localStorage.setItem("nc_demo_community_posts", JSON.stringify(storedPosts));
+      }
+    }
   } catch (e) {}
 
   const storedIds = new Set(storedPosts.map(p => p.id));
@@ -1861,24 +1897,41 @@ export const getDemoCommunityData = () => {
     ...DEMO_COMMUNITY_POSTS.filter(p => !storedIds.has(p.id))
   ];
 
-  const activeDemoEmail = typeof window !== "undefined" ? localStorage.getItem("nc_active_demo_email") : null;
-  const user = (activeDemoEmail ? getDemoUserByEmail(activeDemoEmail) : null) || DEMO_COMMUNITY_PEOPLE[3];
+  const demoUser = activeDemoEmail ? getDemoUserByEmail(activeDemoEmail) : null;
+  const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
+
+  const viewer = isDoctor ? {
+    id: "user-tantani",
+    name: "Dr. Ayman Tantani",
+    username: "dr_tantani",
+    profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+    role: "Médecin Tabacologue",
+    isDoctor: true,
+    smokeFreeStatus: "Médecin Référent",
+    stats: {
+      daysSmokeFree: 0,
+      savedAmount: 0,
+      postsCount: mergedPosts.filter(p => p.author?.username === "dr_tantani" || p.author?.isDoctor).length,
+      badgesCount: 6
+    },
+    badges: ["🩺 Tabacologue Référent", "🌟 Médecin Certifié", "💡 Expert HAS/OMS", "🤝 Modérateur Clinique"]
+  } : {
+    id: commPerson?.id || demoUser?.id || "user-viewer",
+    name: commPerson?.name || demoUser?.fullName || "Membre NeuralConsult",
+    username: commPerson?.username || demoUser?.username || (demoUser?.email ? demoUser.email.split("@")[0] : "membre_nc"),
+    profilePhotoUrl: commPerson?.profilePhotoUrl || demoUser?.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    role: commPerson?.role || demoUser?.role || "Patient en Sevrage",
+    isDoctor: Boolean(commPerson?.isDoctor || demoUser?.isDoctor),
+    smokeFreeStatus: commPerson?.smokeFreeStatus || demoUser?.smokeFreeStatus || "Suivi actif",
+    stats: { daysSmokeFree: 30, savedAmount: 280, postsCount: mergedPosts.filter(p => p.author?.username === (commPerson?.username || demoUser?.username)).length, badgesCount: 4 },
+    badges: ["🏆 Sevrage Actif", "🌟 Membre Vérifié", "🫁 Capacité Restaurée", "🤝 Entraide Pro"]
+  };
 
   return {
     posts: mergedPosts,
     servers: DEMO_COMMUNITY_SERVERS,
     people: DEMO_COMMUNITY_PEOPLE,
-    viewer: {
-      id: user.id || "user-viewer",
-      name: user.fullName || user.name || "Membre NeuralConsult",
-      username: user.username || (user.email ? user.email.split("@")[0] : "membre_nc"),
-      profilePhotoUrl: user.profilePhotoUrl || user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-      role: user.role || (user.isDoctor ? "Médecin Tabacologue" : "Patient en Sevrage"),
-      isDoctor: Boolean(user.isDoctor),
-      smokeFreeStatus: user.smokeFreeStatus || "Suivi actif",
-      stats: { daysSmokeFree: 30, savedAmount: 280, postsCount: mergedPosts.filter(p => p.author?.username === user.username).length, badgesCount: 4 },
-      badges: ["🏆 Sevrage Actif", "🌟 Membre Vérifié", "🫁 Capacité Restaurée", "🤝 Entraide Pro"]
-    },
+    viewer,
     conversations: [
       {
         id: "chat-1",
@@ -1910,13 +1963,39 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     // 4. Communities Social Posts Creation
     if (url.includes("/api/communities/social/posts") && !url.includes("/reactions") && !url.includes("/comments") && upperMethod === "POST") {
       const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
+      const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
+
+      const postAuthor = payload?.author || (isDoctor ? {
+        id: "user-tantani",
+        name: "Dr. Ayman Tantani",
+        username: "dr_tantani",
+        profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+        role: "Médecin Tabacologue & Addictologue",
+        isDoctor: true,
+        smokeFreeStatus: "Médecin Référent",
+        following: false
+      } : {
+        id: commPerson?.id || activeUser.id || "user-viewer",
+        name: commPerson?.name || activeUser.fullName || activeUser.name || "Membre NeuralConsult",
+        username: commPerson?.username || activeUser.username || "membre_actif",
+        profilePhotoUrl: commPerson?.profilePhotoUrl || activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        role: commPerson?.role || activeUser.role || "Patient en Sevrage",
+        isDoctor: Boolean(commPerson?.isDoctor || activeUser.isDoctor),
+        smokeFreeStatus: commPerson?.smokeFreeStatus || activeUser.smokeFreeStatus || "Suivi actif",
+        following: false
+      });
+
+      const isAllOrEmpty = !payload?.serverId || payload?.serverId === "all" || payload?.serverId === "";
+      const serverId = isAllOrEmpty ? "all" : payload?.serverId;
+      const serverName = isAllOrEmpty ? "r/tous · Fil Général" : (DEMO_COMMUNITY_SERVERS.find(s => s.id === serverId)?.name || `r/${serverId}`);
+
       const newPost = {
         id: `post-user-${Date.now()}`,
-        serverId: payload?.serverId || "victoires",
-        serverName: DEMO_COMMUNITY_SERVERS.find(s => s.id === payload?.serverId)?.name || "r/victoires_sevrage",
+        serverId,
+        serverName,
         title: payload?.title || "Témoignage de sevrage",
         content: payload?.content || "",
-        flair: payload?.flair || "🏆 Victoire J+30",
+        flair: payload?.flair || (isDoctor ? "🩺 Conseil Médecin" : "🏆 Victoire J+30"),
         imageUrl: payload?.imageUrl || null,
         createdAt: new Date().toISOString(),
         upvotesCount: 1,
@@ -1925,16 +2004,7 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
         reactions: { LOVE: 1, FIRE: 1, CLAP: 0, INSIGHT: 0 },
         commentsCount: 0,
         comments: [],
-        author: {
-          id: activeUser.id || "user-viewer",
-          name: activeUser.fullName || activeUser.name || "Membre NeuralConsult",
-          username: activeUser.username || "membre_actif",
-          profilePhotoUrl: activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-          role: activeUser.role || (activeUser.isDoctor ? "Médecin Tabacologue" : "Patient en Sevrage"),
-          isDoctor: Boolean(activeUser.isDoctor),
-          smokeFreeStatus: activeUser.smokeFreeStatus || "Suivi actif",
-          following: false
-        }
+        author: postAuthor
       };
       try {
         const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
@@ -1997,23 +2067,34 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     if (url.includes("/api/communities/social/posts/") && url.includes("/comments") && upperMethod === "POST") {
       const postId = url.split("/posts/")[1].split("/comments")[0];
       const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
+      const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
       const data = getDemoCommunityData();
       let target = data.posts.find(p => p.id === postId) || DEMO_COMMUNITY_POSTS[0];
       const updated = { ...target };
+
+      const commentAuthor = isDoctor ? {
+        id: "user-tantani",
+        name: "Dr. Ayman Tantani",
+        username: "dr_tantani",
+        profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+        role: "Médecin Tabacologue",
+        isDoctor: true,
+        smokeFreeStatus: "Médecin Référent"
+      } : {
+        id: commPerson?.id || activeUser.id || "user-viewer",
+        name: commPerson?.name || activeUser.fullName || activeUser.name || "Membre NeuralConsult",
+        username: commPerson?.username || activeUser.username || "membre_actif",
+        profilePhotoUrl: commPerson?.profilePhotoUrl || activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        role: commPerson?.role || activeUser.role || "Patient en Sevrage",
+        isDoctor: Boolean(commPerson?.isDoctor || activeUser.isDoctor),
+        smokeFreeStatus: commPerson?.smokeFreeStatus || activeUser.smokeFreeStatus || "Suivi actif"
+      };
 
       const newComment = {
         id: `c-${Date.now()}`,
         content: payload?.content || "Excellent message, merci pour ce partage !",
         createdAt: new Date().toISOString(),
-        author: {
-          id: activeUser.id || "user-viewer",
-          name: activeUser.fullName || activeUser.name || "Membre NeuralConsult",
-          username: activeUser.username || "membre_actif",
-          profilePhotoUrl: activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-          role: activeUser.role || (activeUser.isDoctor ? "Médecin Tabacologue" : "Patient en Sevrage"),
-          isDoctor: Boolean(activeUser.isDoctor),
-          smokeFreeStatus: activeUser.smokeFreeStatus || "Suivi actif"
-        },
+        author: commentAuthor,
         replies: []
       };
 
@@ -2240,20 +2321,65 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       };
     }
 
+    // 8. Direct Messaging POST
+    if (url.includes("/api/communities/social/direct/") && upperMethod === "POST") {
+      return {
+        id: `dm-${Date.now()}`,
+        senderUsername: isDoctor ? "dr_tantani" : "membre_actif",
+        senderName: isDoctor ? "Dr. Ayman Tantani" : "Membre NeuralConsult",
+        content: payload?.content || "",
+        createdAt: new Date().toISOString(),
+        outgoing: true
+      };
+    }
+
     // 4. Fallback for any other POST/PUT/DELETE
     return { success: true, message: "Enregistrement effectué avec succès (Mode Démo Portfolio)." };
   }
 
   // ─── QUERIES (GET) ───
 
+  if (url.includes("/api/communities/social/direct/")) {
+    const targetId = url.split("/direct/")[1].split("?")[0];
+    const peer = DEMO_COMMUNITY_PEOPLE.find(p => p.id === targetId || p.username === targetId) || DEMO_COMMUNITY_PEOPLE[0];
+    return [
+      {
+        id: `dm-init`,
+        senderUsername: peer.username,
+        senderName: peer.name,
+        content: `Bonjour ! N'hésitez pas si vous avez des questions ou si vous ressentez une envie pressante. Nous sommes là pour vous accompagner.`,
+        createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        outgoing: false
+      }
+    ];
+  }
+
   if (url.includes("/api/communities/social/profile")) {
     const commData = getDemoCommunityData();
     return commData.viewer;
   }
+  if (url.includes("/api/communities/social/users/by-username/")) {
+    const rawUsername = url.split("/by-username/")[1].split("?")[0].replace("@", "").toLowerCase();
+    const isDocLookup = rawUsername === "dr_tantani" || rawUsername.includes("tantani");
+    const person = isDocLookup ? DEMO_COMMUNITY_PEOPLE[0] : (DEMO_COMMUNITY_PEOPLE.find(p => (p.username || "").toLowerCase() === rawUsername) || DEMO_COMMUNITY_PEOPLE[0]);
+    const commData = getDemoCommunityData();
+    const allPosts = commData.posts || [];
+    const userPosts = allPosts.filter(p => p.author?.id === person.id || (p.author?.username || "").toLowerCase() === (person.username || "").toLowerCase() || (person.isDoctor && p.author?.isDoctor));
+    return {
+      user: person,
+      posts: userPosts,
+      followersCount: 42,
+      followingCount: 15,
+      isFollowing: false
+    };
+  }
   if (url.includes("/api/communities/social/users/")) {
     const userId = url.split("/users/")[1].split("?")[0];
-    const person = DEMO_COMMUNITY_PEOPLE.find(p => p.id === userId) || DEMO_COMMUNITY_PEOPLE[0];
-    const userPosts = DEMO_COMMUNITY_POSTS.filter(p => p.author?.id === userId || p.author?.username === person.username);
+    const isDocLookup = userId === "user-tantani" || userId === "d0c70000-0000-0000-0000-000000000001" || (userId.startsWith("d0c7") && isDoctor);
+    const person = isDocLookup ? DEMO_COMMUNITY_PEOPLE[0] : (DEMO_COMMUNITY_PEOPLE.find(p => p.id === userId) || DEMO_COMMUNITY_PEOPLE[0]);
+    const commData = getDemoCommunityData();
+    const allPosts = commData.posts || [];
+    const userPosts = allPosts.filter(p => p.author?.id === person.id || (p.author?.username || "").toLowerCase() === (person.username || "").toLowerCase() || (person.isDoctor && p.author?.isDoctor));
     return {
       user: person,
       posts: userPosts,

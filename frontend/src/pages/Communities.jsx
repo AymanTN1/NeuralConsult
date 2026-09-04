@@ -5,6 +5,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getDemoCommunityData } from "../services/demoMockService";
+import { isDoctor } from "../utils/roles";
 
 // Fallback initial subreddits
 const DEFAULT_SUBREDDITS = [
@@ -52,6 +53,8 @@ export default function Communities() {
   const { user: authUser } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
 
+  const isDoc = Boolean(isDoctor(authUser) || authUser?.roles?.includes("ROLE_DOCTOR") || authUser?.email === "ayman.tantani@uit.ac.ma");
+
   // Core Community State
   const [posts, setPosts] = useState([]);
   const [servers, setServers] = useState([]);
@@ -60,9 +63,39 @@ export default function Communities() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Filters & Navigation
+  // Resolved public identity of the logged-in viewer
+  const resolvedProfile = useMemo(() => {
+    if (isDoc) {
+      return {
+        id: "user-tantani",
+        name: authUser?.fullName || "Dr. Ayman Tantani",
+        username: "dr_tantani",
+        role: "Médecin Tabacologue",
+        isDoctor: true,
+        profilePhotoUrl: authUser?.profilePhotoUrl || "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+        smokeFreeStatus: "Médecin Référent"
+      };
+    }
+    if (myProfile) {
+      return myProfile;
+    }
+    if (authUser) {
+      return {
+        id: authUser.id || "user-viewer",
+        name: authUser.fullName || "Membre NeuralConsult",
+        username: authUser.username || (authUser.email ? authUser.email.split("@")[0] : "membre_actif"),
+        role: "Patient en Sevrage",
+        isDoctor: false,
+        profilePhotoUrl: authUser.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        smokeFreeStatus: "Suivi actif"
+      };
+    }
+    return null;
+  }, [authUser, myProfile, isDoc]);
+
+  // Filters & Navigation - default to "new" so new posts appear on top
   const [activeSubreddit, setActiveSubreddit] = useState("all");
-  const [activeFilter, setActiveFilter] = useState("hot"); // hot, new, top, discussed
+  const [activeFilter, setActiveFilter] = useState("new"); // new, hot, top, discussed
   const [activeFlair, setActiveFlair] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -78,7 +111,7 @@ export default function Communities() {
   // Post Draft Form
   const [postDraft, setPostDraft] = useState({
     title: "",
-    flair: "🏆 Victoire J+30",
+    flair: isDoc ? "🩺 Conseil Médecin" : "🏆 Victoire J+30",
     content: "",
     imageUrl: "",
     serverId: ""
@@ -301,16 +334,34 @@ export default function Communities() {
       setActionLoading(true);
       const payload = {
         title: postDraft.title.trim(),
-        flair: postDraft.flair,
+        flair: postDraft.flair || (isDoc ? "🩺 Conseil Médecin" : "🏆 Victoire J+30"),
         content: postDraft.content.trim(),
         imageUrl: postDraft.imageUrl.trim() || null,
-        serverId: postDraft.serverId || null
+        serverId: postDraft.serverId || "all",
+        author: resolvedProfile ? {
+          id: resolvedProfile.id,
+          name: resolvedProfile.name,
+          username: resolvedProfile.username,
+          profilePhotoUrl: resolvedProfile.profilePhotoUrl,
+          role: resolvedProfile.role,
+          isDoctor: resolvedProfile.isDoctor,
+          smokeFreeStatus: resolvedProfile.smokeFreeStatus
+        } : null
       };
       const res = await api.post("/api/communities/social/posts", payload);
       if (res?.data) {
-        setPosts((prev) => [res.data, ...prev]);
+        setPosts((prev) => [res.data, ...prev.filter(p => p.id !== res.data.id)]);
+        setActiveFilter("new");
+        setActiveSubreddit("all");
+        setActiveFlair(null);
         setShowCreateModal(false);
-        setPostDraft({ title: "", flair: "🏆 Victoire J+30", content: "", imageUrl: "", serverId: "" });
+        setPostDraft({
+          title: "",
+          flair: isDoc ? "🩺 Conseil Médecin" : "🏆 Victoire J+30",
+          content: "",
+          imageUrl: "",
+          serverId: ""
+        });
         showToast("🎉 Publication créée avec succès !");
       }
     } catch (err) {
@@ -330,11 +381,21 @@ export default function Communities() {
         flair: "💡 Partage",
         content: repostComment.trim() || "Je partage cette publication inspirante !",
         repostOfPostId: targetRepostPost.id,
-        repostComment: repostComment.trim()
+        repostComment: repostComment.trim(),
+        author: resolvedProfile ? {
+          id: resolvedProfile.id,
+          name: resolvedProfile.name,
+          username: resolvedProfile.username,
+          profilePhotoUrl: resolvedProfile.profilePhotoUrl,
+          role: resolvedProfile.role,
+          isDoctor: resolvedProfile.isDoctor,
+          smokeFreeStatus: resolvedProfile.smokeFreeStatus
+        } : null
       };
       const res = await api.post("/api/communities/social/posts", payload);
       if (res?.data) {
-        setPosts((prev) => [res.data, ...prev]);
+        setPosts((prev) => [res.data, ...prev.filter(p => p.id !== res.data.id)]);
+        setActiveFilter("new");
         setShowRepostModal(false);
         setTargetRepostPost(null);
         setRepostComment("");
@@ -393,7 +454,7 @@ export default function Communities() {
       setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, status: "READ" } : n)));
       setUnreadNotifsCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error("Error mark notif read:", err);
+      console.error("Error marking notif read:", err);
     }
   };
 
@@ -440,10 +501,17 @@ export default function Communities() {
     } else if (activeFilter === "discussed") {
       result.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
     } else {
-      // "hot" score
+      // "hot" score with freshness boost
       result.sort((a, b) => {
-        const scoreA = (a.upvotesCount || 0) * 3 + (a.comments?.length || 0) * 2;
-        const scoreB = (b.upvotesCount || 0) * 3 + (b.comments?.length || 0) * 2;
+        const now = Date.now();
+        const ageHoursA = Math.max(0, (now - new Date(a.createdAt).getTime()) / 3600000);
+        const ageHoursB = Math.max(0, (now - new Date(b.createdAt).getTime()) / 3600000);
+
+        const freshBonusA = ageHoursA < 2 ? 10000 : (ageHoursA < 12 ? 2000 : 0);
+        const freshBonusB = ageHoursB < 2 ? 10000 : (ageHoursB < 12 ? 2000 : 0);
+
+        const scoreA = ((a.upvotesCount || 0) * 3 + (a.comments?.length || 0) * 2 + 10) / Math.pow(ageHoursA + 1, 1.3) + freshBonusA;
+        const scoreB = ((b.upvotesCount || 0) * 3 + (b.comments?.length || 0) * 2 + 10) / Math.pow(ageHoursB + 1, 1.3) + freshBonusB;
         return scoreB - scoreA;
       });
     }
@@ -576,22 +644,22 @@ export default function Communities() {
           </div>
 
           {/* Current User Pill (Click to view own profile) */}
-          {myProfile && (
+          {resolvedProfile && (
             <div
               className="reddit-user-chip"
-              onClick={() => myProfile.id && handleOpenUserProfile(myProfile.id)}
+              onClick={() => resolvedProfile.id && handleOpenUserProfile(resolvedProfile.id)}
               title="Voir mon profil public"
             >
               <div className="reddit-avatar-sm">
-                {myProfile.profilePhotoUrl ? (
-                  <img src={myProfile.profilePhotoUrl} alt="Avatar" />
+                {resolvedProfile.profilePhotoUrl ? (
+                  <img src={resolvedProfile.profilePhotoUrl} alt="Avatar" />
                 ) : (
-                  <span>{getAvatarLetter(myProfile.name, myProfile.username)}</span>
+                  <span>{getAvatarLetter(resolvedProfile.name, resolvedProfile.username)}</span>
                 )}
               </div>
               <div className="user-info-text d-none d-lg-block">
-                <div className="user-name">@{myProfile.username || "mon_profil"}</div>
-                <div className="user-role">{myProfile.role || "Patient"}</div>
+                <div className="user-name">@{resolvedProfile.username || "mon_profil"}</div>
+                <div className="user-role">{resolvedProfile.role || (resolvedProfile.isDoctor ? "Médecin Tabacologue" : "Patient")}</div>
               </div>
             </div>
           )}
@@ -605,10 +673,10 @@ export default function Communities() {
           <div className="sidebar-section">
             <div className="sidebar-title">FLUX PRINCIPAUX</div>
             <button
-              className={`sidebar-nav-item ${activeSubreddit === "all" ? "active" : ""}`}
-              onClick={() => { setActiveSubreddit("all"); setActiveFlair(null); }}
+              className={`sidebar-nav-item ${activeSubreddit === "all" && activeFilter === "new" ? "active" : ""}`}
+              onClick={() => { setActiveSubreddit("all"); setActiveFilter("new"); setActiveFlair(null); }}
             >
-              <i className="bi bi-house-door-fill"></i>
+              <i className="bi bi-house-door-fill text-primary"></i>
               <span>Accueil Global</span>
             </button>
             <button
@@ -676,10 +744,10 @@ export default function Communities() {
           {/* Quick Post Box */}
           <div className="reddit-quick-post" onClick={() => setShowCreateModal(true)}>
             <div className="reddit-avatar-sm">
-              {myProfile?.profilePhotoUrl ? (
-                <img src={myProfile.profilePhotoUrl} alt="Avatar" />
+              {resolvedProfile?.profilePhotoUrl ? (
+                <img src={resolvedProfile.profilePhotoUrl} alt="Avatar" />
               ) : (
-                <span>{getAvatarLetter(myProfile?.name, myProfile?.username)}</span>
+                <span>{getAvatarLetter(resolvedProfile?.name, resolvedProfile?.username)}</span>
               )}
             </div>
             <input
@@ -697,18 +765,18 @@ export default function Communities() {
           <div className="reddit-sort-bar">
             <div className="sort-buttons">
               <button
-                className={`sort-tab ${activeFilter === "hot" ? "active" : ""}`}
-                onClick={() => setActiveFilter("hot")}
-              >
-                <i className="bi bi-fire"></i>
-                <span>Populaires</span>
-              </button>
-              <button
                 className={`sort-tab ${activeFilter === "new" ? "active" : ""}`}
                 onClick={() => setActiveFilter("new")}
               >
                 <i className="bi bi-stars"></i>
                 <span>Nouveaux</span>
+              </button>
+              <button
+                className={`sort-tab ${activeFilter === "hot" ? "active" : ""}`}
+                onClick={() => setActiveFilter("hot")}
+              >
+                <i className="bi bi-fire"></i>
+                <span>Populaires</span>
               </button>
               <button
                 className={`sort-tab ${activeFilter === "top" ? "active" : ""}`}
@@ -752,7 +820,20 @@ export default function Communities() {
           ) : (
             <div className="reddit-posts-list">
               {filteredPosts.map((post) => {
-                const isDoctor = post.author?.isDoctor || post.author?.role === "Médecin Tabacologue";
+                const isPostDoctor = Boolean(
+                  post.author?.isDoctor ||
+                  post.author?.role === "Médecin Tabacologue" ||
+                  post.author?.role?.toLowerCase().includes("médecin") ||
+                  post.author?.username === "dr_tantani"
+                );
+                const isMyPost = Boolean(
+                  authUser && (
+                    post.author?.id === authUser.id ||
+                    (isDoc && (post.author?.id === "user-tantani" || post.author?.username === "dr_tantani" || post.author?.isDoctor)) ||
+                    post.author?.email === authUser.email ||
+                    (resolvedProfile && post.author?.username === resolvedProfile.username)
+                  )
+                );
                 const netScore = (post.upvotesCount || 0) - (post.downvotesCount || 0);
                 const commentsOpen = !!expandedComments[post.id];
                 const commentsList = post.comments || [];
@@ -803,10 +884,10 @@ export default function Communities() {
                         </div>
 
                         {/* Role / Doctor Badge */}
-                        {isDoctor ? (
+                        {isPostDoctor ? (
                           <span className="badge-doctor" title="Médecin Tabacologue Certifié">
                             <i className="bi bi-patch-check-fill me-1"></i>
-                            {post.author?.name || "Dr. Tabacologue"}
+                            {post.author?.name || "Dr. Ayman Tantani"}
                           </span>
                         ) : (
                           <span className="badge-patient">
@@ -823,7 +904,7 @@ export default function Communities() {
                         )}
 
                         {/* Follow Button on Post Header */}
-                        {post.author && authUser && post.author.id !== authUser.id && (
+                        {post.author && !isMyPost && (
                           <button
                             className={`post-follow-btn ${post.author.following ? "following" : ""}`}
                             onClick={(e) => {
@@ -932,10 +1013,10 @@ export default function Communities() {
                           {/* Add Comment Input */}
                           <div className="comment-composer">
                             <div className="reddit-avatar-xs">
-                              {myProfile?.profilePhotoUrl ? (
-                                <img src={myProfile.profilePhotoUrl} alt="Avatar" />
+                              {resolvedProfile?.profilePhotoUrl ? (
+                                <img src={resolvedProfile.profilePhotoUrl} alt="Avatar" />
                               ) : (
-                                <span>{getAvatarLetter(myProfile?.name, myProfile?.username)}</span>
+                                <span>{getAvatarLetter(resolvedProfile?.name, resolvedProfile?.username)}</span>
                               )}
                             </div>
                             <div className="comment-input-wrap">
@@ -1174,25 +1255,51 @@ export default function Communities() {
                   </div>
 
                   <div className="profile-action-buttons">
-                    {authUser && selectedUserProfile.user?.id !== authUser.id && (
-                      <>
-                        <button
-                          className={`btn-follow-lg ${selectedUserProfile.user?.following ? "following" : ""}`}
-                          onClick={() => handleToggleFollow(selectedUserProfile.user?.id)}
-                        >
-                          {selectedUserProfile.user?.following ? "Abonné" : "+ S'abonner"}
-                        </button>
-                        <button
-                          className="btn-chat-lg"
-                          onClick={() => {
-                            setShowProfileModal(false);
-                            handleOpenChatWith(selectedUserProfile.user);
-                          }}
-                        >
-                          <i className="bi bi-chat-dots-fill me-1"></i> Message Privé
-                        </button>
-                      </>
-                    )}
+                    {(() => {
+                      const isOwnProfile = Boolean(
+                        authUser && selectedUserProfile.user && (
+                          selectedUserProfile.user.id === authUser.id ||
+                          (isDoc && (selectedUserProfile.user.id === "user-tantani" || selectedUserProfile.user.username === "dr_tantani" || selectedUserProfile.user.isDoctor)) ||
+                          selectedUserProfile.user.email === authUser.email ||
+                          (resolvedProfile && selectedUserProfile.user.username === resolvedProfile.username)
+                        )
+                      );
+                      if (isOwnProfile) {
+                        return (
+                          <button
+                            className="btn-follow-lg following"
+                            onClick={() => {
+                              setShowProfileModal(false);
+                              navigate("/profile");
+                            }}
+                          >
+                            <i className="bi bi-person-gear me-1"></i> Gérer mon profil
+                          </button>
+                        );
+                      }
+                      if (authUser) {
+                        return (
+                          <>
+                            <button
+                              className={`btn-follow-lg ${selectedUserProfile.user?.following ? "following" : ""}`}
+                              onClick={() => handleToggleFollow(selectedUserProfile.user?.id)}
+                            >
+                              {selectedUserProfile.user?.following ? "Abonné" : "+ S'abonner"}
+                            </button>
+                            <button
+                              className="btn-chat-lg"
+                              onClick={() => {
+                                setShowProfileModal(false);
+                                handleOpenChatWith(selectedUserProfile.user);
+                              }}
+                            >
+                              <i className="bi bi-chat-dots-fill me-1"></i> Message Privé
+                            </button>
+                          </>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
 
@@ -1497,7 +1604,7 @@ export default function Communities() {
                     <div className="chat-empty">Démarrez votre conversation bienveillante avec @{activeChatTarget.username} !</div>
                   ) : (
                     chatMessages.map((msg) => {
-                      const isMe = msg.senderUsername === myProfile?.username || msg.outgoing;
+                      const isMe = msg.senderUsername === resolvedProfile?.username || msg.outgoing;
                       return (
                         <div key={msg.id} className={`chat-bubble-wrap ${isMe ? "me" : "them"}`}>
                           <div className="chat-bubble">
