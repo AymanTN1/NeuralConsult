@@ -384,7 +384,6 @@ const Tests = () => {
             </div>
           )}
         </div>
-      </div>
 
       <div className="card shadow-sm mb-4">
         <div className="card-body">

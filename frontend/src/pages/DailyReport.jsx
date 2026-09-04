@@ -196,7 +196,6 @@ const DailyReport = () => {
           )}
         </div>
       </div>
-    </div>
   );
 };
 
