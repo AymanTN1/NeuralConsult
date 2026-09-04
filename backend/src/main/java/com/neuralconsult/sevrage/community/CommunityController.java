@@ -139,6 +139,13 @@ public class CommunityController {
     return communityService.createPost(bot, request);
   }
 
+  @DeleteMapping("/social/posts/{postId}")
+  public org.springframework.http.ResponseEntity<Void> deletePost(@AuthenticationPrincipal UserDetails principal,
+                                                                 @PathVariable UUID postId) {
+    communityService.deletePost(currentUser(principal), postId);
+    return org.springframework.http.ResponseEntity.noContent().build();
+  }
+
   @PostMapping("/social/posts/{postId}/reactions")
   public CommunityPostResponse react(@AuthenticationPrincipal UserDetails principal,
                                      @PathVariable UUID postId,

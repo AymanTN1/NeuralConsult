@@ -2014,6 +2014,38 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       return newPost;
     }
 
+    // 4b. Delete Community Post
+    if (url.includes("/api/communities/social/posts/") && !url.includes("/reactions") && !url.includes("/comments") && upperMethod === "DELETE") {
+      const postId = url.split("/posts/")[1].split("?")[0].replace(/\/$/, "");
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        const filtered = stored.filter(p => p.id !== postId);
+        localStorage.setItem("nc_demo_community_posts", JSON.stringify(filtered));
+      } catch (e) {}
+      return { success: true, id: postId, message: "Publication supprimée" };
+    }
+
+    // 4c. Edit / Update Community Post
+    if (url.includes("/api/communities/social/posts/") && !url.includes("/reactions") && !url.includes("/comments") && (upperMethod === "PUT" || upperMethod === "PATCH")) {
+      const postId = url.split("/posts/")[1].split("?")[0].replace(/\/$/, "");
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        const idx = stored.findIndex(p => p.id === postId);
+        if (idx !== -1) {
+          stored[idx] = {
+            ...stored[idx],
+            ...(payload?.title ? { title: payload.title } : {}),
+            ...(payload?.content !== undefined ? { content: payload.content } : {}),
+            ...(payload?.flair ? { flair: payload.flair } : {}),
+            updatedAt: new Date().toISOString()
+          };
+          localStorage.setItem("nc_demo_community_posts", JSON.stringify(stored));
+          return stored[idx];
+        }
+      } catch (e) {}
+      return { id: postId, ...payload, updatedAt: new Date().toISOString() };
+    }
+
     // 5. Communities Social Post Reactions & Votes
     if (url.includes("/api/communities/social/posts/") && url.includes("/reactions") && upperMethod === "POST") {
       const postId = url.split("/posts/")[1].split("/reactions")[0];

@@ -177,6 +177,26 @@ export default function Communities() {
   const fileInputRef = useRef(null);
   const [repostComment, setRepostComment] = useState("");
 
+  // Post Actions & Dropdown Management
+  const [activePostMenuId, setActivePostMenuId] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editDraft, setEditDraft] = useState({ id: null, title: "", content: "", flair: "" });
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [postToReport, setPostToReport] = useState(null);
+  const [reportReason, setReportReason] = useState("misinformation");
+  const [hiddenPostIds, setHiddenPostIds] = useState(new Set());
+
+  // Close post menu on outside click
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActivePostMenuId(null);
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
+
   // Comments Inline Management
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
@@ -575,6 +595,134 @@ export default function Communities() {
     }
   };
 
+  // Delete Post (Own Post)
+  const handleDeletePost = async (postId) => {
+    if (!postId) return;
+    try {
+      setActionLoading(true);
+      await api.delete(`/api/communities/social/posts/${postId}`).catch(() => ({ data: null }));
+
+      // Remove from main feed
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+
+      // Remove from profile modal if open
+      if (selectedUserProfile?.posts) {
+        setSelectedUserProfile((prev) => ({
+          ...prev,
+          posts: prev.posts.filter((p) => p.id !== postId)
+        }));
+      }
+
+      // Sync demo localStorage
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        const filtered = stored.filter((p) => p.id !== postId);
+        localStorage.setItem("nc_demo_community_posts", JSON.stringify(filtered));
+      } catch (e) {}
+
+      setShowDeleteConfirmModal(false);
+      setPostToDelete(null);
+      setActivePostMenuId(null);
+      showToast("🗑️ Votre publication a été supprimée avec succès.");
+    } catch (err) {
+      showToast("Impossible de supprimer cette publication.", "danger");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Edit Post (Own Post)
+  const handleEditPostSubmit = async (e) => {
+    e?.preventDefault();
+    if (!editDraft.id) return;
+    if (!editDraft.title.trim() && !editDraft.content.trim()) {
+      showToast("Veuillez saisir un titre ou un contenu.", "warning");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const payload = {
+        title: editDraft.title.trim(),
+        content: editDraft.content.trim(),
+        flair: editDraft.flair
+      };
+
+      await api.put(`/api/communities/social/posts/${editDraft.id}`, payload).catch(() => ({ data: null }));
+
+      // Update in posts state
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editDraft.id
+            ? { ...p, title: payload.title, content: payload.content, flair: payload.flair, isEdited: true }
+            : p
+        )
+      );
+
+      // Update in selectedUserProfile if open
+      if (selectedUserProfile?.posts) {
+        setSelectedUserProfile((prev) => ({
+          ...prev,
+          posts: prev.posts.map((p) =>
+            p.id === editDraft.id
+              ? { ...p, title: payload.title, content: payload.content, flair: payload.flair, isEdited: true }
+              : p
+          )
+        }));
+      }
+
+      // Sync demo localStorage
+      try {
+        const stored = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+        const idx = stored.findIndex((p) => p.id === editDraft.id);
+        if (idx !== -1) {
+          stored[idx] = { ...stored[idx], title: payload.title, content: payload.content, flair: payload.flair, isEdited: true };
+          localStorage.setItem("nc_demo_community_posts", JSON.stringify(stored));
+        }
+      } catch (e) {}
+
+      setShowEditModal(false);
+      setEditDraft({ id: null, title: "", content: "", flair: "" });
+      setActivePostMenuId(null);
+      showToast("✏️ Publication mise à jour avec succès !");
+    } catch (err) {
+      showToast("Erreur lors de la modification.", "danger");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Pin / Unpin Post
+  const handleTogglePinPost = (postId) => {
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id === postId) {
+          const nextPinned = !p.isPinned;
+          showToast(nextPinned ? "📌 Publication épinglée en tête de fil." : "Publication détachée.");
+          return { ...p, isPinned: nextPinned };
+        }
+        return p;
+      })
+    );
+    setActivePostMenuId(null);
+  };
+
+  // Hide Post
+  const handleHidePost = (postId) => {
+    setHiddenPostIds((prev) => new Set([...prev, postId]));
+    setActivePostMenuId(null);
+    showToast("👁️‍🗨️ Cette publication a été masquée de votre fil.");
+  };
+
+  // Report Post
+  const handleReportPostSubmit = (e) => {
+    e?.preventDefault();
+    setShowReportModal(false);
+    setPostToReport(null);
+    setActivePostMenuId(null);
+    showToast("🛡️ Signalement transmis à l'équipe médicale de modération. Merci !");
+  };
+
   // Repost / Cross-Post Submit
   const handleRepostSubmit = async () => {
     if (!targetRepostPost) return;
@@ -664,7 +812,7 @@ export default function Communities() {
 
   // Filtered & Sorted Posts
   const filteredPosts = useMemo(() => {
-    let result = [...posts];
+    let result = posts.filter((p) => !hiddenPostIds.has(p.id));
 
     // Filter by Subreddit
     if (activeSubreddit !== "all") {
@@ -720,8 +868,11 @@ export default function Communities() {
       });
     }
 
+    // Pinned posts always stay on top
+    result.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+
     return result;
-  }, [posts, activeSubreddit, activeFlair, searchQuery, activeFilter]);
+  }, [posts, activeSubreddit, activeFlair, searchQuery, activeFilter, hiddenPostIds]);
 
   const selectedSubreddit = useMemo(() => {
     return DEFAULT_SUBREDDITS.find((s) => s.id === activeSubreddit) || DEFAULT_SUBREDDITS[0];
@@ -1186,6 +1337,18 @@ export default function Communities() {
                           <span className="post-flair-pill">{post.flair}</span>
                         )}
 
+                        {/* Pinned Badge */}
+                        {post.isPinned && (
+                          <span className="post-pinned-pill" title="Épinglé en tête de fil">
+                            <i className="bi bi-pin-angle-fill me-1"></i> Épinglé
+                          </span>
+                        )}
+
+                        {/* Edited Badge */}
+                        {post.isEdited && (
+                          <span className="post-edited-label ms-1">(modifié)</span>
+                        )}
+
                         {/* Follow Button on Post Header */}
                         {post.author && !isMyPost && (
                           <button
@@ -1198,6 +1361,111 @@ export default function Communities() {
                             {post.author.following ? "Abonné" : "+ Suivre"}
                           </button>
                         )}
+
+                        {/* 3-DOT POST OPTIONS DROPDOWN */}
+                        <div className="post-options-menu-wrap ms-auto" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className={`post-options-btn ${activePostMenuId === post.id ? "active" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePostMenuId(activePostMenuId === post.id ? null : post.id);
+                            }}
+                            title="Options de la publication"
+                          >
+                            <i className="bi bi-three-dots"></i>
+                          </button>
+
+                          {activePostMenuId === post.id && (
+                            <div className="post-dropdown-menu">
+                              {/* Current user's own post actions */}
+                              {isMyPost && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="dropdown-item text-danger"
+                                    onClick={() => {
+                                      setActivePostMenuId(null);
+                                      setPostToDelete(post);
+                                      setShowDeleteConfirmModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-trash3-fill me-2 text-danger"></i>
+                                    <span>Supprimer la publication</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="dropdown-item"
+                                    onClick={() => {
+                                      setActivePostMenuId(null);
+                                      setEditDraft({
+                                        id: post.id,
+                                        title: post.title || "",
+                                        content: post.content || "",
+                                        flair: post.flair || ""
+                                      });
+                                      setShowEditModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-pencil-square me-2 text-primary"></i>
+                                    <span>Modifier le texte</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="dropdown-item"
+                                    onClick={() => handleTogglePinPost(post.id)}
+                                  >
+                                    <i className={`bi ${post.isPinned ? "bi-pin-angle" : "bi-pin-angle-fill"} me-2 text-warning`}></i>
+                                    <span>{post.isPinned ? "Détacher du haut" : "Épingler en haut"}</span>
+                                  </button>
+                                  <div className="dropdown-divider"></div>
+                                </>
+                              )}
+
+                              {/* Universal actions */}
+                              <button
+                                type="button"
+                                className="dropdown-item"
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(`${window.location.origin}/communities?post=${post.id}`);
+                                  setActivePostMenuId(null);
+                                  showToast("🔗 Lien direct copié dans le presse-papier !");
+                                }}
+                              >
+                                <i className="bi bi-link-45deg me-2 text-info"></i>
+                                <span>Copier le lien direct</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                className="dropdown-item"
+                                onClick={() => handleHidePost(post.id)}
+                              >
+                                <i className="bi bi-eye-slash me-2 text-secondary"></i>
+                                <span>Masquer cette publication</span>
+                              </button>
+
+                              {/* Report action for others' posts */}
+                              {!isMyPost && (
+                                <>
+                                  <div className="dropdown-divider"></div>
+                                  <button
+                                    type="button"
+                                    className="dropdown-item text-danger"
+                                    onClick={() => {
+                                      setActivePostMenuId(null);
+                                      setPostToReport(post);
+                                      setShowReportModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-flag-fill me-2 text-danger"></i>
+                                    <span>Signaler ce contenu</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Post Title */}
@@ -1565,9 +1833,18 @@ export default function Communities() {
             </div>
           ) : (
             <>
-              {/* Profile Cover / Header */}
-              <div className="profile-cover-banner">
-                <button className="profile-close-btn" onClick={() => setShowProfileModal(false)}>
+              {/* Profile Top Bar (Clean & uncropped - No Blue Banner) */}
+              <div className="profile-modal-clean-top">
+                <div className="profile-modal-title">
+                  <i className="bi bi-person-badge text-primary me-2"></i>
+                  <span>Profil de Membre</span>
+                </div>
+                <button
+                  type="button"
+                  className="profile-modal-close-btn"
+                  onClick={() => setShowProfileModal(false)}
+                  title="Fermer"
+                >
                   <i className="bi bi-x-lg"></i>
                 </button>
               </div>
@@ -1678,25 +1955,51 @@ export default function Communities() {
                     <div className="profile-no-posts">Cet utilisateur n'a pas encore partagé de publications.</div>
                   ) : (
                     <div className="profile-posts-list">
-                      {selectedUserProfile.posts.map((p) => (
-                        <div key={p.id} className="profile-post-card">
-                          <div className="pcard-header">
-                            <span className="pcard-sub">{p.serverName}</span>
-                            <span className="meta-dot">·</span>
-                            <span className="pcard-time">{formatDateAgo(p.createdAt)}</span>
-                            {p.flair && <span className="pcard-flair">{p.flair}</span>}
+                      {selectedUserProfile.posts.map((p) => {
+                        const isOwnProfilePost = Boolean(
+                          authUser && selectedUserProfile.user && (
+                            selectedUserProfile.user.id === authUser.id ||
+                            (isDoc && (selectedUserProfile.user.id === "user-tantani" || selectedUserProfile.user.username === "dr_tantani" || selectedUserProfile.user.isDoctor)) ||
+                            selectedUserProfile.user.email === authUser.email ||
+                            (resolvedProfile && selectedUserProfile.user.username === resolvedProfile.username)
+                          )
+                        );
+                        return (
+                          <div key={p.id} className="profile-post-card">
+                            <div className="pcard-header">
+                              <span className="pcard-sub">{p.serverName}</span>
+                              <span className="meta-dot">·</span>
+                              <span className="pcard-time">{formatDateAgo(p.createdAt)}</span>
+                              {p.flair && <span className="pcard-flair">{p.flair}</span>}
+
+                              {/* Quick delete button if this is the user's own profile */}
+                              {isOwnProfilePost && (
+                                <button
+                                  type="button"
+                                  className="btn-delete-profile-post ms-auto"
+                                  onClick={() => {
+                                    setPostToDelete(p);
+                                    setShowDeleteConfirmModal(true);
+                                  }}
+                                  title="Supprimer cette publication"
+                                >
+                                  <i className="bi bi-trash3 me-1 text-danger"></i>
+                                  <span>Supprimer</span>
+                                </button>
+                              )}
+                            </div>
+                            {p.title && <div className="pcard-title">{p.title}</div>}
+                            <div className="pcard-text">{p.content}</div>
+                            {p.imageUrl && (
+                              <img className="pcard-img" src={p.imageUrl} alt="Média" />
+                            )}
+                            <div className="pcard-footer">
+                              <span><i className="bi bi-arrow-up-circle-fill text-warning me-1"></i> {p.upvotesCount || 0} upvotes</span>
+                              <span><i className="bi bi-chat-fill text-primary ms-3 me-1"></i> {p.comments?.length || 0} commentaires</span>
+                            </div>
                           </div>
-                          {p.title && <div className="pcard-title">{p.title}</div>}
-                          <div className="pcard-text">{p.content}</div>
-                          {p.imageUrl && (
-                            <img className="pcard-img" src={p.imageUrl} alt="Média" />
-                          )}
-                          <div className="pcard-footer">
-                            <span><i className="bi bi-arrow-up-circle-fill text-warning me-1"></i> {p.upvotesCount || 0} upvotes</span>
-                            <span><i className="bi bi-chat-fill text-primary ms-3 me-1"></i> {p.comments?.length || 0} commentaires</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1990,6 +2293,158 @@ export default function Communities() {
               {actionLoading ? "Republication..." : "Republier"}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* 🗑️ DELETE POST CONFIRMATION MODAL                                        */}
+      {/* ========================================================================= */}
+      <Modal show={showDeleteConfirmModal} onHide={() => setShowDeleteConfirmModal(false)} centered className="reddit-modal delete-confirm-modal">
+        <div className="modal-content-reddit">
+          <div className="modal-header-reddit" style={{ borderBottomColor: "rgba(239, 68, 68, 0.2)" }}>
+            <h5 className="modal-title text-danger">
+              <i className="bi bi-trash3-fill me-2"></i>Supprimer la publication ?
+            </h5>
+            <button className="btn-close-reddit" onClick={() => setShowDeleteConfirmModal(false)}><i className="bi bi-x-lg"></i></button>
+          </div>
+          <div className="modal-body-reddit">
+            <p className="mb-2">Êtes-vous sûr de vouloir supprimer définitivement cette publication ?</p>
+            {postToDelete && (
+              <div className="delete-preview-box">
+                <div className="fw-bold text-truncate">{postToDelete.title || "Publication sans titre"}</div>
+                {postToDelete.content && (
+                  <div className="small text-muted text-truncate mt-1">{postToDelete.content}</div>
+                )}
+              </div>
+            )}
+            <p className="small text-danger mt-3 mb-0">
+              <i className="bi bi-info-circle me-1"></i>Cette action est irréversible. Les commentaires et réactions associés seront également effacés.
+            </p>
+          </div>
+          <div className="modal-footer-reddit">
+            <button type="button" className="btn-cancel" onClick={() => setShowDeleteConfirmModal(false)}>Annuler</button>
+            <button
+              type="button"
+              className="btn btn-danger px-3 py-1.5 fw-bold"
+              style={{ borderRadius: "10px" }}
+              disabled={actionLoading}
+              onClick={() => handleDeletePost(postToDelete?.id)}
+            >
+              <i className="bi bi-trash3 me-1"></i>
+              {actionLoading ? "Suppression..." : "Confirmer la suppression"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* ✏️ EDIT POST MODAL                                                        */}
+      {/* ========================================================================= */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered size="lg" className="reddit-modal">
+        <div className="modal-content-reddit">
+          <div className="modal-header-reddit">
+            <h5 className="modal-title">
+              <i className="bi bi-pencil-square me-2 text-primary"></i>Modifier votre publication
+            </h5>
+            <button className="btn-close-reddit" onClick={() => setShowEditModal(false)}><i className="bi bi-x-lg"></i></button>
+          </div>
+          <form onSubmit={handleEditPostSubmit}>
+            <div className="modal-body-reddit">
+              {/* Select Flair */}
+              <div className="form-group-reddit">
+                <label>Étiquette / Flair de sujet</label>
+                <div className="flair-select-row">
+                  {FLAIRS.map((f) => (
+                    <button
+                      type="button"
+                      key={f.label}
+                      className={`flair-btn ${editDraft.flair === f.label ? "selected" : ""}`}
+                      style={{ color: f.color }}
+                      onClick={() => setEditDraft({ ...editDraft, flair: f.label })}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Title Input */}
+              <div className="form-group-reddit">
+                <label>Titre de votre publication *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Titre clair et précis..."
+                  value={editDraft.title}
+                  onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })}
+                />
+              </div>
+
+              {/* Content Textarea */}
+              <div className="form-group-reddit">
+                <label>Corps du message</label>
+                <textarea
+                  rows="5"
+                  placeholder="Partagez votre message..."
+                  value={editDraft.content}
+                  onChange={(e) => setEditDraft({ ...editDraft, content: e.target.value })}
+                ></textarea>
+              </div>
+            </div>
+
+            <div className="modal-footer-reddit">
+              <button type="button" className="btn-cancel" onClick={() => setShowEditModal(false)}>Annuler</button>
+              <button type="submit" className="btn-submit" disabled={actionLoading}>
+                {actionLoading ? "Enregistrement..." : "Enregistrer les modifications"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* 🚨 REPORT POST MODAL                                                      */}
+      {/* ========================================================================= */}
+      <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered className="reddit-modal">
+        <div className="modal-content-reddit">
+          <div className="modal-header-reddit">
+            <h5 className="modal-title">
+              <i className="bi bi-shield-exclamation me-2 text-warning"></i>Signaler ce contenu
+            </h5>
+            <button className="btn-close-reddit" onClick={() => setShowReportModal(false)}><i className="bi bi-x-lg"></i></button>
+          </div>
+          <form onSubmit={handleReportPostSubmit}>
+            <div className="modal-body-reddit">
+              <p className="small text-muted mb-3">
+                La communauté NeuralConsult est un espace médicalisé d'entraide bienveillant. Veuillez sélectionner le motif de votre signalement :
+              </p>
+              <div className="report-options-list">
+                {[
+                  { id: "misinformation", label: "Désinformation médicale ou contre-indication" },
+                  { id: "relapse_trigger", label: "Incitation au tabagisme ou promotion de produits" },
+                  { id: "harassment", label: "Propos agressifs, harcèlement ou non-bienveillance" },
+                  { id: "spam", label: "Spam, publicité ou contenu non pertinent" }
+                ].map((opt) => (
+                  <label key={opt.id} className="report-option-item">
+                    <input
+                      type="radio"
+                      name="reportReason"
+                      value={opt.id}
+                      checked={reportReason === opt.id}
+                      onChange={(e) => setReportReason(e.target.value)}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer-reddit">
+              <button type="button" className="btn-cancel" onClick={() => setShowReportModal(false)}>Annuler</button>
+              <button type="submit" className="btn btn-warning fw-bold px-3 py-1.5" style={{ borderRadius: "10px" }}>
+                <i className="bi bi-send-check me-1"></i> Transmettre à la modération
+              </button>
+            </div>
+          </form>
         </div>
       </Modal>
 

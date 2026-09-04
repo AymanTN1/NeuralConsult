@@ -333,6 +333,21 @@ public class CommunityService {
   }
 
   @Transactional
+  public void deletePost(User user, UUID postId) {
+    User actor = requireManagedUser(user);
+    CommunityPost post = postRepository.findById(postId)
+        .orElseThrow(() -> new IllegalArgumentException("Publication introuvable"));
+    boolean isAuthor = post.getAuthor().getId().equals(actor.getId());
+    boolean isPrivileged = actor.getRole() == com.neuralconsult.sevrage.user.UserRole.DOCTOR 
+        || actor.getRole() == com.neuralconsult.sevrage.user.UserRole.ADMIN;
+    if (!isAuthor && !isPrivileged) {
+      throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer cette publication.");
+    }
+    post.markDeleted(actor.getEmail());
+    postRepository.save(post);
+  }
+
+  @Transactional
   public CommunityPostResponse reactToPost(User user, UUID postId, CommunityReactionRequest request) {
     User actor = requireManagedUser(user);
     CommunityPost post = postRepository.findById(postId).orElseThrow();
