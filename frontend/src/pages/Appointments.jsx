@@ -6,7 +6,7 @@ import { isDoctor } from "../utils/roles";
 import ConsultationReportForm from "../components/ConsultationReportForm";
 import LungLoader from "../components/LungLoader";
 import Modal from "react-bootstrap/Modal";
-import { DEMO_DOCTOR_PATIENTS } from "../services/demoMockService";
+import { DEMO_DOCTOR_PATIENTS, getDemoDoctorAvailabilities } from "../services/demoMockService";
 
 const statusCopy = {
   REQUESTED: "En attente",
@@ -70,11 +70,48 @@ const formatDate = (value) => {
   });
 };
 
+const formatAvailabilityDate = (value) => {
+  if (!value) return "-";
+  const date = toJsDate(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+};
+
+const getAvailabilityDayLabel = (availability) => {
+  if (!availability) return "-";
+  if (availability.dayOfWeek) {
+    const match = weekdayOptions.find(
+      (option) => option.value.toUpperCase() === String(availability.dayOfWeek).toUpperCase()
+    );
+    if (match) return match.label;
+  }
+  if (availability.availableDate) {
+    const date = toJsDate(availability.availableDate);
+    if (!Number.isNaN(date.getTime())) {
+      const name = date.toLocaleDateString("fr-FR", { weekday: "long" });
+      return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+  }
+  return "-";
+};
+
+const renderTimeRange = (startTime, endTime) => {
+  if (!startTime && !endTime) return "-";
+  const cleanStart = typeof startTime === "string" ? startTime.slice(0, 5) : "";
+  const cleanEnd = typeof endTime === "string" ? endTime.slice(0, 5) : "";
+  if (cleanStart && cleanEnd) return `${cleanStart} - ${cleanEnd}`;
+  return cleanStart || cleanEnd || "-";
+};
+
 const formatTime = (value) => {
-  if (!value) return "";
+  if (!value || typeof value !== "string" || value.includes("undefined")) return "";
   const date = toJsDate(value);
   if (Number.isNaN(date.getTime())) {
-    if (typeof value === "string" && value.includes(":")) {
+    if (value.includes(":")) {
       return value.slice(0, 5);
     }
     return value;
@@ -269,7 +306,13 @@ const hasReachedWeeklyLimit = (dateValue) => {
       ]);
 
       const nextAppointments = appointmentsResp.status === "fulfilled" ? appointmentsResp.value.data || [] : [];
-      const nextAvailabilities = availabilityResp.status === "fulfilled" ? availabilityResp.value.data || [] : [];
+      const rawAvailabilities = availabilityResp.status === "fulfilled" ? availabilityResp.value.data || [] : [];
+      const validAvailabilities = Array.isArray(rawAvailabilities)
+        ? rawAvailabilities.filter((a) => a && typeof a === "object" && (a.startTime || a.availableDate) && !a.startsAt)
+        : [];
+      const nextAvailabilities = (rawAvailabilities.length > 0 && validAvailabilities.length === 0)
+        ? getDemoDoctorAvailabilities()
+        : validAvailabilities;
       const rawPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
       const nextPatients = rawPatients.length > 0
         ? rawPatients.map((p, idx) => {
@@ -512,15 +555,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
           ? "Disponibilité modifiée avec succès. Les créneaux ont été recalculés."
           : "Disponibilité ajoutée avec succès. Elle apparaît immédiatement dans votre planning."
       });
-      setAvailabilityForm({
-        id: "",
-        availableDate: todayDateValue(),
-        startTime: "09:00",
-        endTime: "12:00",
-        bufferMinutes: 10,
-        slotDurationMinutes: 20,
-        active: true
-      });
+      resetAvailabilityForm();
       await load();
     } catch (error) {
       const apiError = error?.response?.data?.message || error?.response?.data?.error;
@@ -1110,11 +1145,11 @@ const hasReachedWeeklyLimit = (dateValue) => {
                   <tbody>
                     {availabilities.map((availability) => (
                       <tr key={availability.id}>
-                        <td><strong>{availability.availableDate ? formatDate(availability.availableDate) : "-"}</strong></td>
-                        <td>{weekdayOptions.find((option) => option.value === availability.dayOfWeek)?.label || availability.dayOfWeek || "-"}</td>
+                        <td><strong>{formatAvailabilityDate(availability.availableDate)}</strong></td>
+                        <td>{getAvailabilityDayLabel(availability)}</td>
                         <td>
                           <span className="badge bg-light text-dark border">
-                            {formatTime(`2000-01-01T${availability.startTime}`)} - {formatTime(`2000-01-01T${availability.endTime}`)}
+                            {renderTimeRange(availability.startTime, availability.endTime)}
                           </span>
                         </td>
                         <td>
@@ -1128,8 +1163,8 @@ const hasReachedWeeklyLimit = (dateValue) => {
                           </span>
                         </td>
                         <td>
-                          <span className={`doctor-status-chip ${availability.active ? "status-confirmed" : "status-cancelled"}`}>
-                            {availability.active ? "Active" : "Inactive"}
+                          <span className={`doctor-status-chip ${availability.active !== false ? "status-confirmed" : "status-cancelled"}`}>
+                            {availability.active !== false ? "Active" : "Inactive"}
                           </span>
                         </td>
                         <td>

@@ -712,6 +712,157 @@ export let DEMO_APPOINTMENTS = [
   }
 ];
 
+export const getDemoAppointments = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("nc_demo_appointments");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+  }
+  return DEMO_APPOINTMENTS;
+};
+
+export const saveDemoAppointments = (appointments) => {
+  DEMO_APPOINTMENTS = appointments;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("nc_demo_appointments", JSON.stringify(appointments));
+    } catch (e) {}
+  }
+};
+
+const AVAILABILITY_DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+
+const formatToDateString = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+export const getDemoDoctorAvailabilities = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("nc_demo_availabilities");
+      if (raw !== null) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter(a => a && typeof a === "object" && a.startTime && !a.startsAt);
+          if (parsed.length > 0 && valid.length === 0) {
+            // Corrupted entries from previous bug, reseed below
+          } else {
+            return valid;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const inThreeDays = new Date(today);
+  inThreeDays.setDate(today.getDate() + 3);
+
+  const defaults = [
+    {
+      id: "avail-demo-01",
+      availableDate: formatToDateString(today),
+      dayOfWeek: AVAILABILITY_DAY_NAMES[today.getDay()],
+      startTime: "09:00",
+      endTime: "12:00",
+      bufferMinutes: 10,
+      slotDurationMinutes: 20,
+      active: true
+    },
+    {
+      id: "avail-demo-02",
+      availableDate: formatToDateString(tomorrow),
+      dayOfWeek: AVAILABILITY_DAY_NAMES[tomorrow.getDay()],
+      startTime: "14:30",
+      endTime: "17:30",
+      bufferMinutes: 10,
+      slotDurationMinutes: 20,
+      active: true
+    },
+    {
+      id: "avail-demo-03",
+      availableDate: formatToDateString(inThreeDays),
+      dayOfWeek: AVAILABILITY_DAY_NAMES[inThreeDays.getDay()],
+      startTime: "10:00",
+      endTime: "13:00",
+      bufferMinutes: 15,
+      slotDurationMinutes: 20,
+      active: true
+    }
+  ];
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("nc_demo_availabilities", JSON.stringify(defaults));
+    } catch (e) {}
+  }
+  return defaults;
+};
+
+export const generateDemoAvailableSlotsForPatient = () => {
+  const doctorAvailabilities = getDemoDoctorAvailabilities();
+  const appointments = getDemoAppointments();
+  const occupiedStarts = new Set(
+    appointments
+      .filter(a => a.status !== "CANCELLED" && a.status !== "REFUSED")
+      .map(a => (a.startsAt ? a.startsAt.slice(0, 16) : ""))
+  );
+
+  const slots = [];
+  const activeAvailabilities = doctorAvailabilities.filter(a => a.active !== false);
+
+  for (const avail of activeAvailabilities) {
+    const slotDuration = avail.slotDurationMinutes || 20;
+    const buffer = avail.bufferMinutes !== undefined ? avail.bufferMinutes : 10;
+    const step = slotDuration + buffer;
+    const dateStr = avail.availableDate || formatToDateString(new Date());
+
+    const startStr = (avail.startTime || "09:00").slice(0, 5);
+    const endStr = (avail.endTime || "12:00").slice(0, 5);
+    const [sH, sM] = startStr.split(":").map(Number);
+    const [eH, eM] = endStr.split(":").map(Number);
+    const startMinutes = (sH || 0) * 60 + (sM || 0);
+    const endMinutes = (eH || 0) * 60 + (eM || 0);
+
+    let cur = startMinutes;
+    while (cur + slotDuration <= endMinutes) {
+      const curH = String(Math.floor(cur / 60)).padStart(2, "0");
+      const curM = String(cur % 60).padStart(2, "0");
+      const endSlotH = String(Math.floor((cur + slotDuration) / 60)).padStart(2, "0");
+      const endSlotM = String((cur + slotDuration) % 60).padStart(2, "0");
+
+      const startsAt = `${dateStr}T${curH}:${curM}:00`;
+      const endsAt = `${dateStr}T${endSlotH}:${endSlotM}:00`;
+      const startKey = `${dateStr}T${curH}:${curM}`;
+
+      if (!occupiedStarts.has(startKey)) {
+        slots.push({
+          doctorProfileId: "doc-prof-01",
+          doctorName: "Dr. Ayman Tantani",
+          startsAt,
+          endsAt
+        });
+      }
+
+      cur += step;
+    }
+  }
+
+  slots.sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  return slots;
+};
+
 // Demo Alerts for Doctor Support
 export const DEMO_SUPPORT_ALERTS = [
   {
@@ -1716,22 +1867,115 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       return { success: true, message: "Statut d'abonnement mis à jour." };
     }
 
-    // 1. Appointments decisions (complete / confirm / refuse / cancel)
+    // 0a. Doctor availability delete
+    if (url.includes("/api/appointments/availability/doctor/") && url.includes("/delete")) {
+      const parts = url.split("/");
+      const availabilityId = parts[parts.length - 2];
+      const currentList = getDemoDoctorAvailabilities();
+      const updatedList = currentList.filter(a => a.id !== availabilityId);
+      try {
+        localStorage.setItem("nc_demo_availabilities", JSON.stringify(updatedList));
+      } catch (e) {}
+      return { success: true, message: "Disponibilité supprimée avec succès." };
+    }
+
+    // 0b. Doctor availability save (create or update)
+    if (url.includes("/api/appointments/availability/doctor")) {
+      const currentList = getDemoDoctorAvailabilities();
+      const existingId = payload?.id;
+      const id = existingId || `avail-demo-${Date.now()}`;
+      const dateStr = payload?.availableDate || formatToDateString(new Date());
+      const dayOfWeek = payload?.dayOfWeek || (() => {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        return AVAILABILITY_DAY_NAMES[new Date(y, m - 1, d).getDay()] || "MONDAY";
+      })();
+
+      const savedItem = {
+        id,
+        availableDate: dateStr,
+        dayOfWeek,
+        startTime: payload?.startTime || "09:00",
+        endTime: payload?.endTime || "12:00",
+        bufferMinutes: payload?.bufferMinutes !== undefined ? Number(payload.bufferMinutes) : 10,
+        slotDurationMinutes: payload?.slotDurationMinutes !== undefined ? Number(payload.slotDurationMinutes) : 20,
+        active: payload?.active !== undefined ? Boolean(payload.active) : true
+      };
+
+      let updatedList;
+      if (existingId) {
+        const idx = currentList.findIndex(a => a.id === existingId);
+        if (idx >= 0) {
+          updatedList = [...currentList];
+          updatedList[idx] = savedItem;
+        } else {
+          updatedList = [savedItem, ...currentList];
+        }
+      } else {
+        updatedList = [savedItem, ...currentList];
+      }
+
+      try {
+        localStorage.setItem("nc_demo_availabilities", JSON.stringify(updatedList));
+      } catch (e) {}
+
+      return savedItem;
+    }
+
+    // 0c. Patient appointment booking
+    if ((url.endsWith("/api/appointments") || url.endsWith("/api/appointments/")) && upperMethod === "POST") {
+      const activePatient = getDemoUserByEmail(activeDemoEmail) || DEMO_USERS.patient1;
+      const newApt = {
+        id: `apt-patient-${Date.now()}`,
+        startsAt: payload?.startsAt || new Date(Date.now() + 86400000).toISOString(),
+        durationMinutes: 20,
+        status: "REQUESTED",
+        reason: payload?.reason || "Demande de consultation de suivi du sevrage.",
+        doctorName: "Dr. Ayman Tantani",
+        doctorSpecialty: "Tabacologue & Médecin Référent",
+        patientName: activePatient.fullName || "Patient Démo",
+        patientProfileId: activePatient.patientProfileId || "p0c70000-0000-0000-0000-000000000001",
+        meetingProvider: "JITSI",
+        meetingRoomName: `NeuralConsult-Demo-${Date.now()}`,
+        meetingJoinUrl: `https://meet.jit.si/NeuralConsult-Demo-${Date.now()}`,
+        triggeredByAiAlert: false,
+        createdAt: new Date().toISOString()
+      };
+      const list = getDemoAppointments();
+      const updated = [newApt, ...list];
+      saveDemoAppointments(updated);
+      return newApt;
+    }
+
+    // 1. Appointments decisions & updates (complete / confirm / refuse / cancel / doctor-update / patient-update)
     if (url.includes("/api/appointments/")) {
       const parts = url.split("/");
       const action = parts[parts.length - 1];
       const appointmentId = parts[parts.length - 2];
 
+      if (action === "doctor-update" || action === "patient-update") {
+        const list = getDemoAppointments().map(a => a.id === appointmentId ? {
+          ...a,
+          ...(payload?.startsAt ? { startsAt: payload.startsAt } : {}),
+          ...(payload?.reason ? { reason: payload.reason } : {}),
+          ...(payload?.doctorNote ? { doctorNote: payload.doctorNote } : {})
+        } : a);
+        saveDemoAppointments(list);
+        return { success: true, message: "Rendez-vous mis à jour avec succès." };
+      }
+
       if (action === "complete") {
-        DEMO_APPOINTMENTS = DEMO_APPOINTMENTS.map(a => a.id === appointmentId ? { ...a, status: "COMPLETED" } : a);
+        const list = getDemoAppointments().map(a => a.id === appointmentId ? { ...a, status: "COMPLETED" } : a);
+        saveDemoAppointments(list);
         return { success: true, message: "Rendez-vous marqué comme terminé." };
       }
       if (action === "confirm") {
-        DEMO_APPOINTMENTS = DEMO_APPOINTMENTS.map(a => a.id === appointmentId ? { ...a, status: "CONFIRMED" } : a);
+        const list = getDemoAppointments().map(a => a.id === appointmentId ? { ...a, status: "CONFIRMED" } : a);
+        saveDemoAppointments(list);
         return { success: true, message: "Rendez-vous confirmé." };
       }
       if (action === "refuse" || action.includes("cancel")) {
-        DEMO_APPOINTMENTS = DEMO_APPOINTMENTS.map(a => a.id === appointmentId ? { ...a, status: "CANCELLED" } : a);
+        const list = getDemoAppointments().map(a => a.id === appointmentId ? { ...a, status: "CANCELLED" } : a);
+        saveDemoAppointments(list);
         return { success: true, message: "Rendez-vous annulé." };
       }
     }
@@ -1755,7 +1999,9 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
         meetingJoinUrl: `https://meet.jit.si/NeuralConsult-Urgent-${Date.now()}`,
         triggeredByAiAlert: !!payload?.triggeredByAiAlert
       };
-      DEMO_APPOINTMENTS.unshift(newApt);
+      const list = getDemoAppointments();
+      const updated = [newApt, ...list];
+      saveDemoAppointments(updated);
       return newApt;
     }
 
@@ -1924,8 +2170,14 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   if (url.includes("/api/tests/fagerstrom")) {
     return generateDemoTests().fagerstrom;
   }
+  if (url.includes("/api/appointments/availability/patient")) {
+    return generateDemoAvailableSlotsForPatient();
+  }
+  if (url.includes("/api/appointments/availability/doctor")) {
+    return getDemoDoctorAvailabilities();
+  }
   if (url.includes("/api/appointments/doctor") || url.includes("/api/appointments/patient") || url.includes("/api/appointments")) {
-    return DEMO_APPOINTMENTS;
+    return getDemoAppointments();
   }
   if (url.includes("/api/doctors/association/patient")) {
     return {
