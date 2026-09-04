@@ -7278,7 +7278,6 @@ body.light-theme .pathway-label,
 body.light-theme .life-gain-label,
 body.light-theme .chart-badge,
 body.light-theme .evaluation-goal-chip,
-body.light-theme .doctor-status-chip,
 body.light-theme .community-mini-chip,
 body.light-theme .landing-roadmap-hover-range,
 body.light-theme .phase-spotlight-badge {
@@ -15599,252 +15598,506 @@ body.light-theme .table-hover tbody tr:hover,
 }
 
 /* ==========================================================================
-   NEURALCONSULT DOCTOR APPOINTMENTS UI / UX OVERHAUL
+   NEURALCONSULT DOCTOR APPOINTMENTS UI / UX OVERHAUL (PREMIUM EDITION)
    ========================================================================== */
 
+/* 1. Doctor KPI Stats Cards */
 .nc-appointment-kpi-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.1rem 1.25rem;
-  border-radius: 1rem;
-  background: var(--nc-surface, #ffffff);
-  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.8));
-  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  gap: 1.15rem !important;
+  padding: 1.2rem 1.35rem !important;
+  border-radius: 1.25rem !important;
+  background: var(--nc-surface, #ffffff) !important;
+  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.85)) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02) !important;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.nc-appointment-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  transition: background 0.2s ease;
 }
 
 .nc-appointment-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
-  border-color: rgba(14, 165, 233, 0.4);
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.08) !important;
+  border-color: rgba(2, 132, 199, 0.35) !important;
 }
 
-.nc-appointment-kpi-card .kpi-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  font-size: 1.35rem;
-  flex-shrink: 0;
+.nc-appointment-kpi-card.active,
+.nc-appointment-kpi-card.is-active {
+  border-color: #0284c7 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%) !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2), 0 8px 24px -4px rgba(2, 132, 199, 0.15) !important;
 }
 
-.nc-appointment-kpi-card .kpi-value {
-  font-size: 1.55rem;
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--nc-copy, #0f172a);
+.nc-appointment-kpi-card.active::before,
+.nc-appointment-kpi-card.is-active::before {
+  background: #0284c7 !important;
 }
 
-.nc-appointment-kpi-card .kpi-label {
-  font-size: 0.82rem;
-  color: var(--nc-copy-muted, #64748b);
-  font-weight: 500;
-  margin-top: 0.15rem;
+body.dark-theme .nc-appointment-kpi-card,
+[data-theme="dark"] .nc-appointment-kpi-card {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Segmented Doctor Navigation Pills */
+body.dark-theme .nc-appointment-kpi-card.active,
+[data-theme="dark"] .nc-appointment-kpi-card.active {
+  background: linear-gradient(180deg, #0f172a 0%, #082f49 100%) !important;
+  border-color: #38bdf8 !important;
+}
+
+.nc-appointment-kpi-card .nc-kpi-icon-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  font-size: 1.45rem !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+.nc-appointment-kpi-card .nc-kpi-info {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+}
+
+.nc-appointment-kpi-card .nc-kpi-num {
+  font-size: 1.85rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--nc-copy, #0f172a) !important;
+}
+
+body.dark-theme .nc-appointment-kpi-card .nc-kpi-num,
+[data-theme="dark"] .nc-appointment-kpi-card .nc-kpi-num {
+  color: #f8fafc !important;
+}
+
+.nc-appointment-kpi-card .nc-kpi-label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: var(--nc-copy-muted, #64748b) !important;
+  margin-top: 0.25rem !important;
+  white-space: nowrap !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* 2. Segmented Doctor Navigation Bar */
 .nc-doctor-nav-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem;
-  background: var(--nc-surface-subtle, rgba(241, 245, 249, 0.8));
-  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.8));
-  border-radius: 1rem;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.45rem !important;
+  padding: 0.45rem !important;
+  background: var(--nc-surface-subtle, #f1f5f9) !important;
+  border: 1px solid var(--nc-border, #e2e8f0) !important;
+  border-radius: 1rem !important;
 }
 
-.nc-doctor-nav-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+body.dark-theme .nc-doctor-nav-bar,
+[data-theme="dark"] .nc-doctor-nav-bar {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
 }
 
 .nc-doctor-nav-btn {
-  border: none;
-  background: transparent;
-  color: var(--nc-copy-muted, #64748b);
-  padding: 0.55rem 1.1rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  font-size: 0.88rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
+  border: none !important;
+  background: transparent !important;
+  color: var(--nc-copy-muted, #64748b) !important;
+  padding: 0.62rem 1.25rem !important;
+  border-radius: 0.75rem !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
 }
 
 .nc-doctor-nav-btn:hover {
-  color: var(--nc-copy, #0f172a);
-  background: rgba(255, 255, 255, 0.6);
+  color: var(--nc-copy, #0f172a) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
 }
 
+body.dark-theme .nc-doctor-nav-btn:hover,
+[data-theme="dark"] .nc-doctor-nav-btn:hover {
+  color: #f8fafc !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+.nc-doctor-nav-btn.active,
 .nc-doctor-nav-btn.is-active {
-  background: var(--nc-surface, #ffffff);
-  color: #0284c7;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  background: var(--nc-surface, #ffffff) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  font-weight: 700 !important;
 }
 
+body.dark-theme .nc-doctor-nav-btn.active,
 body.dark-theme .nc-doctor-nav-btn.is-active,
+[data-theme="dark"] .nc-doctor-nav-btn.active,
 [data-theme="dark"] .nc-doctor-nav-btn.is-active {
-  background: rgba(14, 165, 233, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: #1e293b !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
 }
 
-/* Status Filter Buttons */
+/* 3. Toolbar Container & Status Filter Buttons */
+.nc-consultation-toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.85rem !important;
+  padding: 0.85rem 1.15rem !important;
+  background: var(--nc-surface, #ffffff) !important;
+  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.85)) !important;
+  border-radius: 1.15rem !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+}
+
+body.dark-theme .nc-consultation-toolbar,
+[data-theme="dark"] .nc-consultation-toolbar {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+}
+
 .nc-status-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: center;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.45rem !important;
+  align-items: center !important;
 }
 
 .nc-status-filter-btn {
-  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.9));
-  background: var(--nc-surface, #ffffff);
-  color: var(--nc-copy-muted, #64748b);
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.18s ease;
-  cursor: pointer;
+  border: 1px solid var(--nc-border, rgba(226, 232, 240, 0.9)) !important;
+  background: var(--nc-surface, #ffffff) !important;
+  color: var(--nc-copy-muted, #64748b) !important;
+  padding: 0.42rem 0.95rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  transition: all 0.18s ease !important;
+  cursor: pointer !important;
 }
 
 .nc-status-filter-btn:hover {
-  background: var(--nc-surface-subtle, #f8fafc);
-  border-color: rgba(14, 165, 233, 0.4);
-  color: var(--nc-copy, #0f172a);
+  background: var(--nc-surface-subtle, #f8fafc) !important;
+  border-color: rgba(14, 165, 233, 0.4) !important;
+  color: var(--nc-copy, #0f172a) !important;
+  transform: translateY(-1px);
 }
 
-.nc-status-filter-btn.is-active {
-  background: #0284c7;
+body.dark-theme .nc-status-filter-btn,
+[data-theme="dark"] .nc-status-filter-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+/* Individual Semantic Colors when Active */
+.nc-status-filter-btn.filter-all.is-active,
+.nc-status-filter-btn.filter-all.active {
+  background: #0f172a !important;
   color: #ffffff !important;
-  border-color: #0284c7;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+  border-color: #0f172a !important;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.25) !important;
 }
 
-.nc-status-filter-btn.is-active .badge {
-  background: rgba(255, 255, 255, 0.25) !important;
+.nc-status-filter-btn.filter-requested.is-active,
+.nc-status-filter-btn.filter-requested.active {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3) !important;
+}
+
+.nc-status-filter-btn.filter-confirmed.is-active,
+.nc-status-filter-btn.filter-confirmed.active {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3) !important;
+}
+
+.nc-status-filter-btn.filter-completed.is-active,
+.nc-status-filter-btn.filter-completed.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3) !important;
+}
+
+.nc-status-filter-btn.filter-archived.is-active,
+.nc-status-filter-btn.filter-archived.active {
+  background: #475569 !important;
+  color: #ffffff !important;
+  border-color: #475569 !important;
+  box-shadow: 0 3px 10px rgba(71, 85, 105, 0.3) !important;
+}
+
+.nc-status-filter-btn.is-active .badge,
+.nc-status-filter-btn.active .badge {
+  background: rgba(255, 255, 255, 0.28) !important;
   color: #ffffff !important;
 }
 
-/* Patient Avatar Initials */
+/* 4. Semantic Status Badges (Doctor & Patients) */
+.nc-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 0.38rem 0.85rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* REQUESTED (En attente) */
+.nc-status-badge.status-requested {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+body.dark-theme .nc-status-badge.status-requested,
+[data-theme="dark"] .nc-status-badge.status-requested {
+  background: rgba(217, 119, 6, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(217, 119, 6, 0.4) !important;
+}
+
+/* CONFIRMED (Confirmé) */
+.nc-status-badge.status-confirmed {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+body.dark-theme .nc-status-badge.status-confirmed,
+[data-theme="dark"] .nc-status-badge.status-confirmed {
+  background: rgba(5, 150, 105, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(5, 150, 105, 0.4) !important;
+}
+
+/* COMPLETED (Terminé) */
+.nc-status-badge.status-completed {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+body.dark-theme .nc-status-badge.status-completed,
+[data-theme="dark"] .nc-status-badge.status-completed {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+}
+
+/* CANCELLED (Annulé) */
+.nc-status-badge.status-cancelled {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+body.dark-theme .nc-status-badge.status-cancelled,
+[data-theme="dark"] .nc-status-badge.status-cancelled {
+  background: rgba(100, 116, 139, 0.2) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(100, 116, 139, 0.4) !important;
+}
+
+/* REFUSED (Refusé) */
+.nc-status-badge.status-refused {
+  background: #fff1f2 !important;
+  color: #be123c !important;
+  border: 1px solid #fecdd3 !important;
+}
+body.dark-theme .nc-status-badge.status-refused,
+[data-theme="dark"] .nc-status-badge.status-refused {
+  background: rgba(225, 29, 72, 0.2) !important;
+  color: #fb7185 !important;
+  border-color: rgba(225, 29, 72, 0.4) !important;
+}
+
+/* 5. Patient Avatar Initials */
 .nc-patient-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #ffffff;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  letter-spacing: -0.5px;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+  letter-spacing: -0.5px !important;
 }
 
-/* Visio Launcher Button */
+/* 6. Jitsi Visio Launcher Button */
 .nc-visio-launcher-btn {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #059669 0%, #0d9488 100%) !important;
   color: #ffffff !important;
   border: none !important;
-  font-weight: 600;
-  padding: 0.48rem 0.95rem;
-  border-radius: 0.65rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  font-weight: 600 !important;
+  padding: 0.48rem 0.95rem !important;
+  border-radius: 0.65rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.28) !important;
   transition: all 0.2s ease !important;
   text-decoration: none !important;
-  font-size: 0.85rem;
+  font-size: 0.85rem !important;
 }
 
 .nc-visio-launcher-btn:hover {
-  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.42) !important;
+  background: linear-gradient(135deg, #047857 0%, #0f766e 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.42) !important;
   color: #ffffff !important;
 }
 
 .nc-visio-launcher-btn i {
-  animation: pulse-camera 2s infinite ease-in-out;
+  animation: nc-pulse-camera 2s infinite ease-in-out;
 }
 
-@keyframes pulse-camera {
+@keyframes nc-pulse-camera {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.18); }
 }
 
-/* Horizontal Action Bar for Table */
+/* 7. Action Bar for Doctor Appointments Table */
 .nc-appointment-action-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-  justify-content: flex-end;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.35rem !important;
+  flex-wrap: nowrap !important;
 }
 
 .nc-appointment-action-bar .btn {
-  font-size: 0.78rem;
-  padding: 0.32rem 0.65rem;
-  border-radius: 0.55rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  white-space: nowrap;
+  font-size: 0.78rem !important;
+  padding: 0.36rem 0.72rem !important;
+  border-radius: 0.6rem !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.32rem !important;
+  white-space: nowrap !important;
+  line-height: 1.25 !important;
+  transition: all 0.16s ease !important;
 }
 
-/* Note Preview Box */
+.nc-appointment-action-bar .btn:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* 8. Clinical Note Box */
 .nc-clinical-note-box {
-  background: var(--nc-surface-subtle, rgba(248, 250, 252, 0.9));
-  border-left: 3px solid #0284c7;
-  border-radius: 0 0.5rem 0.5rem 0;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.8rem;
-  color: var(--nc-copy, #334155);
-  margin-top: 0.45rem;
+  background: var(--nc-surface-subtle, rgba(248, 250, 252, 0.9)) !important;
+  border-left: 4px solid #0284c7 !important;
+  border-radius: 0 0.6rem 0.6rem 0 !important;
+  padding: 0.55rem 0.85rem !important;
+  font-size: 0.82rem !important;
+  color: var(--nc-copy, #334155) !important;
+  margin-top: 0.45rem !important;
 }
 
 body.dark-theme .nc-clinical-note-box,
 [data-theme="dark"] .nc-clinical-note-box {
-  background: rgba(15, 23, 42, 0.55);
-  border-left-color: #38bdf8;
-  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.55) !important;
+  border-left-color: #38bdf8 !important;
+  color: #cbd5e1 !important;
 }
 
-/* Urgency Pulse Indicator */
+/* 9. Urgent Indicator Badge */
 .nc-urgent-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: rgba(239, 68, 68, 0.12);
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  padding: 0.22rem 0.6rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
 }
 
 body.dark-theme .nc-urgent-indicator,
 [data-theme="dark"] .nc-urgent-indicator {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
 }
+
+/* 10. Table Enhancements */
+.doctor-table th {
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #64748b !important;
+  padding: 0.95rem 1.1rem !important;
+  background-color: #f8fafc !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+body.dark-theme .doctor-table th,
+[data-theme="dark"] .doctor-table th {
+  background-color: #1e293b !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #334155 !important;
+}
+
+.doctor-table td {
+  padding: 1rem 1.1rem !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.75) !important;
+}
+
+body.dark-theme .doctor-table td,
+[data-theme="dark"] .doctor-table td {
+  border-bottom-color: rgba(51, 65, 85, 0.75) !important;
+}
+
+.doctor-table tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.55) !important;
+}
+
+body.dark-theme .doctor-table tbody tr:hover,
+[data-theme="dark"] .doctor-table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.45) !important;
+}
+
 

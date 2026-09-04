@@ -10,10 +10,10 @@ import { DEMO_DOCTOR_PATIENTS, getDemoDoctorAvailabilities } from "../services/d
 
 const statusCopy = {
   REQUESTED: "En attente",
-  CONFIRMED: "Confirme",
-  REFUSED: "Refuse",
-  CANCELLED: "Annule",
-  COMPLETED: "Termine"
+  CONFIRMED: "Confirmé",
+  REFUSED: "Refusé",
+  CANCELLED: "Annulé",
+  COMPLETED: "Terminé"
 };
 
 const weekdayOptions = [
@@ -824,21 +824,21 @@ const hasReachedWeeklyLimit = (dateValue) => {
   const canGoNextMonth = availableMonths.some((timestamp) => timestamp > monthStart.getTime());
 
   const renderDoctorAppointmentsView = () => (
-    <div className="mt-3">
-      {/* Search & Filters Bar */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 rounded-3 bg-white border shadow-sm">
-        {/* Status Filter Buttons */}
+    <div className="mt-2">
+      {/* Search & Filters Toolbar */}
+      <div className="nc-consultation-toolbar mb-3">
+        {/* Status Filter Pills */}
         <div className="nc-status-filter-bar">
           <button
             type="button"
-            className={`nc-status-filter-btn ${statusFilter === "ALL" ? "is-active" : ""}`}
+            className={`nc-status-filter-btn filter-all ${statusFilter === "ALL" ? "is-active active" : ""}`}
             onClick={() => setStatusFilter("ALL")}
           >
             Toutes <span className="badge bg-secondary-subtle text-secondary rounded-pill">{appointments.length}</span>
           </button>
           <button
             type="button"
-            className={`nc-status-filter-btn ${statusFilter === "REQUESTED" ? "is-active" : ""}`}
+            className={`nc-status-filter-btn filter-requested ${statusFilter === "REQUESTED" ? "is-active active" : ""}`}
             onClick={() => setStatusFilter("REQUESTED")}
           >
             <i className="bi bi-hourglass-split text-warning" />
@@ -846,7 +846,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
           </button>
           <button
             type="button"
-            className={`nc-status-filter-btn ${statusFilter === "CONFIRMED" ? "is-active" : ""}`}
+            className={`nc-status-filter-btn filter-confirmed ${statusFilter === "CONFIRMED" ? "is-active active" : ""}`}
             onClick={() => setStatusFilter("CONFIRMED")}
           >
             <i className="bi bi-check-circle-fill text-success" />
@@ -854,7 +854,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
           </button>
           <button
             type="button"
-            className={`nc-status-filter-btn ${statusFilter === "COMPLETED" ? "is-active" : ""}`}
+            className={`nc-status-filter-btn filter-completed ${statusFilter === "COMPLETED" ? "is-active active" : ""}`}
             onClick={() => setStatusFilter("COMPLETED")}
           >
             <i className="bi bi-check2-all text-info" />
@@ -862,7 +862,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
           </button>
           <button
             type="button"
-            className={`nc-status-filter-btn ${statusFilter === "ARCHIVED" ? "is-active" : ""}`}
+            className={`nc-status-filter-btn filter-archived ${statusFilter === "ARCHIVED" ? "is-active active" : ""}`}
             onClick={() => setStatusFilter("ARCHIVED")}
           >
             <i className="bi bi-archive-fill text-muted" />
@@ -870,11 +870,11 @@ const hasReachedWeeklyLimit = (dateValue) => {
           </button>
         </div>
 
-        {/* Search input & Urgent filter */}
+        {/* Search Input & Urgent Toggle */}
         <div className="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0" style={{ minWidth: "280px" }}>
           <div className="input-group input-group-sm">
-            <span className="input-group-text bg-light border-end-0">
-              <i className="bi bi-search text-muted" />
+            <span className="input-group-text bg-light border-end-0 text-muted">
+              <i className="bi bi-search" />
             </span>
             <input
               type="text"
@@ -884,41 +884,43 @@ const hasReachedWeeklyLimit = (dateValue) => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {searchTerm && (
-              <button className="btn btn-outline-secondary" type="button" onClick={() => setSearchTerm("")}>
-                <i className="bi bi-x" />
+              <button className="btn btn-outline-secondary border-start-0" type="button" onClick={() => setSearchTerm("")}>
+                <i className="bi bi-x-lg" />
               </button>
             )}
           </div>
           <button
             type="button"
-            className={`btn btn-sm ${onlyUrgentFilter ? "btn-danger" : "btn-outline-danger"}`}
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 ${
+              onlyUrgentFilter ? "btn-danger shadow-sm" : "btn-outline-danger"
+            }`}
             style={{ whiteSpace: "nowrap" }}
             onClick={() => setOnlyUrgentFilter((prev) => !prev)}
             title="Afficher uniquement les consultations déclenchées par une alerte IA"
           >
-            <i className="bi bi-lightning-charge-fill me-1" />
+            <i className="bi bi-lightning-charge-fill" />
             Urgences IA
           </button>
         </div>
       </div>
 
-      {/* Consultations Table */}
+      {/* Consultations Table / Empty State */}
       {filteredDoctorAppointments.length === 0 ? (
-        <div className="card form-card p-5 text-center">
-          <div className="mb-3">
-            <i className="bi bi-calendar-x text-muted" style={{ fontSize: "3rem" }} />
+        <div className="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-3">
+          <div className="d-inline-flex align-items-center justify-content-center mx-auto mb-3 bg-light rounded-circle" style={{ width: "72px", height: "72px" }}>
+            <i className="bi bi-calendar2-x text-muted" style={{ fontSize: "2rem" }} />
           </div>
-          <h5 className="fw-bold">Aucune consultation trouvée</h5>
-          <p className="text-muted mb-3">
+          <h5 className="fw-bold text-dark mb-1">Aucune consultation trouvée</h5>
+          <p className="text-muted mb-3 mx-auto" style={{ maxWidth: "480px", fontSize: "0.9rem" }}>
             {searchTerm || onlyUrgentFilter || statusFilter !== "ALL"
               ? "Aucune consultation ne correspond à vos critères de recherche ou filtres actifs."
-              : "Aucune consultation enregistrée dans cette catégorie."}
+              : "Aucune consultation enregistrée dans cette catégorie pour le moment."}
           </p>
           {(searchTerm || onlyUrgentFilter || statusFilter !== "ALL") && (
             <div>
               <button
                 type="button"
-                className="btn btn-outline-primary btn-sm"
+                className="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold"
                 onClick={() => {
                   setStatusFilter("ALL");
                   setSearchTerm("");
@@ -931,15 +933,15 @@ const hasReachedWeeklyLimit = (dateValue) => {
           )}
         </div>
       ) : (
-        <div className="doctor-table-shell shadow-sm border rounded-3 overflow-hidden bg-white">
+        <div className="doctor-table-shell shadow-sm border rounded-4 overflow-hidden bg-white mb-4">
           <table className="table table-hover align-middle doctor-table appointment-table mb-0">
-            <thead className="table-light">
+            <thead>
               <tr>
-                <th style={{ width: "240px" }}>Patient</th>
-                <th style={{ width: "200px" }}>Date & Horaire</th>
+                <th style={{ width: "230px" }}>Patient</th>
+                <th style={{ width: "175px" }}>Date & Horaire</th>
                 <th>Motif & Téléconsultation</th>
-                <th style={{ width: "130px" }}>État</th>
-                <th style={{ width: "240px" }} className="text-end">Actions</th>
+                <th style={{ width: "140px" }} className="text-center">État</th>
+                <th style={{ width: "260px" }} className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -952,26 +954,28 @@ const hasReachedWeeklyLimit = (dateValue) => {
                 const avatarBg = getAvatarGradient(appointment.patientName);
                 const relativeBadge = getRelativeTimeBadge(appointment.startsAt);
                 const isNoteExpanded = expandedNoteId === appointment.id;
+                const statusKey = String(appointment.status || "REQUESTED").toLowerCase();
 
                 return (
                   <tr key={appointment.id} className={appointment.triggeredByAiAlert ? "table-danger-subtle" : ""}>
-                    {/* Patient Column with Avatar */}
+                    {/* Patient Column */}
                     <td>
-                      <div className="d-flex align-items-center gap-2.5">
+                      <div className="d-flex align-items-center gap-3">
                         <div className="nc-patient-avatar" style={{ background: avatarBg }}>
                           {initials}
                         </div>
                         <div>
-                          <strong className="d-block text-dark" style={{ fontSize: "0.95rem" }}>
+                          <strong className="d-block text-dark fw-bold" style={{ fontSize: "0.93rem" }}>
                             {appointment.patientName}
                           </strong>
-                          <div className="d-flex align-items-center gap-1.5 mt-0.5">
-                            <span className="badge bg-light text-secondary border px-1.5 py-0.5" style={{ fontSize: "0.72rem" }}>
-                              <i className="bi bi-stopwatch me-1" />{appointment.durationMinutes || 20} min
+                          <div className="d-flex align-items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="badge bg-light text-secondary border px-2 py-0.5" style={{ fontSize: "0.72rem" }}>
+                              <i className="bi bi-stopwatch me-1 text-primary" />
+                              {appointment.durationMinutes || 20} min
                             </span>
                             {appointment.triggeredByAiAlert && (
-                              <span className="badge bg-danger text-white px-1.5 py-0.5" style={{ fontSize: "0.7rem" }}>
-                                SOS Envie
+                              <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5" style={{ fontSize: "0.7rem", fontWeight: 700 }}>
+                                <i className="bi bi-lightning-fill me-0.5" /> SOS IA
                               </span>
                             )}
                           </div>
@@ -979,13 +983,17 @@ const hasReachedWeeklyLimit = (dateValue) => {
                       </div>
                     </td>
 
-                    {/* Date & Horaire Column with Relative Time */}
+                    {/* Date & Horaire Column */}
                     <td>
-                      <div className="fw-semibold text-dark" style={{ fontSize: "0.88rem" }}>
-                        <i className="bi bi-calendar3 me-1.5 text-primary" />
-                        {formatDateTime(appointment.startsAt)}
+                      <div className="d-flex align-items-center gap-1.5 fw-semibold text-dark" style={{ fontSize: "0.88rem" }}>
+                        <i className="bi bi-calendar3 text-primary" style={{ fontSize: "0.92rem" }} />
+                        <span>{formatDate(appointment.startsAt)}</span>
                       </div>
-                      <div className="mt-1">
+                      <div className="d-flex align-items-center gap-2 mt-1">
+                        <span className="text-muted fw-bold" style={{ fontSize: "0.82rem" }}>
+                          <i className="bi bi-clock text-secondary me-1" />
+                          {formatTime(appointment.startsAt)}
+                        </span>
                         {relativeBadge}
                       </div>
                     </td>
@@ -993,18 +1001,18 @@ const hasReachedWeeklyLimit = (dateValue) => {
                     {/* Motif & Téléconsultation Visio Column */}
                     <td>
                       {appointment.triggeredByAiAlert && (
-                        <div className="nc-urgent-indicator mb-1.5">
+                        <div className="nc-urgent-indicator mb-2">
                           <i className="bi bi-exclamation-octagon-fill" />
-                          Consultation Urgente Déclenchée par l'IA 24/7
+                          Consultation Urgente · Alerte IA 24/7
                         </div>
                       )}
-                      <div className="appointment-cell-copy fw-medium" style={{ fontSize: "0.88rem" }}>
+                      <div className="appointment-cell-copy text-dark fw-normal" style={{ fontSize: "0.88rem", lineHeight: "1.45" }}>
                         {appointment.reason || "Consultation clinique de suivi du sevrage tabagique."}
                       </div>
 
-                      {/* Confirmed: Glowing Visio Launcher */}
+                      {/* Confirmed: Visio Launcher */}
                       {isConfirmed && (
-                        <div className="mt-2.5 d-flex flex-wrap align-items-center gap-2">
+                        <div className="mt-2.5 d-flex flex-wrap align-items-center gap-2.5">
                           <a
                             href={appointment.meetingJoinUrl || `https://meet.jit.si/NeuralConsult-Sevrage-${appointment.id}`}
                             target="_blank"
@@ -1014,26 +1022,27 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             <i className="bi bi-camera-video-fill" />
                             Lancer la Téléconsultation Visio (Jitsi)
                           </a>
-                          <span className="text-muted" style={{ fontSize: "0.75rem" }}>
-                            <i className="bi bi-shield-check text-success me-1" />
+                          <span className="text-muted small d-inline-flex align-items-center">
+                            <i className="bi bi-shield-check text-success me-1 fs-6" />
                             Salle médicale prête
                           </span>
                         </div>
                       )}
 
-                      {/* Completed / Archived: Saved Clinical Notes */}
+                      {/* Clinical Notes Box */}
                       {(isCompleted || appointment.doctorNote) && (
                         <div className="nc-clinical-note-box mt-2">
                           <div className="d-flex align-items-center justify-content-between">
-                            <span className="fw-semibold" style={{ fontSize: "0.78rem" }}>
-                              <i className="bi bi-journal-medical text-primary me-1" />
+                            <span className="fw-semibold text-primary" style={{ fontSize: "0.78rem" }}>
+                              <i className="bi bi-journal-medical me-1" />
                               Synthèse clinique du Dr. Tantani :
                             </span>
                             <button
                               type="button"
                               className="btn btn-link p-0 text-muted"
-                              style={{ fontSize: "0.75rem", textDecoration: "none" }}
+                              style={{ fontSize: "0.78rem", textDecoration: "none" }}
                               onClick={() => setExpandedNoteId(isNoteExpanded ? null : appointment.id)}
+                              title="Modifier la note clinique"
                             >
                               <i className={`bi bi-${isNoteExpanded ? "chevron-up" : "pencil-square"}`} />
                             </button>
@@ -1044,9 +1053,9 @@ const hasReachedWeeklyLimit = (dateValue) => {
                         </div>
                       )}
 
-                      {/* Inline Note Editor if opened */}
+                      {/* Inline Note Editor */}
                       {isNoteExpanded && (
-                        <div className="mt-2 p-2 rounded bg-light border">
+                        <div className="mt-2 p-2.5 rounded-3 bg-light border">
                           <textarea
                             className="form-control form-control-sm mb-2"
                             rows="2"
@@ -1054,10 +1063,10 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             defaultValue={appointment.doctorNote || ""}
                             id={`note-input-${appointment.id}`}
                           />
-                          <div className="d-flex justify-content-end gap-1">
+                          <div className="d-flex justify-content-end gap-1.5">
                             <button
                               type="button"
-                              className="btn btn-outline-secondary btn-sm py-0 px-2"
+                              className="btn btn-outline-secondary btn-sm py-0.5 px-2"
                               style={{ fontSize: "0.75rem" }}
                               onClick={() => setExpandedNoteId(null)}
                             >
@@ -1065,7 +1074,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-primary btn-sm py-0 px-2"
+                              className="btn btn-primary btn-sm py-0.5 px-2.5"
                               style={{ fontSize: "0.75rem" }}
                               onClick={() => {
                                 const val = document.getElementById(`note-input-${appointment.id}`)?.value;
@@ -1088,12 +1097,15 @@ const hasReachedWeeklyLimit = (dateValue) => {
                     </td>
 
                     {/* Status Column */}
-                    <td>
-                      <div className="appointment-status-stack appointment-status-stack-inline">
-                        <span className={`doctor-status-chip status-${String(appointment.status || "REQUESTED").toLowerCase()}`}>
-                          {statusCopy[appointment.status] || appointment.status}
-                        </span>
-                      </div>
+                    <td className="text-center">
+                      <span className={`nc-status-badge status-${statusKey}`}>
+                        {isRequested && <i className="bi bi-hourglass-split" />}
+                        {isConfirmed && <i className="bi bi-check-circle-fill" />}
+                        {isCompleted && <i className="bi bi-check2-all" />}
+                        {appointment.status === "CANCELLED" && <i className="bi bi-x-circle" />}
+                        {appointment.status === "REFUSED" && <i className="bi bi-slash-circle" />}
+                        {statusCopy[appointment.status] || appointment.status}
+                      </span>
                     </td>
 
                     {/* Actions Toolbar */}
@@ -1104,7 +1116,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                           <>
                             <button
                               type="button"
-                              className="btn btn-success"
+                              className="btn btn-success btn-sm"
                               onClick={() => doctorDecision(appointment.id, "confirm")}
                               title="Valider et confirmer la téléconsultation"
                             >
@@ -1112,7 +1124,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-outline-danger"
+                              className="btn btn-outline-danger btn-sm"
                               onClick={() => doctorDecision(appointment.id, "refuse")}
                               title="Refuser ce créneau"
                             >
@@ -1120,7 +1132,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-light border"
+                              className="btn btn-light border btn-sm"
                               onClick={() => beginAppointmentEdit(appointment)}
                               title="Modifier date ou motif"
                             >
@@ -1134,7 +1146,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                           <>
                             <button
                               type="button"
-                              className="btn btn-success"
+                              className="btn btn-success btn-sm"
                               onClick={() => openMeeting(appointment)}
                               title="Rejoindre la salle visio"
                             >
@@ -1142,7 +1154,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-warning text-dark fw-bold"
+                              className="btn btn-warning text-dark fw-bold btn-sm"
                               onClick={() => setReportingAppointmentId(appointment.id)}
                               title="Rédiger le bilan médical et l'ordonnance"
                             >
@@ -1150,7 +1162,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-primary"
+                              className="btn btn-primary btn-sm"
                               onClick={() => doctorDecision(appointment.id, "complete")}
                               title="Marquer la séance comme terminée"
                             >
@@ -1158,7 +1170,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-light border"
+                              className="btn btn-light border btn-sm"
                               onClick={() => beginAppointmentEdit(appointment)}
                               title="Modifier la consultation"
                             >
@@ -1166,7 +1178,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-outline-danger"
+                              className="btn btn-outline-danger btn-sm"
                               onClick={() => cancelAppointmentAsDoctor(appointment.id)}
                               title="Annuler le rendez-vous"
                             >
@@ -1180,7 +1192,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                           <>
                             <button
                               type="button"
-                              className="btn btn-outline-primary"
+                              className="btn btn-outline-primary btn-sm"
                               onClick={() => setReportingAppointmentId(appointment.id)}
                               title="Consulter ou modifier le compte-rendu médical"
                             >
@@ -1188,7 +1200,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-light border"
+                              className="btn btn-light border btn-sm"
                               onClick={() => beginAppointmentEdit(appointment)}
                               title="Modifier la note ou le motif"
                             >
@@ -1197,12 +1209,12 @@ const hasReachedWeeklyLimit = (dateValue) => {
                           </>
                         )}
 
-                        {/* ARCHIVED (Cancelled / Refused) Actions */}
+                        {/* ARCHIVED Actions */}
                         {isArchived && (
                           <>
                             <button
                               type="button"
-                              className="btn btn-light border text-muted"
+                              className="btn btn-outline-secondary btn-sm"
                               onClick={() => beginAppointmentEdit(appointment)}
                               title="Consulter les détails ou reprogrammer"
                             >
@@ -1327,17 +1339,52 @@ const hasReachedWeeklyLimit = (dateValue) => {
   return (
     <div className="container py-4 app-shell" data-guide-id="appointments-main">
       {(loading || savingAvailability || savingUrgent || savingAppointmentUpdate) && <LungLoader text="Mise à jour de votre agenda clinique..." />}
-      <div className="profile-page-header" data-guide-id="appointments-header">
-        <div>
-          <div className="hero-kicker">Rendez-vous clinique</div>
-          <h2 className="fw-bold mb-1">{doctorMode ? "Gestion des seances et disponibilites" : "Planifier un soutien psychique avec le medecin"}</h2>
-          <p className="muted-text mb-0">
-            {doctorMode
-              ? "Le medecin ouvre ses jours et ses horaires de teleconsultation, confirme les demandes et peut creer une consultation urgente si l'IA 24/7 remonte un risque."
-              : "Le patient choisit un jour depuis le calendrier, puis un creneau de 20 minutes ouvert par son medecin associe. Limite: 4 seances par mois et 1 par semaine."}
-          </p>
+      {doctorMode ? (
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 mt-1 pb-2 border-bottom">
+          <div>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill fw-bold" style={{ fontSize: "0.75rem", letterSpacing: "0.04em" }}>
+                <i className="bi bi-person-badge-fill me-1" /> ESPACE PRATICIEN MD
+              </span>
+              <span className="text-muted small">· Téléconsultations & Planning</span>
+            </div>
+            <h2 className="fw-bold text-dark mb-1" style={{ letterSpacing: "-0.02em" }}>
+              Agenda Médical & Téléconsultations
+            </h2>
+            <p className="text-muted mb-0 small" style={{ maxWidth: "680px" }}>
+              Validez les demandes de rendez-vous, lancez vos téléconsultations chiffrées (Jitsi) et configurez vos plages de disponibilité avec pause inter-séances.
+            </p>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm"
+              onClick={() => setActiveDoctorTab("availabilities")}
+            >
+              <i className="bi bi-clock-history" />
+              Ouvrir des créneaux
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm"
+              onClick={() => setActiveDoctorTab("urgent")}
+            >
+              <i className="bi bi-lightning-fill" />
+              Créer urgence
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="profile-page-header" data-guide-id="appointments-header">
+          <div>
+            <div className="hero-kicker">Rendez-vous clinique</div>
+            <h2 className="fw-bold mb-1">Planifier un soutien psychique avec le medecin</h2>
+            <p className="muted-text mb-0">
+              Le patient choisit un jour depuis le calendrier, puis un creneau de 20 minutes ouvert par son medecin associe. Limite: 4 seances par mois et 1 par semaine.
+            </p>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div className={`floating-feedback-toast ${message.type === "error" ? "is-error" : "is-success"}`}>
@@ -1355,7 +1402,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
           <div className="row g-3 mt-1 mb-4">
             <div className="col-6 col-md-3">
               <div
-                className={`nc-appointment-kpi-card ${statusFilter === "ALL" && activeDoctorTab === "consultations" ? "active" : ""}`}
+                className={`nc-appointment-kpi-card ${statusFilter === "ALL" && activeDoctorTab === "consultations" ? "active is-active" : ""}`}
                 onClick={() => {
                   setActiveDoctorTab("consultations");
                   setStatusFilter("ALL");
@@ -1374,7 +1421,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
             </div>
             <div className="col-6 col-md-3">
               <div
-                className={`nc-appointment-kpi-card ${statusFilter === "REQUESTED" && activeDoctorTab === "consultations" ? "active" : ""}`}
+                className={`nc-appointment-kpi-card ${statusFilter === "REQUESTED" && activeDoctorTab === "consultations" ? "active is-active" : ""}`}
                 onClick={() => {
                   setActiveDoctorTab("consultations");
                   setStatusFilter("REQUESTED");
@@ -1393,7 +1440,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
             </div>
             <div className="col-6 col-md-3">
               <div
-                className={`nc-appointment-kpi-card ${statusFilter === "CONFIRMED" && activeDoctorTab === "consultations" ? "active" : ""}`}
+                className={`nc-appointment-kpi-card ${statusFilter === "CONFIRMED" && activeDoctorTab === "consultations" ? "active is-active" : ""}`}
                 onClick={() => {
                   setActiveDoctorTab("consultations");
                   setStatusFilter("CONFIRMED");
@@ -1412,7 +1459,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
             </div>
             <div className="col-6 col-md-3">
               <div
-                className={`nc-appointment-kpi-card ${statusFilter === "COMPLETED" && activeDoctorTab === "consultations" ? "active" : ""}`}
+                className={`nc-appointment-kpi-card ${statusFilter === "COMPLETED" && activeDoctorTab === "consultations" ? "active is-active" : ""}`}
                 onClick={() => {
                   setActiveDoctorTab("consultations");
                   setStatusFilter("COMPLETED");
@@ -1435,7 +1482,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
           <div className="nc-doctor-nav-bar mb-4">
             <button
               type="button"
-              className={`nc-doctor-nav-btn ${activeDoctorTab === "consultations" ? "active" : ""}`}
+              className={`nc-doctor-nav-btn ${activeDoctorTab === "consultations" ? "active is-active" : ""}`}
               onClick={() => setActiveDoctorTab("consultations")}
             >
               <i className="bi bi-calendar2-check-fill" />
@@ -1446,7 +1493,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
             </button>
             <button
               type="button"
-              className={`nc-doctor-nav-btn ${activeDoctorTab === "availabilities" ? "active" : ""}`}
+              className={`nc-doctor-nav-btn ${activeDoctorTab === "availabilities" ? "active is-active" : ""}`}
               onClick={() => setActiveDoctorTab("availabilities")}
             >
               <i className="bi bi-clock-history" />
@@ -1457,7 +1504,7 @@ const hasReachedWeeklyLimit = (dateValue) => {
             </button>
             <button
               type="button"
-              className={`nc-doctor-nav-btn ${activeDoctorTab === "urgent" ? "active" : ""}`}
+              className={`nc-doctor-nav-btn ${activeDoctorTab === "urgent" ? "active is-active" : ""}`}
               onClick={() => setActiveDoctorTab("urgent")}
             >
               <i className="bi bi-lightning-charge-fill text-danger" />
