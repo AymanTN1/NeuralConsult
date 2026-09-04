@@ -9,12 +9,66 @@ import { isDoctor } from "../utils/roles";
 
 // Fallback initial subreddits
 const DEFAULT_SUBREDDITS = [
-  { id: "all", name: "r/tous", label: "Accueil Global", icon: "bi-globe2", color: "#3b82f6" },
-  { id: "victoires", name: "r/victoires_sevrage", label: "Victoires & Étapes", icon: "bi-trophy-fill", color: "#10b981" },
-  { id: "entraide", name: "r/entraide_urgences", label: "SOS & Urgences Craving", icon: "bi-shield-fill-exclamation", color: "#ef4444" },
-  { id: "conseils", name: "r/conseils_tabacologues", label: "Conseils Médicaux", icon: "bi-heart-pulse-fill", color: "#8b5cf6" },
-  { id: "tns", name: "r/substituts_tns", label: "Substituts & Traitements", icon: "bi-capsule", color: "#f59e0b" },
-  { id: "sport", name: "r/sport_et_bienetre", label: "Sport & Respiration", icon: "bi-lungs-fill", color: "#06b6d4" }
+  {
+    id: "all",
+    name: "r/tous",
+    label: "Accueil Global",
+    icon: "bi-globe2",
+    color: "#3b82f6",
+    desc: "Le fil unifié de tous les témoignages, conseils médicaux et victoires de sevrage.",
+    members: "1 420 membres",
+    online: "54 en ligne"
+  },
+  {
+    id: "victoires",
+    name: "r/victoires_sevrage",
+    label: "Victoires & Étapes",
+    icon: "bi-trophy-fill",
+    color: "#10b981",
+    desc: "Célébrez chaque jour gagné sans tabac : J+1, J+7, J+30, 1 an... Chaque victoire renforce le collectif !",
+    members: "920 membres",
+    online: "28 en ligne"
+  },
+  {
+    id: "entraide",
+    name: "r/entraide_urgences",
+    label: "SOS & Urgences Craving",
+    icon: "bi-shield-fill-exclamation",
+    color: "#ef4444",
+    desc: "Envie aiguë ou pic d'anxiété ? Entraide immédiate 24/7 et techniques d'urgence validées par les tabacologues.",
+    members: "680 membres",
+    online: "22 en ligne"
+  },
+  {
+    id: "conseils",
+    name: "r/conseils_tabacologues",
+    label: "Conseils Médicaux",
+    icon: "bi-heart-pulse-fill",
+    color: "#8b5cf6",
+    desc: "Recommandations cliniques, réponses scientifiques aux questions fréquentes et accompagnement médicalisé.",
+    members: "1 210 membres",
+    online: "39 en ligne"
+  },
+  {
+    id: "tns",
+    name: "r/substituts_tns",
+    label: "Substituts & Traitements",
+    icon: "bi-capsule",
+    color: "#f59e0b",
+    desc: "Échanges autour des patchs, gommes, inhaleurs, varénicline et ajustements des dosages nicotiniques.",
+    members: "510 membres",
+    online: "15 en ligne"
+  },
+  {
+    id: "sport",
+    name: "r/sport_et_bienetre",
+    label: "Sport & Respiration",
+    icon: "bi-lungs-fill",
+    color: "#06b6d4",
+    desc: "Reprise d'activité physique, cohérence cardiaque, gestion du stress et récupération de la capacité respiratoire.",
+    members: "560 membres",
+    online: "18 en ligne"
+  }
 ];
 
 const FLAIRS = [
@@ -519,6 +573,22 @@ export default function Communities() {
     return result;
   }, [posts, activeSubreddit, activeFlair, searchQuery, activeFilter]);
 
+  const selectedSubreddit = useMemo(() => {
+    return DEFAULT_SUBREDDITS.find((s) => s.id === activeSubreddit) || DEFAULT_SUBREDDITS[0];
+  }, [activeSubreddit]);
+
+  const handleSubredditClick = (serverName) => {
+    if (!serverName) return;
+    const s = (serverName || "").toLowerCase();
+    if (s.includes("victoire")) setActiveSubreddit("victoires");
+    else if (s.includes("entraide") || s.includes("urgence")) setActiveSubreddit("entraide");
+    else if (s.includes("conseil")) setActiveSubreddit("conseils");
+    else if (s.includes("substitut") || s.includes("tns")) setActiveSubreddit("tns");
+    else if (s.includes("sport") || s.includes("bienetre")) setActiveSubreddit("sport");
+    else setActiveSubreddit("all");
+    setActiveFlair(null);
+  };
+
   return (
     <div className="reddit-root">
       {/* Toast Feedback */}
@@ -536,16 +606,20 @@ export default function Communities() {
             <span className="reddit-logo-icon">🧠</span>
             <div className="reddit-brand-text">
               <span className="brand-title">NeuralCommunity</span>
-              <span className="brand-badge">Sevrage & Entraide</span>
+              <span className="brand-badge">Entraide & Sevrage · Modéré par Médecins</span>
             </div>
           </div>
 
           {/* Subreddit Quick Switcher */}
           <div className="reddit-subreddit-select-wrap">
+            <i className={`bi ${selectedSubreddit.icon} select-sub-icon`} style={{ color: selectedSubreddit.color }}></i>
             <select
               className="reddit-subreddit-select"
               value={activeSubreddit}
-              onChange={(e) => setActiveSubreddit(e.target.value)}
+              onChange={(e) => {
+                setActiveSubreddit(e.target.value);
+                setActiveFlair(null);
+              }}
             >
               {DEFAULT_SUBREDDITS.map((sub) => (
                 <option key={sub.id} value={sub.id}>
@@ -561,87 +635,35 @@ export default function Communities() {
           <i className="bi bi-search search-icon"></i>
           <input
             type="text"
-            placeholder="Rechercher sur NeuralCommunity (titres, astuces, @pseudos, flairs)..."
+            placeholder="Rechercher sur NeuralCommunity (titres, conseils, @pseudos, flairs)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {searchQuery && (
-            <button className="clear-search-btn" onClick={() => setSearchQuery("")}>
+          {searchQuery ? (
+            <button className="clear-search-btn" onClick={() => setSearchQuery("")} title="Effacer la recherche">
               <i className="bi bi-x-circle-fill"></i>
             </button>
+          ) : (
+            <span className="search-kbd-hint">⌘K</span>
           )}
         </div>
 
         {/* Topbar Actions */}
         <div className="reddit-topbar-right">
-          {/* Theme Toggle Button */}
-          <button
-            className="reddit-icon-btn"
-            title={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
-            onClick={toggleTheme}
-          >
-            {isDark ? <i className="bi bi-sun-fill text-warning"></i> : <i className="bi bi-moon-stars-fill text-primary"></i>}
-          </button>
-
           {/* Create Post Action */}
           <button className="reddit-create-btn" onClick={() => setShowCreateModal(true)}>
             <i className="bi bi-plus-lg"></i>
-            <span>Créer</span>
+            <span>Créer une publication</span>
           </button>
 
           {/* Chat Dock Trigger */}
           <button
             className={`reddit-icon-btn ${chatDockOpen ? "active" : ""}`}
-            title="Discussions privées"
+            title="Messages privés"
             onClick={() => setChatDockOpen(!chatDockOpen)}
           >
             <i className="bi bi-chat-dots-fill"></i>
           </button>
-
-          {/* Notification Bell with Menu */}
-          <div className="reddit-notif-wrap">
-            <button
-              className="reddit-icon-btn position-relative"
-              onClick={() => setShowNotifsMenu(!showNotifsMenu)}
-              title="Notifications"
-            >
-              <i className="bi bi-bell-fill"></i>
-              {unreadNotifsCount > 0 && (
-                <span className="reddit-notif-badge">{unreadNotifsCount}</span>
-              )}
-            </button>
-
-            {showNotifsMenu && (
-              <div className="reddit-notif-dropdown">
-                <div className="notif-header">
-                  <h6>Notifications</h6>
-                  <span className="notif-sub">{notifications.length} récentes</span>
-                </div>
-                <div className="notif-list">
-                  {notifications.length === 0 ? (
-                    <div className="notif-empty">Aucune notification pour le moment.</div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className={`notif-item ${n.status === "UNREAD" ? "unread" : ""}`}
-                        onClick={() => handleMarkNotifRead(n.id)}
-                      >
-                        <div className="notif-icon">
-                          <i className="bi bi-heart-pulse-fill text-danger"></i>
-                        </div>
-                        <div className="notif-content">
-                          <div className="notif-title">{n.title}</div>
-                          <div className="notif-text">{n.content}</div>
-                          <div className="notif-time">{formatDateAgo(n.createdAt)}</div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Current User Pill (Click to view own profile) */}
           {resolvedProfile && (
@@ -676,8 +698,8 @@ export default function Communities() {
               className={`sidebar-nav-item ${activeSubreddit === "all" && activeFilter === "new" ? "active" : ""}`}
               onClick={() => { setActiveSubreddit("all"); setActiveFilter("new"); setActiveFlair(null); }}
             >
-              <i className="bi bi-house-door-fill text-primary"></i>
-              <span>Accueil Global</span>
+              <i className="bi bi-stars text-primary"></i>
+              <span>Nouveautés Récentes</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeFilter === "hot" && activeSubreddit === "all" ? "active" : ""}`}
@@ -690,8 +712,15 @@ export default function Communities() {
               className={`sidebar-nav-item ${activeFilter === "top" ? "active" : ""}`}
               onClick={() => setActiveFilter("top")}
             >
-              <i className="bi bi-graph-up-arrow text-success"></i>
+              <i className="bi bi-trophy-fill text-success"></i>
               <span>Meilleurs (Top)</span>
+            </button>
+            <button
+              className={`sidebar-nav-item ${activeFilter === "discussed" ? "active" : ""}`}
+              onClick={() => setActiveFilter("discussed")}
+            >
+              <i className="bi bi-chat-quote-fill text-info"></i>
+              <span>Discussions Actives</span>
             </button>
           </div>
 
@@ -703,7 +732,9 @@ export default function Communities() {
                 className={`sidebar-nav-item ${activeSubreddit === sub.id ? "active" : ""}`}
                 onClick={() => { setActiveSubreddit(sub.id); setActiveFlair(null); }}
               >
-                <i className={`bi ${sub.icon}`} style={{ color: sub.color }}></i>
+                <div className="sub-icon-badge" style={{ backgroundColor: `${sub.color}20`, color: sub.color }}>
+                  <i className={`bi ${sub.icon}`}></i>
+                </div>
                 <div className="sub-meta">
                   <span className="sub-name">{sub.name}</span>
                   <span className="sub-label">{sub.label}</span>
@@ -713,7 +744,7 @@ export default function Communities() {
           </div>
 
           <div className="sidebar-section">
-            <div className="sidebar-title">THEMES / FLAIRS</div>
+            <div className="sidebar-title">THÈMES & ÉTIQUETTES</div>
             <div className="flair-chips-wrap">
               {FLAIRS.map((f) => (
                 <button
@@ -731,33 +762,118 @@ export default function Communities() {
           <div className="sidebar-card rules-card">
             <div className="rules-header">
               <i className="bi bi-shield-check text-primary"></i>
-              <span>Charte Bienveillante</span>
+              <span>Charte Thérapeutique</span>
             </div>
             <p className="rules-text">
-              Respect mutuel, secret médical, encouragements sans jugement et modération assurée par des tabacologues certifiés.
+              Échanges bienveillants et sans jugement. Respect du secret médical et accompagnement validé par des médecins tabacologues certifiés.
             </p>
           </div>
         </aside>
 
         {/* CENTRAL FEED: Quick Post Bar, Sort Tabs, Post Cards */}
         <main className="reddit-main-feed">
-          {/* Quick Post Box */}
-          <div className="reddit-quick-post" onClick={() => setShowCreateModal(true)}>
-            <div className="reddit-avatar-sm">
-              {resolvedProfile?.profilePhotoUrl ? (
-                <img src={resolvedProfile.profilePhotoUrl} alt="Avatar" />
-              ) : (
-                <span>{getAvatarLetter(resolvedProfile?.name, resolvedProfile?.username)}</span>
-              )}
+          {/* Subreddit Contextual Hero Banner (shown when filtered) */}
+          {activeSubreddit !== "all" && (
+            <div className="subreddit-hero-banner" style={{ '--sub-accent': selectedSubreddit.color || '#3b82f6' }}>
+              <div className="hero-banner-inner">
+                <div className="hero-icon-pill" style={{ backgroundColor: `${selectedSubreddit.color}1f`, color: selectedSubreddit.color }}>
+                  <i className={`bi ${selectedSubreddit.icon}`}></i>
+                </div>
+                <div className="hero-info-body">
+                  <div className="hero-header-row">
+                    <h2 className="hero-title">{selectedSubreddit.name}</h2>
+                    <span className="hero-category-label">{selectedSubreddit.label}</span>
+                    <span className="hero-badge-mod"><i className="bi bi-patch-check-fill me-1"></i>Modéré par les tabacologues</span>
+                  </div>
+                  <p className="hero-description">{selectedSubreddit.desc}</p>
+                  <div className="hero-meta-strip">
+                    <span className="hero-stat"><i className="bi bi-people-fill me-1"></i>{selectedSubreddit.members}</span>
+                    <span className="hero-dot">·</span>
+                    <span className="hero-stat online"><i className="bi bi-circle-fill me-1"></i>{selectedSubreddit.online}</span>
+                    <button
+                      className="hero-publish-btn"
+                      onClick={() => {
+                        const matchedServer = servers.find((s) => s.name === selectedSubreddit.name || s.id === selectedSubreddit.id);
+                        setPostDraft((prev) => ({
+                          ...prev,
+                          serverId: matchedServer?.id || ""
+                        }));
+                        setShowCreateModal(true);
+                      }}
+                    >
+                      <i className="bi bi-plus-circle-fill me-1"></i> Publier dans ce fil
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <input
-              type="text"
-              readOnly
-              placeholder="Une victoire, un conseil, un craving ou une photo à partager ?"
-            />
-            <div className="quick-post-actions">
-              <button className="quick-action-btn" title="Photo"><i className="bi bi-image"></i></button>
-              <button className="quick-action-btn" title="Lien"><i className="bi bi-link-45deg"></i></button>
+          )}
+
+          {/* Quick Post Box */}
+          <div className="reddit-quick-post">
+            <div className="quick-post-prompt" onClick={() => setShowCreateModal(true)}>
+              <div className="reddit-avatar-sm">
+                {resolvedProfile?.profilePhotoUrl ? (
+                  <img src={resolvedProfile.profilePhotoUrl} alt="Avatar" />
+                ) : (
+                  <span>{getAvatarLetter(resolvedProfile?.name, resolvedProfile?.username)}</span>
+                )}
+              </div>
+              <div className="quick-fake-input">
+                <i className="bi bi-pencil-square me-2 text-primary"></i>
+                <span>Une victoire, un conseil, un craving ou une question à partager ?</span>
+              </div>
+            </div>
+            <div className="quick-post-chips">
+              <button
+                type="button"
+                className="quick-chip-btn victory"
+                onClick={() => {
+                  setPostDraft((prev) => ({ ...prev, flair: "🏆 Victoire J+30" }));
+                  setShowCreateModal(true);
+                }}
+              >
+                <i className="bi bi-trophy-fill text-success"></i>
+                <span>Victoire</span>
+              </button>
+              <button
+                type="button"
+                className="quick-chip-btn medical"
+                onClick={() => {
+                  setPostDraft((prev) => ({ ...prev, flair: isDoc ? "🩺 Conseil Médecin" : "💡 Astuce du Jour" }));
+                  setShowCreateModal(true);
+                }}
+              >
+                <i className="bi bi-heart-pulse-fill text-primary"></i>
+                <span>{isDoc ? "Conseil Médecin" : "Astuce / Question"}</span>
+              </button>
+              <button
+                type="button"
+                className="quick-chip-btn craving"
+                onClick={() => {
+                  setActiveSubreddit("entraide");
+                  setPostDraft((prev) => ({
+                    ...prev,
+                    flair: "🆘 Urgence Craving",
+                    serverId: servers.find((s) => s.name?.includes("urgence") || s.id === "entraide")?.id || ""
+                  }));
+                  setShowCreateModal(true);
+                }}
+              >
+                <i className="bi bi-shield-fill-exclamation text-danger"></i>
+                <span>SOS Craving</span>
+              </button>
+              <button
+                type="button"
+                className="quick-chip-btn media"
+                onClick={() => {
+                  setPostTab("media");
+                  setShowCreateModal(true);
+                }}
+              >
+                <i className="bi bi-image-fill text-info"></i>
+                <span>Photo</span>
+              </button>
             </div>
           </div>
 
@@ -797,7 +913,7 @@ export default function Communities() {
             {activeFlair && (
               <div className="active-flair-indicator">
                 <span>Filtré par : <strong>{activeFlair}</strong></span>
-                <button onClick={() => setActiveFlair(null)}><i className="bi bi-x"></i></button>
+                <button onClick={() => setActiveFlair(null)} title="Effacer le filtre"><i className="bi bi-x"></i></button>
               </div>
             )}
           </div>
@@ -844,7 +960,7 @@ export default function Communities() {
                     <div className="reddit-vote-column">
                       <button
                         className={`vote-btn upvote ${post.myReaction === "UPVOTE" ? "voted" : ""}`}
-                        title="Upvote"
+                        title="Voter pour (Upvote)"
                         onClick={() => handleVote(post.id, "UPVOTE")}
                       >
                         <i className="bi bi-arrow-up-circle-fill"></i>
@@ -854,7 +970,7 @@ export default function Communities() {
                       </span>
                       <button
                         className={`vote-btn downvote ${post.myReaction === "DOWNVOTE" ? "voted" : ""}`}
-                        title="Downvote"
+                        title="Voter contre (Downvote)"
                         onClick={() => handleVote(post.id, "DOWNVOTE")}
                       >
                         <i className="bi bi-arrow-down-circle-fill"></i>
@@ -863,15 +979,23 @@ export default function Communities() {
 
                     {/* MAIN POST BODY */}
                     <div className="reddit-post-main">
-                      {/* Post Header: Subreddit, Author (clickable to profile), Role, Time, Flair */}
+                      {/* Post Header: Subreddit, Author, Role, Time, Flair */}
                       <div className="reddit-post-header">
-                        <span className="post-subreddit">{post.serverName || "r/victoires_sevrage"}</span>
+                        <button
+                          className="post-subreddit-badge"
+                          onClick={() => handleSubredditClick(post.serverName)}
+                          title="Filtrer sur ce fil"
+                        >
+                          <i className="bi bi-hash"></i>
+                          {post.serverName || "r/victoires_sevrage"}
+                        </button>
                         <span className="meta-dot">·</span>
 
                         {/* Author Clickable to Profile */}
                         <div
                           className="post-author-wrap"
                           onClick={() => post.author?.id && handleOpenUserProfile(post.author.id)}
+                          title="Voir le profil de l'auteur"
                         >
                           <div className="author-avatar-xs">
                             {post.author?.profilePhotoUrl ? (
@@ -888,15 +1012,20 @@ export default function Communities() {
                           <span className="badge-doctor" title="Médecin Tabacologue Certifié">
                             <i className="bi bi-patch-check-fill me-1"></i>
                             {post.author?.name || "Dr. Ayman Tantani"}
+                            <small className="doc-sublabel ms-1">Tabacologue</small>
                           </span>
                         ) : (
                           <span className="badge-patient">
+                            <i className="bi bi-award-fill me-1 text-warning"></i>
                             {post.author?.smokeFreeStatus || "Patient"}
                           </span>
                         )}
 
                         <span className="meta-dot">·</span>
-                        <span className="post-time">{formatDateAgo(post.createdAt)}</span>
+                        <span className="post-time">
+                          <i className="bi bi-clock me-1"></i>
+                          {formatDateAgo(post.createdAt)}
+                        </span>
 
                         {/* Flair Pill */}
                         {post.flair && (
@@ -957,7 +1086,7 @@ export default function Communities() {
                       <div className="reddit-post-footer">
                         {/* Comments Toggle */}
                         <button
-                          className={`footer-action-btn ${commentsOpen ? "active" : ""}`}
+                          className={`footer-action-btn comments-btn ${commentsOpen ? "active" : ""}`}
                           onClick={() => setExpandedComments((prev) => ({ ...prev, [post.id]: !prev[post.id] }))}
                         >
                           <i className="bi bi-chat-square-text-fill"></i>
@@ -966,7 +1095,7 @@ export default function Communities() {
 
                         {/* Repost Button */}
                         <button
-                          className="footer-action-btn"
+                          className="footer-action-btn repost-btn"
                           title="Republier ce témoignage"
                           onClick={() => {
                             setTargetRepostPost(post);
@@ -979,17 +1108,17 @@ export default function Communities() {
 
                         {/* Emoji Quick Reactions */}
                         <div className="reaction-chips-wrap">
-                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "LOVE")} title="Soutien 💖">
-                            💖 {post.reactions?.LOVE || 0}
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "LOVE")} title="Soutien bienveillant">
+                            <span className="rx-emoji">💖</span> <span className="rx-label">Soutien</span> <span className="rx-count">{post.reactions?.LOVE || 0}</span>
                           </button>
-                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "FIRE")} title="Force 🔥">
-                            🔥 {post.reactions?.FIRE || 0}
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "FIRE")} title="Force & motivation">
+                            <span className="rx-emoji">🔥</span> <span className="rx-label">Force</span> <span className="rx-count">{post.reactions?.FIRE || 0}</span>
                           </button>
-                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "CLAP")} title="Bravo 👏">
-                            👏 {post.reactions?.CLAP || 0}
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "CLAP")} title="Félicitations">
+                            <span className="rx-emoji">👏</span> <span className="rx-label">Bravo</span> <span className="rx-count">{post.reactions?.CLAP || 0}</span>
                           </button>
-                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "INSIGHT")} title="Utile 💡">
-                            💡 {post.reactions?.INSIGHT || 0}
+                          <button className="reaction-chip" onClick={() => handleReaction(post.id, "INSIGHT")} title="Conseil utile">
+                            <span className="rx-emoji">💡</span> <span className="rx-label">Utile</span> <span className="rx-count">{post.reactions?.INSIGHT || 0}</span>
                           </button>
                         </div>
 
@@ -1132,13 +1261,48 @@ export default function Communities() {
 
         {/* RIGHT SIDEBAR: Widgets & Verified Tabacologues */}
         <aside className="reddit-sidebar-right">
+          {/* SOS Craving Urgency Box */}
+          <div className="sidebar-card sos-craving-card">
+            <div className="sos-header">
+              <div className="sos-pulse-icon">
+                <i className="bi bi-shield-fill-exclamation"></i>
+              </div>
+              <div className="sos-header-text">
+                <h6 className="sos-title">Urgence Craving ?</h6>
+                <span className="sos-sub">Technique Respiratoire 3-6-5</span>
+              </div>
+            </div>
+            <p className="sos-desc">
+              Le pic d'envie dure en moyenne <strong>3 à 5 minutes</strong>. Inspirez pendant 5s, retenez 2s, puis soufflez lentement pendant 5s.
+            </p>
+            <div className="sos-action-strip">
+              <button
+                className="btn-sos-trigger"
+                onClick={() => {
+                  setActiveSubreddit("entraide");
+                  setPostDraft((prev) => ({
+                    ...prev,
+                    flair: "🆘 Urgence Craving",
+                    serverId: servers.find((s) => s.name?.includes("urgence") || s.id === "entraide")?.id || ""
+                  }));
+                  setShowCreateModal(true);
+                }}
+              >
+                <i className="bi bi-broadcast me-1"></i> Alerte Entraide
+              </button>
+              <a href="tel:3989" className="sos-phone-pill" title="Tabac Info Service (Appel non surtaxé)">
+                <i className="bi bi-telephone-fill me-1"></i> 39 89
+              </a>
+            </div>
+          </div>
+
           {/* Community Info Widget */}
           <div className="sidebar-card community-about-card">
             <div className="about-header">
-              <h6>À propos de NeuralConsult</h6>
+              <h6>À propos de NeuralCommunity</h6>
             </div>
             <p className="about-desc">
-              Réseau clinique et d'entraide dédié à l'arrêt du tabac, supervisé par des médecins tabacologues et enrichi par la force du collectif.
+              Espace clinique et d'entraide dédié à l'arrêt durable du tabac. Supervisé scientifiquement par l'équipe de tabacologie du CHU et fondé sur le soutien entre pairs.
             </p>
             <div className="about-stats-grid">
               <div className="stat-box">
@@ -1151,7 +1315,7 @@ export default function Communities() {
               </div>
               <div className="stat-box">
                 <span className="stat-val">24/7</span>
-                <span className="stat-lbl">Soutien</span>
+                <span className="stat-lbl">Soutien Actif</span>
               </div>
             </div>
           </div>
@@ -1163,27 +1327,38 @@ export default function Communities() {
               <h6>Tabacologues & Médecins</h6>
             </div>
             <div className="doctors-list">
-              {people.filter((p) => p.isDoctor || p.role?.includes("Medecin")).slice(0, 4).map((doc) => (
-                <div key={doc.id} className="doc-item">
-                  <div className="doc-avatar" onClick={() => handleOpenUserProfile(doc.id)}>
-                    {doc.profilePhotoUrl ? (
-                      <img src={doc.profilePhotoUrl} alt="Dr" />
+              {people.filter((p) => p.isDoctor || p.role?.includes("Medecin")).slice(0, 4).map((doc) => {
+                const isMe = Boolean(
+                  (authUser && doc.id === authUser.id) ||
+                  (isDoc && (doc.id === "user-tantani" || doc.username === "dr_tantani")) ||
+                  (resolvedProfile && doc.username === resolvedProfile.username)
+                );
+                return (
+                  <div key={doc.id} className="doc-item">
+                    <div className="doc-avatar" onClick={() => handleOpenUserProfile(doc.id)}>
+                      {doc.profilePhotoUrl ? (
+                        <img src={doc.profilePhotoUrl} alt="Dr" />
+                      ) : (
+                        <span>{getAvatarLetter(doc.name, doc.username)}</span>
+                      )}
+                    </div>
+                    <div className="doc-info" onClick={() => handleOpenUserProfile(doc.id)}>
+                      <div className="doc-name">{doc.name || `@${doc.username}`}</div>
+                      <div className="doc-spec">{doc.bio || "Médecin Tabacologue Référent"}</div>
+                    </div>
+                    {isMe ? (
+                      <span className="badge-doc-self">Vous</span>
                     ) : (
-                      <span>{getAvatarLetter(doc.name, doc.username)}</span>
+                      <button
+                        className={`doc-follow-btn ${doc.following ? "following" : ""}`}
+                        onClick={() => handleToggleFollow(doc.id)}
+                      >
+                        {doc.following ? "Abonné" : "+ Suivre"}
+                      </button>
                     )}
                   </div>
-                  <div className="doc-info" onClick={() => handleOpenUserProfile(doc.id)}>
-                    <div className="doc-name">{doc.name || `@${doc.username}`}</div>
-                    <div className="doc-spec">{doc.bio || "Médecin Tabacologue"}</div>
-                  </div>
-                  <button
-                    className={`doc-follow-btn ${doc.following ? "following" : ""}`}
-                    onClick={() => handleToggleFollow(doc.id)}
-                  >
-                    {doc.following ? "Suivi" : "+ Suivre"}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -1191,7 +1366,7 @@ export default function Communities() {
           <div className="sidebar-card leaderboard-card">
             <div className="widget-header">
               <i className="bi bi-award-fill text-warning"></i>
-              <h6>Tableau d'Honneur</h6>
+              <h6>Tableau d'Honneur du Mois</h6>
             </div>
             <div className="leader-item">
               <span className="badge-rank gold">1</span>
