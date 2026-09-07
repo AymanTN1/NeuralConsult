@@ -315,191 +315,260 @@ const Tests = () => {
           </h5>
           {editingFagerId && <span className="badge bg-warning text-dark">Mode Édition</span>}
         </div>
-        <form onSubmit={submitFagerstrom} className="row g-3">
-          <div className="col-12">
-            <label className="form-label fw-semibold">Délai avant la 1ère cigarette après le réveil</label>
-            <select className="form-select rounded-3" name="timeToFirstCigarette" value={fagerstromForm.timeToFirstCigarette} onChange={handleFagerstromChange}>
-              <option value="WITHIN_5_MIN">Moins de 5 minutes (Forte dépendance)</option>
-              <option value="MIN_6_TO_30">6 à 30 minutes</option>
-              <option value="MIN_31_TO_60">31 à 60 minutes</option>
-              <option value="AFTER_60">Plus de 60 minutes (Dépendance modérée)</option>
-            </select>
-          </div>
-            <div className="col-12">
-              <label className="form-label">Cigarette la plus difficile a abandonner</label>
-              <select className="form-select" name="mostDifficultCigarette" value={fagerstromForm.mostDifficultCigarette} onChange={handleFagerstromChange}>
-                <option value="FIRST_IN_MORNING">La premiere de la journee</option>
-                <option value="ANY_OTHER">Une autre</option>
-              </select>
-            </div>
-            <div className="col-12">
-              <label className="form-label">Nombre de cigarettes par jour</label>
-              <select className="form-select" name="cigarettesPerDay" value={fagerstromForm.cigarettesPerDay} onChange={handleFagerstromChange}>
-                <option value="TEN_OR_LESS">10 ou moins</option>
-                <option value="ELEVEN_TO_TWENTY">11 a 20</option>
-                <option value="TWENTY_ONE_TO_THIRTY">21 a 30</option>
-                <option value="THIRTY_ONE_OR_MORE">31 ou plus</option>
-              </select>
-            </div>
-            <div className="col-12 form-check">
-              <input className="form-check-input" type="checkbox" name="difficultToRefrain" checked={fagerstromForm.difficultToRefrain} onChange={handleFagerstromChange} />
-              <label className="form-check-label">Difficile de ne pas fumer dans les lieux interdits</label>
-            </div>
-            <div className="col-12 form-check">
-              <input className="form-check-input" type="checkbox" name="smokeMoreInMorning" checked={fagerstromForm.smokeMoreInMorning} onChange={handleFagerstromChange} />
-              <label className="form-check-label">Fumez plus durant les premieres heures</label>
-            </div>
-            <div className="col-12 form-check">
-              <input className="form-check-input" type="checkbox" name="smokeWhenIll" checked={fagerstromForm.smokeWhenIll} onChange={handleFagerstromChange} />
-              <label className="form-check-label">Fumez meme malade</label>
-            </div>
-            <div className="col-12 d-flex gap-2">
-              <button className="btn btn-dark" disabled={loading}>
-                {editingFagerId ? "Mettre a jour" : "Calculer"}
-              </button>
-              {editingFagerId && (
-                <button
-                  type="button"
-                  className="btn btn-outline-dark"
-                  onClick={() => {
-                    setEditingFagerId(null);
-                    setFagerstromForm({
-                      timeToFirstCigarette: "WITHIN_5_MIN",
-                      difficultToRefrain: false,
-                      mostDifficultCigarette: "FIRST_IN_MORNING",
-                      cigarettesPerDay: "TEN_OR_LESS",
-                      smokeMoreInMorning: false,
-                      smokeWhenIll: false
-                    });
-                  }}
+        <form onSubmit={submitFagerstrom}>
+          <div className="nc-test-question">
+            <span className="nc-test-q-label">1. Délai avant la 1ère cigarette après le réveil</span>
+            <div className="nc-choice-grid">
+              {[
+                { value: "WITHIN_5_MIN", label: "Moins de 5 minutes" },
+                { value: "MIN_6_TO_30", label: "6 à 30 minutes" },
+                { value: "MIN_31_TO_60", label: "31 à 60 minutes" },
+                { value: "AFTER_60", label: "Plus de 60 minutes" }
+              ].map(opt => (
+                <div 
+                  key={opt.value} 
+                  className={`nc-choice-card ${fagerstromForm.timeToFirstCigarette === opt.value ? 'is-selected' : ''}`}
+                  onClick={() => setFagerstromForm(p => ({ ...p, timeToFirstCigarette: opt.value }))}
                 >
-                  Annuler
-                </button>
-              )}
+                  {opt.label}
+                </div>
+              ))}
             </div>
-          </form>
-          {fagerstromResult && (
-            <div className="alert alert-info mt-3">
-              Score: {fagerstromResult.totalScore} | Niveau: {fagerstromResult.dependenceLevel}
+          </div>
+
+          <div className="nc-test-question">
+            <span className="nc-test-q-label">2. Cigarette la plus difficile à abandonner</span>
+            <div className="nc-choice-grid">
+              {[
+                { value: "FIRST_IN_MORNING", label: "La première de la journée" },
+                { value: "ANY_OTHER", label: "Une autre" }
+              ].map(opt => (
+                <div 
+                  key={opt.value} 
+                  className={`nc-choice-card ${fagerstromForm.mostDifficultCigarette === opt.value ? 'is-selected' : ''}`}
+                  onClick={() => setFagerstromForm(p => ({ ...p, mostDifficultCigarette: opt.value }))}
+                >
+                  {opt.label}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-
-      <div className="card shadow-sm mb-4">
-        <div className="card-body">
-          <h5 className="card-title">Historique Fagerstrom</h5>
-          <div className="table-responsive">
-            <table className="table table-sm align-middle">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Score</th>
-                  <th>Niveau</th>
-                  <th className="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fagerstromHistory.map((item) => (
-                  <tr key={item.id}>
-                    <td>{formatDate(item.createdAt)}</td>
-                    <td>{item.totalScore}</td>
-                    <td>{item.dependenceLevel}</td>
-                    <td className="text-end table-actions">
-                      <i className="bi bi-pencil-square me-3" onClick={() => editFagerstrom(item)} />
-                      <i className="bi bi-trash" onClick={() => deleteFagerstrom(item.id)} />
-                    </td>
-                  </tr>
-                ))}
-                {fagerstromHistory.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="text-muted">Aucun test pour le moment.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
-        </div>
-      </div>
 
-      <div className="card form-card mb-4">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <h5 className="card-title mb-0">Echelle HAD</h5>
-            {editingHadId && <span className="badge text-bg-warning">Edition</span>}
+          <div className="nc-test-question">
+            <span className="nc-test-q-label">3. Nombre de cigarettes par jour</span>
+            <div className="nc-choice-grid">
+              {[
+                { value: "TEN_OR_LESS", label: "10 ou moins" },
+                { value: "ELEVEN_TO_TWENTY", label: "11 à 20" },
+                { value: "TWENTY_ONE_TO_THIRTY", label: "21 à 30" },
+                { value: "THIRTY_ONE_OR_MORE", label: "31 ou plus" }
+              ].map(opt => (
+                <div 
+                  key={opt.value} 
+                  className={`nc-choice-card ${fagerstromForm.cigarettesPerDay === opt.value ? 'is-selected' : ''}`}
+                  onClick={() => setFagerstromForm(p => ({ ...p, cigarettesPerDay: opt.value }))}
+                >
+                  {opt.label}
+                </div>
+              ))}
+            </div>
           </div>
-          <form onSubmit={submitHad} className="row g-3">
-            {hadQuestions.map((question) => (
-              <div className="col-12 col-lg-6" key={question.key}>
-                <label className="form-label">{question.label}</label>
-                <select className="form-select" name={question.key} value={hadForm[question.key]} onChange={handleHadChange}>
-                  {question.options.map((option) => (
-                    <option key={`${question.key}-${option.value}`} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+
+          <div className="nc-test-question">
+            <span className="nc-test-q-label mb-3">4. Comportements additionnels</span>
+            <div className="d-flex flex-column gap-2">
+              <div 
+                className="nc-switch-card" 
+                onClick={() => setFagerstromForm(p => ({ ...p, difficultToRefrain: !p.difficultToRefrain }))}
+              >
+                <span className="nc-switch-label">Difficile de ne pas fumer dans les lieux interdits</span>
+                <div className="form-check form-switch m-0">
+                  <input className="form-check-input" type="checkbox" checked={fagerstromForm.difficultToRefrain} readOnly />
+                </div>
               </div>
-            ))}
-            <div className="col-12 d-flex gap-2">
-              <button className="btn btn-dark" disabled={loading}>
-                {editingHadId ? "Mettre a jour" : "Calculer"}
+              <div 
+                className="nc-switch-card" 
+                onClick={() => setFagerstromForm(p => ({ ...p, smokeMoreInMorning: !p.smokeMoreInMorning }))}
+              >
+                <span className="nc-switch-label">Fumez plus durant les premières heures</span>
+                <div className="form-check form-switch m-0">
+                  <input className="form-check-input" type="checkbox" checked={fagerstromForm.smokeMoreInMorning} readOnly />
+                </div>
+              </div>
+              <div 
+                className="nc-switch-card" 
+                onClick={() => setFagerstromForm(p => ({ ...p, smokeWhenIll: !p.smokeWhenIll }))}
+              >
+                <span className="nc-switch-label">Fumez même malade ou alité</span>
+                <div className="form-check form-switch m-0">
+                  <input className="form-check-input" type="checkbox" checked={fagerstromForm.smokeWhenIll} readOnly />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="d-flex gap-2 justify-content-end">
+            {editingFagerId && (
+              <button
+                type="button"
+                className="btn btn-outline-secondary fw-semibold rounded-pill px-4"
+                onClick={() => {
+                  setEditingFagerId(null);
+                  setFagerstromForm({
+                    timeToFirstCigarette: "WITHIN_5_MIN",
+                    difficultToRefrain: false,
+                    mostDifficultCigarette: "FIRST_IN_MORNING",
+                    cigarettesPerDay: "TEN_OR_LESS",
+                    smokeMoreInMorning: false,
+                    smokeWhenIll: false
+                  });
+                }}
+              >
+                Annuler
               </button>
-              {editingHadId && (
-                <button
-                  type="button"
-                  className="btn btn-outline-dark"
-                  onClick={() => {
-                    setEditingHadId(null);
-                    setHadForm({
-                      q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0, q7: 0,
-                      q8: 0, q9: 0, q10: 0, q11: 0, q12: 0, q13: 0, q14: 0
-                    });
-                  }}
-                >
-                  Annuler
-                </button>
-              )}
+            )}
+            <button className="btn btn-primary fw-semibold rounded-pill px-4 d-flex align-items-center gap-2" disabled={loading}>
+              <i className="bi bi-magic" />
+              {editingFagerId ? "Mettre à jour le Bilan" : "Calculer le Bilan Fagerström"}
+            </button>
+          </div>
+        </form>
+          {fagerstromResult && (
+            <div className="alert alert-success mt-4 d-flex align-items-center gap-3 rounded-4 border-0 shadow-sm">
+              <i className="bi bi-check-circle-fill fs-3 text-success"></i>
+              <div>
+                <strong className="d-block mb-1">Score: {fagerstromResult.totalScore}/10</strong>
+                <span className="mb-0 text-dark">Niveau: {fagerstromResult.dependenceLevel}</span>
+              </div>
             </div>
-          </form>
-          {hadResult && (
-            <div className="alert alert-info mt-3">
-              Anxiete: {hadResult.anxietyScore} ({formatHadInterpretation(hadResult.anxietyInterpretation)}) | Depression: {hadResult.depressionScore} ({formatHadInterpretation(hadResult.depressionInterpretation)})
-            </div>
+          )}
+        </div>
+
+      <div className="nc-glass-card p-4 mb-4">
+        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
+          <i className="bi bi-clock-history text-secondary" />
+          Historique Fagerström
+        </h5>
+        <div className="nc-history-list">
+          {fagerstromHistory.length === 0 ? (
+            <p className="text-muted text-center py-4 mb-0">Aucun historique d'évaluation Fagerström.</p>
+          ) : (
+            fagerstromHistory.map((item) => (
+              <div key={item.id} className="nc-history-card">
+                <div className="nc-history-meta">
+                  <span className="nc-history-date">{formatDate(item.createdAt)}</span>
+                  <strong className="text-dark">Score: {item.totalScore}/10</strong>
+                </div>
+                <div className="nc-history-scores">
+                  <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">{item.dependenceLevel}</span>
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-sm btn-outline-secondary rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => editFagerstrom(item)}>
+                      <i className="bi bi-pencil-square" />
+                    </button>
+                    <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => deleteFagerstrom(item.id)}>
+                      <i className="bi bi-trash" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
 
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <h5 className="card-title">Historique HAD</h5>
-          <div className="table-responsive">
-            <table className="table table-sm align-middle">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Anxiete</th>
-                  <th>Depression</th>
-                  <th className="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hadHistory.map((item) => (
-                  <tr key={item.id}>
-                    <td>{formatDate(item.createdAt)}</td>
-                    <td>{item.anxietyScore} ({formatHadInterpretation(item.anxietyInterpretation)})</td>
-                    <td>{item.depressionScore} ({formatHadInterpretation(item.depressionInterpretation)})</td>
-                    <td className="text-end table-actions">
-                      <i className="bi bi-pencil-square me-3" onClick={() => editHad(item)} />
-                      <i className="bi bi-trash" onClick={() => deleteHad(item.id)} />
-                    </td>
-                  </tr>
+      <div className="nc-glass-card p-4 mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-heart-pulse-fill text-primary" />
+            Échelle Hospitalière d'Anxiété et de Dépression (HAD)
+          </h5>
+          {editingHadId && <span className="badge bg-warning text-dark">Mode Édition</span>}
+        </div>
+        
+        <form onSubmit={submitHad}>
+          {hadQuestions.map((question, index) => (
+            <div className="nc-test-question" key={question.key}>
+              <span className="nc-test-q-label">{index + 1}. {question.label}</span>
+              <div className="nc-likert-scale">
+                {question.options.map((option) => (
+                  <div
+                    key={`${question.key}-${option.value}`}
+                    className={`nc-likert-option ${hadForm[question.key] === option.value ? 'is-selected' : ''}`}
+                    onClick={() => setHadForm(p => ({ ...p, [question.key]: option.value }))}
+                  >
+                    {option.label}
+                  </div>
                 ))}
-                {hadHistory.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="text-muted">Aucun test pour le moment.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              </div>
+            </div>
+          ))}
+          
+          <div className="d-flex gap-2 justify-content-end mt-4">
+            {editingHadId && (
+              <button
+                type="button"
+                className="btn btn-outline-secondary fw-semibold rounded-pill px-4"
+                onClick={() => {
+                  setEditingHadId(null);
+                  setHadForm({
+                    q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0, q7: 0,
+                    q8: 0, q9: 0, q10: 0, q11: 0, q12: 0, q13: 0, q14: 0
+                  });
+                }}
+              >
+                Annuler
+              </button>
+            )}
+            <button className="btn btn-primary fw-semibold rounded-pill px-4 d-flex align-items-center gap-2" disabled={loading}>
+              <i className="bi bi-magic" />
+              {editingHadId ? "Mettre à jour le Bilan" : "Calculer le Bilan HAD"}
+            </button>
           </div>
+        </form>
+        
+        {hadResult && (
+          <div className="alert alert-success mt-4 d-flex align-items-center gap-3 rounded-4 border-0 shadow-sm">
+            <i className="bi bi-check-circle-fill fs-3 text-success"></i>
+            <div>
+              <strong className="d-block mb-1">Anxiété : {hadResult.anxietyScore} ({formatHadInterpretation(hadResult.anxietyInterpretation)})</strong>
+              <span className="mb-0 text-dark">Dépression : {hadResult.depressionScore} ({formatHadInterpretation(hadResult.depressionInterpretation)})</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="nc-glass-card p-4">
+        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
+          <i className="bi bi-clock-history text-secondary" />
+          Historique HAD
+        </h5>
+        <div className="nc-history-list">
+          {hadHistory.length === 0 ? (
+            <p className="text-muted text-center py-4 mb-0">Aucun historique d'évaluation HAD.</p>
+          ) : (
+            hadHistory.map((item) => (
+              <div key={item.id} className="nc-history-card">
+                <div className="nc-history-meta">
+                  <span className="nc-history-date">{formatDate(item.createdAt)}</span>
+                  <strong className="text-dark">A : {item.anxietyScore} | D : {item.depressionScore}</strong>
+                </div>
+                <div className="nc-history-scores">
+                  <div className="d-flex flex-column flex-sm-row gap-2">
+                    <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">Anxiété : {formatHadInterpretation(item.anxietyInterpretation)}</span>
+                    <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">Dépression : {formatHadInterpretation(item.depressionInterpretation)}</span>
+                  </div>
+                  <div className="d-flex gap-2 ms-2">
+                    <button className="btn btn-sm btn-outline-secondary rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => editHad(item)}>
+                      <i className="bi bi-pencil-square" />
+                    </button>
+                    <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => deleteHad(item.id)}>
+                      <i className="bi bi-trash" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
