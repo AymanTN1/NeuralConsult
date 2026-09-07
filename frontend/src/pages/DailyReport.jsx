@@ -21,6 +21,7 @@ const DailyReport = () => {
   const [reports, setReports] = useState([]);
   const [message, setMessage] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const loadReports = async () => {
     const { data } = await api.get("/api/daily-reports");
@@ -155,11 +156,22 @@ const DailyReport = () => {
       </form>
 
       <div className="nc-glass-card p-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="fw-bold mb-0">Historique des entrées</h5>
+        <div 
+          className="d-flex justify-content-between align-items-center cursor-pointer"
+          onClick={() => setShowHistory(!showHistory)}
+          style={{ cursor: "pointer" }}
+        >
+          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-journal-text text-secondary" />
+            Historique des entrées
+            <span className="badge bg-light text-dark border ms-2 rounded-pill px-2">{reports.length}</span>
+          </h5>
+          <i className={`bi bi-chevron-${showHistory ? 'up' : 'down'} fs-5 text-muted`} style={{ transition: "transform 0.3s" }} />
         </div>
-        {reports.length === 0 && <div className="text-muted py-3">Aucun journal pour le moment. Remplissez votre première entrée ci-dessus !</div>}
-        {reports.length > 0 && (
+        
+        <div className={`collapse ${showHistory ? 'show' : ''} mt-4`}>
+          {reports.length === 0 && <div className="text-muted py-3 text-center">Aucun journal pour le moment. Remplissez votre première entrée ci-dessus !</div>}
+          {reports.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
@@ -182,11 +194,19 @@ const DailyReport = () => {
                       <td>{report.cravingsIntensity ?? "-"}</td>
                       <td>{report.moodScore ?? "-"}</td>
                       <td>{report.stressScore ?? "-"}</td>
-                      <td>{report.usedNrt ? "Oui" : "Non"}</td>
-                      <td>{report.relapseEvent ? "Oui" : "Non"}</td>
+                      <td>
+                        {report.usedNrt ? <span className="badge bg-success bg-opacity-10 text-success fw-semibold">Oui</span> : <span className="badge bg-secondary bg-opacity-10 text-secondary fw-semibold">Non</span>}
+                      </td>
+                      <td>
+                        {report.relapseEvent ? <span className="badge bg-danger bg-opacity-10 text-danger fw-semibold">Oui</span> : <span className="badge bg-secondary bg-opacity-10 text-secondary fw-semibold">Non</span>}
+                      </td>
                       <td className="text-end table-actions">
-                        <i className="bi bi-pencil-square me-3" onClick={() => handleEdit(report)} />
-                        <i className="bi bi-trash" onClick={() => handleDelete(report.id)} />
+                        <button className="btn btn-sm btn-outline-secondary rounded-circle me-2" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => handleEdit(report)}>
+                          <i className="bi bi-pencil-square" />
+                        </button>
+                        <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => handleDelete(report.id)}>
+                          <i className="bi bi-trash" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -196,6 +216,7 @@ const DailyReport = () => {
           )}
         </div>
       </div>
+    </div>
   );
 };
 

@@ -14,6 +14,8 @@ const Tests = () => {
   const [hadHistory, setHadHistory] = useState([]);
   const [editingFagerId, setEditingFagerId] = useState(null);
   const [editingHadId, setEditingHadId] = useState(null);
+  const [showFagerstromHistory, setShowFagerstromHistory] = useState(false);
+  const [showHadHistory, setShowHadHistory] = useState(false);
 
   const [fagerstromForm, setFagerstromForm] = useState({
     timeToFirstCigarette: "WITHIN_5_MIN",
@@ -445,34 +447,45 @@ const Tests = () => {
         </div>
 
       <div className="nc-glass-card p-4 mb-4">
-        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
-          <i className="bi bi-clock-history text-secondary" />
-          Historique Fagerström
-        </h5>
-        <div className="nc-history-list">
-          {fagerstromHistory.length === 0 ? (
-            <p className="text-muted text-center py-4 mb-0">Aucun historique d'évaluation Fagerström.</p>
-          ) : (
-            fagerstromHistory.map((item) => (
-              <div key={item.id} className="nc-history-card">
-                <div className="nc-history-meta">
-                  <span className="nc-history-date">{formatDate(item.createdAt)}</span>
-                  <strong className="text-dark">Score: {item.totalScore}/10</strong>
-                </div>
-                <div className="nc-history-scores">
-                  <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">{item.dependenceLevel}</span>
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-sm btn-outline-secondary rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => editFagerstrom(item)}>
-                      <i className="bi bi-pencil-square" />
-                    </button>
-                    <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => deleteFagerstrom(item.id)}>
-                      <i className="bi bi-trash" />
-                    </button>
+        <div 
+          className="d-flex justify-content-between align-items-center cursor-pointer"
+          onClick={() => setShowFagerstromHistory(!showFagerstromHistory)}
+          style={{ cursor: "pointer" }}
+        >
+          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-clock-history text-secondary" />
+            Historique Fagerström
+            <span className="badge bg-light text-dark border ms-2 rounded-pill px-2">{fagerstromHistory.length}</span>
+          </h5>
+          <i className={`bi bi-chevron-${showFagerstromHistory ? 'up' : 'down'} fs-5 text-muted`} style={{ transition: "transform 0.3s" }} />
+        </div>
+        
+        <div className={`collapse ${showFagerstromHistory ? 'show' : ''} mt-4`}>
+          <div className="nc-history-list">
+            {fagerstromHistory.length === 0 ? (
+              <p className="text-muted text-center py-4 mb-0">Aucun historique d'évaluation Fagerström.</p>
+            ) : (
+              fagerstromHistory.map((item) => (
+                <div key={item.id} className="nc-history-card">
+                  <div className="nc-history-meta">
+                    <span className="nc-history-date">{formatDate(item.createdAt)}</span>
+                    <strong className="text-dark">Score: {item.totalScore}/10</strong>
+                  </div>
+                  <div className="nc-history-scores">
+                    <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">{item.dependenceLevel}</span>
+                    <div className="d-flex gap-2">
+                      <button className="btn btn-sm btn-outline-secondary rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => editFagerstrom(item)}>
+                        <i className="bi bi-pencil-square" />
+                      </button>
+                      <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => deleteFagerstrom(item.id)}>
+                        <i className="bi bi-trash" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
 
@@ -538,37 +551,48 @@ const Tests = () => {
       </div>
 
       <div className="nc-glass-card p-4">
-        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
-          <i className="bi bi-clock-history text-secondary" />
-          Historique HAD
-        </h5>
-        <div className="nc-history-list">
-          {hadHistory.length === 0 ? (
-            <p className="text-muted text-center py-4 mb-0">Aucun historique d'évaluation HAD.</p>
-          ) : (
-            hadHistory.map((item) => (
-              <div key={item.id} className="nc-history-card">
-                <div className="nc-history-meta">
-                  <span className="nc-history-date">{formatDate(item.createdAt)}</span>
-                  <strong className="text-dark">A : {item.anxietyScore} | D : {item.depressionScore}</strong>
-                </div>
-                <div className="nc-history-scores">
-                  <div className="d-flex flex-column flex-sm-row gap-2">
-                    <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">Anxiété : {formatHadInterpretation(item.anxietyInterpretation)}</span>
-                    <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">Dépression : {formatHadInterpretation(item.depressionInterpretation)}</span>
+        <div 
+          className="d-flex justify-content-between align-items-center cursor-pointer"
+          onClick={() => setShowHadHistory(!showHadHistory)}
+          style={{ cursor: "pointer" }}
+        >
+          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-clock-history text-secondary" />
+            Historique HAD
+            <span className="badge bg-light text-dark border ms-2 rounded-pill px-2">{hadHistory.length}</span>
+          </h5>
+          <i className={`bi bi-chevron-${showHadHistory ? 'up' : 'down'} fs-5 text-muted`} style={{ transition: "transform 0.3s" }} />
+        </div>
+
+        <div className={`collapse ${showHadHistory ? 'show' : ''} mt-4`}>
+          <div className="nc-history-list">
+            {hadHistory.length === 0 ? (
+              <p className="text-muted text-center py-4 mb-0">Aucun historique d'évaluation HAD.</p>
+            ) : (
+              hadHistory.map((item) => (
+                <div key={item.id} className="nc-history-card">
+                  <div className="nc-history-meta">
+                    <span className="nc-history-date">{formatDate(item.createdAt)}</span>
+                    <strong className="text-dark">A : {item.anxietyScore} | D : {item.depressionScore}</strong>
                   </div>
-                  <div className="d-flex gap-2 ms-2">
-                    <button className="btn btn-sm btn-outline-secondary rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => editHad(item)}>
-                      <i className="bi bi-pencil-square" />
-                    </button>
-                    <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => deleteHad(item.id)}>
-                      <i className="bi bi-trash" />
-                    </button>
+                  <div className="nc-history-scores">
+                    <div className="d-flex flex-column flex-sm-row gap-2">
+                      <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">Anxiété : {formatHadInterpretation(item.anxietyInterpretation)}</span>
+                      <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-medium">Dépression : {formatHadInterpretation(item.depressionInterpretation)}</span>
+                    </div>
+                    <div className="d-flex gap-2 ms-2">
+                      <button className="btn btn-sm btn-outline-secondary rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => editHad(item)}>
+                        <i className="bi bi-pencil-square" />
+                      </button>
+                      <button className="btn btn-sm btn-outline-danger rounded-circle" style={{ width: "32px", height: "32px", padding: 0 }} onClick={() => deleteHad(item.id)}>
+                        <i className="bi bi-trash" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
