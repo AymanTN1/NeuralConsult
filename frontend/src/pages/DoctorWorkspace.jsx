@@ -41,9 +41,47 @@ const emptyForm = {
 };
 
 const matchingCopy = {
-  SAME_CITY: "Meme ville",
+  SAME_CITY: "Même ville",
   SAME_COUNTRY: "Maroc",
-  TELECONSULTATION: "Teleconsultation"
+  TELECONSULTATION: "Téléconsultation"
+};
+
+const matchingColor = {
+  SAME_CITY: { bg: "#ecfdf5", color: "#047857", border: "#a7f3d0" },
+  SAME_COUNTRY: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  TELECONSULTATION: { bg: "#f5f3ff", color: "#6d28d9", border: "#c4b5fd" }
+};
+
+const getDepBadgeStyle = (level) => {
+  const l = String(level || "").toUpperCase();
+  if (l.includes("SÉVÈRE") || l.includes("SEVERE")) return { bg: "#fef2f2", color: "#b91c1c", border: "#fecaca" };
+  if (l.includes("FORTE")) return { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" };
+  if (l.includes("MODÉRÉ") || l.includes("MODERE")) return { bg: "#fffbeb", color: "#b45309", border: "#fde68a" };
+  if (l.includes("FAIBLE")) return { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };
+  if (l.includes("SEVRÉ") || l.includes("SEVRE") || l.includes("CONSOLID")) return { bg: "#ecfdf5", color: "#047857", border: "#a7f3d0" };
+  return { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" };
+};
+
+const getPatientInitials = (name) => {
+  if (!name) return "PT";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const initialsGradients = [
+  "linear-gradient(135deg, #0284c7, #6366f1)",
+  "linear-gradient(135deg, #059669, #0d9488)",
+  "linear-gradient(135deg, #d946ef, #ec4899)",
+  "linear-gradient(135deg, #f59e0b, #ef4444)",
+  "linear-gradient(135deg, #8b5cf6, #6366f1)",
+  "linear-gradient(135deg, #0ea5e9, #2563eb)"
+];
+
+const getInitialsGradient = (name) => {
+  if (!name) return initialsGradients[0];
+  const hash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return initialsGradients[hash % initialsGradients.length];
 };
 
 const patientWorkspaceViews = [
@@ -1224,25 +1262,25 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   return (
     <div className="container py-4 app-shell">
-      {(loading || dossierLoading) && <LungLoader text={dossierLoading ? "Chargement du dossier patient..." : "Chargement de l'espace medecin..."} />}
+      {(loading || dossierLoading) && <LungLoader text={dossierLoading ? "Chargement du dossier patient..." : "Chargement de l'espace médecin..."} />}
       <div className="profile-page-header">
         <div>
-          <div className="hero-kicker">Espace medecin</div>
-          <h2 className="fw-bold mb-1">{mode === "profile" ? "Profil medecin et positionnement" : "Demandes, dossiers et validation de plans"}</h2>
-          <p className="muted-text mb-0">{mode === "profile" ? "Les informations du medecin sont affichees en lecture seule." : "On passe sur un vrai workspace medecin: demandes a trier, liste claire des patients et acces direct au bon module du dossier."}</p>
+          <div className="hero-kicker">{mode === "profile" ? "Profil Praticien" : "Espace Praticien · Médecine du Sevrage"}</div>
+          <h2 className="fw-bold mb-1">{mode === "profile" ? "Profil médecin et positionnement" : "Gestion des Patients & Dossiers Cliniques"}</h2>
+          <p className="muted-text mb-0">{mode === "profile" ? "Les informations personnelles et professionnelles sont affichées en lecture seule." : "Supervision clinique, gestion des demandes entrantes et suivi des dossiers patients."}</p>
         </div>
       </div>
       {message && <div className={`alert mt-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`}>{message.text}</div>}
       {profile && !profile.active && profile?.status !== "APPROVED" && user?.email !== "ayman.tantani@uit.ac.ma" && (
-        <div className="alert alert-warning mt-3">Votre compte medecin est en attente de validation administrateur. Le compte n'est pas encore visible pour les patients.</div>
+        <div className="alert alert-warning mt-3">Votre compte médecin est en attente de validation administrateur. Le compte n'est pas encore visible pour les patients.</div>
       )}
-      {loading ? <div className="muted-text mt-4">Chargement de l'espace medecin...</div> : mode === "profile" ? (
+      {loading ? <div className="muted-text mt-4">Chargement de l'espace médecin...</div> : mode === "profile" ? (
         <div className="mt-4">
           {profile ? (
             <section className="card form-card">
               <div className="profile-summary-header">
                 <div>
-                  <div className="section-title-sm">Profil medecin</div>
+                  <div className="section-title-sm">Profil médecin</div>
                   <p className="muted-text mb-0">Les informations personnelles et professionnelles ont été validées et sont affichées en lecture seule.</p>
                 </div>
               </div>
@@ -1256,27 +1294,100 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       ) : (
         <div className="doctor-workspace-container mt-4">
           <div className="doctor-workspace-main-full">
-            <section className="card form-card doctor-summary-strip">
-              <div className="doctor-summary-card"><span className="profile-data-label">Demandes en attente</span><strong>{pendingRequests.length}</strong></div>
-              <div className="doctor-summary-card"><span className="profile-data-label">Patients associés</span><strong>{patients.length}</strong></div>
-              <div className="doctor-summary-card"><span className="profile-data-label">Spécialité</span><strong>{displayValue(profile?.specialty || "Tabacologue & Addictologue")}</strong></div>
-              <div className="doctor-summary-card"><span className="profile-data-label">Positionnement</span><strong>{displayValue(profile?.city ? `${profile.city}, ${profile.countryCode || "MA"}` : "Rabat, MA")}</strong></div>
-            </section>
+            {/* ─── Premium KPI Cards ─── */}
+            <div className="dw-kpi-strip">
+              <div className="dw-kpi-card dw-kpi-amber">
+                <div className="dw-kpi-icon"><i className="bi bi-inbox-fill" /></div>
+                <div className="dw-kpi-body">
+                  <span className="dw-kpi-value">{pendingRequests.length}</span>
+                  <span className="dw-kpi-label">Demandes en attente</span>
+                </div>
+              </div>
+              <div className="dw-kpi-card dw-kpi-emerald">
+                <div className="dw-kpi-icon"><i className="bi bi-people-fill" /></div>
+                <div className="dw-kpi-body">
+                  <span className="dw-kpi-value">{patients.length}</span>
+                  <span className="dw-kpi-label">Patients associés</span>
+                </div>
+              </div>
+              <div className="dw-kpi-card dw-kpi-cobalt">
+                <div className="dw-kpi-icon"><i className="bi bi-award-fill" /></div>
+                <div className="dw-kpi-body">
+                  <span className="dw-kpi-value dw-kpi-value-sm">{displayValue(profile?.specialty || "Tabacologue & Addictologue")}</span>
+                  <span className="dw-kpi-label">Spécialité</span>
+                </div>
+              </div>
+              <div className="dw-kpi-card dw-kpi-violet">
+                <div className="dw-kpi-icon"><i className="bi bi-geo-alt-fill" /></div>
+                <div className="dw-kpi-body">
+                  <span className="dw-kpi-value dw-kpi-value-sm">{displayValue(profile?.city ? `${profile.city}, ${profile.countryCode || "MA"}` : "Rabat, MA")}</span>
+                  <span className="dw-kpi-label">Positionnement</span>
+                </div>
+              </div>
+            </div>
+
             {!profile && <div className="mt-4">{renderProfileForm()}</div>}
+
+            {/* ─── Demandes Patients ─── */}
             <section className="card form-card mt-4">
-              <div className="doctor-section-head"><div><div className="section-title-sm">Demandes patients</div><p className="muted-text mb-0">Le médecin voit chaque demande avec des actions explicites et un accès direct au dossier avant décision.</p></div></div>
-              {pendingRequests.length === 0 ? <p className="muted-text mb-0 mt-3">Aucune demande pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-sm-table-cell">Matching</th><th className="d-none d-md-table-cell">Message</th><th className="d-none d-lg-table-cell">Demande</th><th className="text-end">Actions</th></tr></thead><tbody>{pendingRequests.map((request) => { const isBusy = decisionLoadingId === request.id; return <tr key={request.id} className={selectedPatientId === request.patientProfileId ? "is-selected" : ""}><td><button type="button" className="doctor-table-link" onClick={() => openPatientView(request.patientProfileId, "overview")}>{request.patientName}</button><div className="d-sm-none mt-1"><span className="doctor-match-chip" style={{ fontSize: "0.7rem", padding: "1px 6px" }}>{matchingCopy[request.matchingMode] || request.matchingMode || "Matching standard"}</span></div></td><td className="d-none d-sm-table-cell"><span className="doctor-match-chip">{matchingCopy[request.matchingMode] || request.matchingMode || "Matching standard"}</span></td><td className="d-none d-md-table-cell doctor-cell-copy">{request.patientMessage || "Aucun message."}</td><td className="d-none d-lg-table-cell">{formatDateTime(request.createdAt)}</td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-dark btn-sm" disabled={isBusy} onClick={() => decideRequest(request.id, "accept", request.patientProfileId)}>{isBusy ? "..." : "Accepter"}</button><button type="button" className="btn btn-outline-dark btn-sm" disabled={isBusy} onClick={() => decideRequest(request.id, "refuse", request.patientProfileId)}>Refuser</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`request-actions-${request.id}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu"><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "overview")}>Vue clinique</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "profile")}>Profil patient</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "evaluation")}>Dossier médical</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "dashboard")}>Dashboard</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "conversation")}>Conversation IA</Dropdown.Item></Dropdown.Menu></Dropdown></div></td></tr>; })}</tbody></table></div>}
+              <div className="doctor-section-head">
+                <div className="d-flex align-items-center gap-2.5">
+                  <div className="dw-section-icon dw-section-icon-amber"><i className="bi bi-bell-fill" /></div>
+                  <div>
+                    <div className="section-title-sm d-flex align-items-center gap-2">Demandes en attente {pendingRequests.length > 0 && <span className="badge bg-warning text-dark rounded-pill px-2 py-0.5" style={{ fontSize: "0.72rem" }}>{pendingRequests.length}</span>}</div>
+                    <p className="muted-text mb-0">Chaque demande peut être examinée avant la prise de décision clinique.</p>
+                  </div>
+                </div>
+              </div>
+              {pendingRequests.length === 0 ? (
+                <div className="text-center py-4">
+                  <i className="bi bi-check-circle text-success fs-3 d-block mb-1" />
+                  <span className="text-muted small">Aucune demande en attente pour le moment.</span>
+                </div>
+              ) : (
+                <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-sm-table-cell">Matching</th><th className="d-none d-md-table-cell">Message</th><th className="d-none d-lg-table-cell">Demande</th><th className="text-end">Actions</th></tr></thead><tbody>{pendingRequests.map((request) => { const isBusy = decisionLoadingId === request.id; const mStyle = matchingColor[request.matchingMode] || matchingColor.SAME_CITY; return <tr key={request.id} className={selectedPatientId === request.patientProfileId ? "is-selected" : ""}><td>
+                  <div className="d-flex align-items-center gap-2.5">
+                    <div className="dw-patient-initials" style={{ background: getInitialsGradient(request.patientName) }}>{getPatientInitials(request.patientName)}</div>
+                    <div>
+                      <button type="button" className="doctor-table-link" onClick={() => openPatientView(request.patientProfileId, "overview")}>{request.patientName}</button>
+                      <div className="d-sm-none mt-1"><span className="badge rounded-pill" style={{ backgroundColor: mStyle.bg, color: mStyle.color, border: `1px solid ${mStyle.border}`, fontSize: "0.7rem", padding: "2px 8px" }}>{matchingCopy[request.matchingMode] || "Matching standard"}</span></div>
+                    </div>
+                  </div>
+                </td><td className="d-none d-sm-table-cell"><span className="badge rounded-pill" style={{ backgroundColor: mStyle.bg, color: mStyle.color, border: `1px solid ${mStyle.border}`, fontSize: "0.75rem", padding: "3px 10px", fontWeight: 600 }}>{matchingCopy[request.matchingMode] || request.matchingMode || "Matching standard"}</span></td><td className="d-none d-md-table-cell doctor-cell-copy">{request.patientMessage || "Aucun message."}</td><td className="d-none d-lg-table-cell">{formatDateTime(request.createdAt)}</td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-sm dw-btn-accept" disabled={isBusy} onClick={() => decideRequest(request.id, "accept", request.patientProfileId)}><i className="bi bi-check-lg me-1" />{isBusy ? "..." : "Accepter"}</button><button type="button" className="btn btn-sm dw-btn-refuse" disabled={isBusy} onClick={() => decideRequest(request.id, "refuse", request.patientProfileId)}><i className="bi bi-x-lg me-1" />Refuser</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`request-actions-${request.id}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu"><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "overview")}><i className="bi bi-grid-1x2-fill me-2" />Vue clinique</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "profile")}><i className="bi bi-person-vcard-fill me-2" />Profil patient</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "evaluation")}><i className="bi bi-journal-medical me-2" />Dossier médical</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "dashboard")}><i className="bi bi-activity me-2" />Dashboard</Dropdown.Item><Dropdown.Item onClick={() => openPatientView(request.patientProfileId, "conversation")}><i className="bi bi-chat-heart-fill me-2" />Conversation IA</Dropdown.Item></Dropdown.Menu></Dropdown></div></td></tr>; })}</tbody></table></div>
+              )}
             </section>
+
+            {/* ─── Patients Associés ─── */}
             <section className="card form-card mt-4">
-              <div className="doctor-section-head"><div><div className="section-title-sm">Patients associés</div><p className="muted-text mb-0">Une liste professionnelle : identité, progression, scores et menu d'actions cliniques.</p></div></div>
-              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.patientEmail; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td><button type="button" className="doctor-table-link" onClick={() => openPatientView(pid, "overview")}>{pName}</button><div className="doctor-table-subcopy">{pEmail}</div><div className="d-md-none mt-1 d-flex align-items-center gap-1.5 flex-wrap"><span className="doctor-status-chip status-info" style={{ fontSize: "0.72rem", padding: "2px 7px" }}>{displayValue(depLevel)}</span>{pCity && pCity !== "-" && <span className="text-muted" style={{ fontSize: "0.76rem" }}>• {displayValue(pCity)}</span>}</div></td><td className="d-none d-lg-table-cell"><div>{formatDate(pDob)}</div><div className="doctor-table-subcopy">{calculateAge(pDob)}</div></td><td className="d-none d-md-table-cell"><div>{displayValue(pCity)}</div><div className="doctor-table-subcopy">{displayValue(pOccupation)}</div></td><td className="d-none d-lg-table-cell"><div className="doctor-progress-inline">{buildProgressBadges(patient).map((item) => <span key={item.key} className={`doctor-progress-pill ${item.done ? "is-done" : ""}`}>{item.label}</span>)}</div></td><td className="d-none d-xl-table-cell doctor-cell-copy">
-  <div>Fagerstrom {fScore} · HAD A {hAnx} · HAD D {hDep}</div>
-  {calculateRassScore(fScore, hAnx, hDep) !== null && (
-    <span className="badge mt-1" style={{ backgroundColor: getRassColor(calculateRassScore(fScore, hAnx, hDep)), color: "#fff", borderRadius: "12px", fontSize: "0.75rem", padding: "3px 8px" }}>
-      RASS : {calculateRassScore(fScore, hAnx, hDep)}/10 ({getRassInterpretation(calculateRassScore(fScore, hAnx, hDep))})
+              <div className="doctor-section-head">
+                <div className="d-flex align-items-center gap-2.5">
+                  <div className="dw-section-icon dw-section-icon-emerald"><i className="bi bi-people-fill" /></div>
+                  <div>
+                    <div className="section-title-sm d-flex align-items-center gap-2">Patients associés <span className="badge bg-primary-subtle text-primary rounded-pill px-2 py-0.5" style={{ fontSize: "0.72rem" }}>{patients.length}</span></div>
+                    <p className="muted-text mb-0">File active : identité, progression clinique, scores et accès direct aux dossiers.</p>
+                  </div>
+                </div>
+              </div>
+              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.patientEmail; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; const depStyle = getDepBadgeStyle(depLevel); const rassVal = calculateRassScore(fScore, hAnx, hDep); return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td>
+                <div className="d-flex align-items-center gap-2.5">
+                  <div className="dw-patient-initials" style={{ background: getInitialsGradient(pName) }}>{getPatientInitials(pName)}</div>
+                  <div>
+                    <button type="button" className="doctor-table-link" onClick={() => openPatientView(pid, "overview")}>{pName}</button>
+                    <div className="doctor-table-subcopy">{pEmail}</div>
+                    <div className="d-md-none mt-1 d-flex align-items-center gap-1.5 flex-wrap">
+                      <span className="badge rounded-pill" style={{ backgroundColor: depStyle.bg, color: depStyle.color, border: `1px solid ${depStyle.border}`, fontSize: "0.72rem", padding: "2px 7px", fontWeight: 600 }}>{displayValue(depLevel)}</span>
+                      {pCity && pCity !== "-" && <span className="text-muted" style={{ fontSize: "0.76rem" }}>• {displayValue(pCity)}</span>}
+                    </div>
+                  </div>
+                </div>
+              </td><td className="d-none d-lg-table-cell"><div>{formatDate(pDob)}</div><div className="doctor-table-subcopy">{calculateAge(pDob)}</div></td><td className="d-none d-md-table-cell"><div>{displayValue(pCity)}</div><div className="doctor-table-subcopy">{displayValue(pOccupation)}</div></td><td className="d-none d-lg-table-cell"><div className="doctor-progress-inline">{buildProgressBadges(patient).map((item) => <span key={item.key} className={`doctor-progress-pill ${item.done ? "is-done" : ""}`}>{item.done ? <><i className="bi bi-check-circle-fill me-1" style={{ fontSize: "0.7rem" }} />{item.label}</> : <><i className="bi bi-hourglass-split me-1" style={{ fontSize: "0.65rem" }} />{item.label}</>}</span>)}</div></td><td className="d-none d-xl-table-cell doctor-cell-copy">
+  <div className="small">F: {fScore} · HAD-A: {hAnx} · HAD-D: {hDep}</div>
+  {rassVal !== null && (
+    <span className="badge mt-1 rounded-pill" style={{ backgroundColor: getRassColor(rassVal), color: "#fff", fontSize: "0.73rem", padding: "3px 10px", fontWeight: 600 }}>
+      RASS {rassVal}/10
     </span>
   )}
-</td><td className="d-none d-md-table-cell"><span className="doctor-status-chip status-info">{displayValue(depLevel)}</span></td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-outline-dark btn-sm fw-semibold" onClick={() => openPatientView(pid, "overview")}>Ouvrir</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`patient-actions-${pid}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu">{patientWorkspaceViews.map((view) => <Dropdown.Item key={view.key} onClick={() => openPatientView(pid, view.key)}><i className={`${view.icon} me-2`} />{view.label}</Dropdown.Item>)}</Dropdown.Menu></Dropdown></div></td></tr>; })}</tbody></table></div>}
+</td><td className="d-none d-md-table-cell"><span className="badge rounded-pill fw-semibold" style={{ backgroundColor: depStyle.bg, color: depStyle.color, border: `1px solid ${depStyle.border}`, fontSize: "0.78rem", padding: "4px 12px" }}>{displayValue(depLevel)}</span></td><td><div className="doctor-row-actions justify-content-end"><button type="button" className="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onClick={() => openPatientView(pid, "overview")}><i className="bi bi-folder2-open me-1" />Ouvrir</button><Dropdown align="end"><Dropdown.Toggle as="button" className="doctor-action-toggle" id={`patient-actions-${pid}`}><i className="bi bi-three-dots-vertical" /></Dropdown.Toggle><Dropdown.Menu className="doctor-action-menu">{patientWorkspaceViews.map((view) => <Dropdown.Item key={view.key} onClick={() => openPatientView(pid, view.key)}><i className={`${view.icon} me-2`} />{view.label}</Dropdown.Item>)}</Dropdown.Menu></Dropdown></div></td></tr>; })}</tbody></table></div>}
             </section>
           </div>
 
