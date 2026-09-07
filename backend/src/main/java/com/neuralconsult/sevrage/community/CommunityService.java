@@ -46,7 +46,7 @@ public class CommunityService {
   private static final int MAX_MESSAGE_LENGTH = 2400;
   private static final int MAX_BIO_LENGTH = 320;
   private static final int MAX_USERNAME_LENGTH = 40;
-  private static final int MAX_IMAGE_LENGTH = 1_800_000;
+  private static final int MAX_IMAGE_LENGTH = 10_000_000;
 
   private final CommunityServerRepository serverRepository;
   private final CommunityChannelRepository channelRepository;

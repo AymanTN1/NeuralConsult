@@ -138,27 +138,50 @@ const Profile = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleProfilePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      event.target.value = null;
+      return;
+    }
+    
     try {
-      const file = event.target.files?.[0];
       const reader = new FileReader();
       reader.onload = async () => {
-        const dataUrl = String(reader.result || "");
-        if (dataUrl.length > 1_800_000) {
-          setMessage({ type: "error", text: "L'image est trop lourde." });
-          return;
+        try {
+          const dataUrl = String(reader.result || "");
+          if (dataUrl.length > 10_000_000) {
+            setMessage({ type: "error", text: "L'image est trop lourde (max ~7 Mo)." });
+            event.target.value = null;
+            return;
+          }
+          
+          let username = user.profile?.username;
+          if (!username) {
+             const baseName = (user.fullName || user.email.split("@")[0] || "user").toLowerCase().replace(/[^a-z0-9._]/g, ".");
+             username = baseName + Math.floor(Math.random() * 1000);
+          }
+
+          // Update via API
+          await api.put("/api/communities/social/profile", { 
+            ...user.profile, 
+            profilePhotoUrl: dataUrl,
+            username: username
+          });
+          
+          await refetch();
+          setShowProfileMenu(false);
+          setMessage({ type: "success", text: "Photo mise à jour avec succès !" });
+        } catch (error) {
+          const apiMessage = error?.response?.data?.message || error?.response?.data?.error;
+          setMessage({ type: "error", text: apiMessage || "Erreur de connexion au serveur." });
+        } finally {
+          event.target.value = null;
         }
-        // Update via API
-        await api.put("/api/communities/social/profile", { 
-          ...user.profile, 
-          profilePhotoUrl: dataUrl,
-          username: user.profile.username || user.fullName?.toLowerCase().replace(/\s+/g, ".")
-        });
-        await refetch();
-        setShowProfileMenu(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      setMessage({ type: "error", text: "Impossible de charger cette image." });
+      setMessage({ type: "error", text: "Impossible de lire le fichier." });
+      event.target.value = null;
     }
   };
 
