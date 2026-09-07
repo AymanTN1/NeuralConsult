@@ -334,23 +334,29 @@ DEMO_USERS.patient = DEMO_USERS.patient1;
 export const getDemoUserByEmail = (email) => {
   if (!email) return null;
   const clean = email.toLowerCase().trim();
+  let baseUser = null;
   if (clean === "ayman.tantani@uit.ac.ma" || clean.includes("dr_tantani") || clean.includes("doctor")) {
-    return DEMO_USERS.doctor;
+    baseUser = DEMO_USERS.doctor;
+  } else if (clean === "tantaniayman0@gmail.com" || clean.includes("samy_zen") || clean === "patient@demo.ma") {
+    baseUser = DEMO_USERS.patient1;
+  } else if (clean === "aymantantani18@gmail.com" || clean.includes("karim") || clean.includes("bennani")) {
+    baseUser = DEMO_USERS.patient2;
+  } else if (clean === "projetfinetude4@gmail.com" || clean.includes("sara") || clean.includes("mansour")) {
+    baseUser = DEMO_USERS.patient3;
+  } else if (clean === "saidpa1969@gmail.com" || clean.includes("said") || clean.includes("alaoui") || clean.includes("tazi")) {
+    baseUser = DEMO_USERS.patient4;
+  } else if (clean === "testaccsimo@gmail.com" || clean.includes("mohamed") || clean.includes("chraibi") || clean.includes("alami")) {
+    baseUser = DEMO_USERS.patient5;
   }
-  if (clean === "tantaniayman0@gmail.com" || clean.includes("samy_zen") || clean === "patient@demo.ma") {
-    return DEMO_USERS.patient1;
-  }
-  if (clean === "aymantantani18@gmail.com" || clean.includes("karim") || clean.includes("bennani")) {
-    return DEMO_USERS.patient2;
-  }
-  if (clean === "projetfinetude4@gmail.com" || clean.includes("sara") || clean.includes("mansour")) {
-    return DEMO_USERS.patient3;
-  }
-  if (clean === "saidpa1969@gmail.com" || clean.includes("said") || clean.includes("alaoui") || clean.includes("tazi")) {
-    return DEMO_USERS.patient4;
-  }
-  if (clean === "testaccsimo@gmail.com" || clean.includes("mohamed") || clean.includes("chraibi") || clean.includes("alami")) {
-    return DEMO_USERS.patient5;
+  
+  if (baseUser && typeof window !== "undefined") {
+    try {
+      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+      if (overrides[baseUser.email]) {
+        return { ...baseUser, ...overrides[baseUser.email] };
+      }
+    } catch (e) {}
+    return baseUser;
   }
   return null;
 };
@@ -2512,6 +2518,19 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   }
 
   if (url.includes("/api/communities/social/profile")) {
+    if (upperMethod === "PUT" || upperMethod === "PATCH") {
+      try {
+        const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+        if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
+           storedDemoUsers[activeDemoEmail] = {
+             ...(storedDemoUsers[activeDemoEmail] || {}),
+             profilePhotoUrl: payload.profilePhotoUrl,
+             avatar: payload.profilePhotoUrl // update both to be safe
+           };
+           localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
+        }
+      } catch (e) {}
+    }
     const commData = getDemoCommunityData();
     return commData.viewer;
   }
