@@ -17674,4 +17674,286 @@ body.dark-theme .doctor-table tbody tr:hover,
   background-color: rgba(30, 41, 59, 0.45) !important;
 }
 
+/* ────────────────────────────────────────────────────────────
+   MODALE PATIENT - PREMIUM UI/UX
+──────────────────────────────────────────────────────────── */
 
+.dw-modal-body-container {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--nc-panel-bg);
+  min-height: 65vh;
+}
+
+/* En-tête de la Modale */
+.dw-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  background-color: transparent;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.dw-modal-avatar {
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.dw-modal-actions {
+  flex-grow: 1;
+}
+
+body.dark-theme .dw-modal-avatar {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+/* Barre de Navigation (Onglets) */
+.dw-modal-nav-container {
+  border-bottom: 1px solid var(--nc-panel-border);
+  padding: 0 1.5rem;
+  background-color: transparent;
+}
+
+.dw-modal-nav {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dw-modal-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dw-modal-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--nc-copy-soft);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dw-modal-nav-item i {
+  font-size: 1.1rem;
+}
+
+.dw-modal-nav-item:hover {
+  color: var(--nc-copy);
+}
+
+.dw-modal-nav-item.is-active {
+  color: var(--nc-primary);
+  border-bottom-color: var(--nc-primary);
+}
+
+body.dark-theme .dw-modal-nav-item.is-active {
+  color: #38bdf8;
+  border-bottom-color: #38bdf8;
+}
+
+/* Conteneur principal de la vue */
+.dw-dossier-stack {
+  padding: 0;
+}
+
+.dw-modal-content-pad {
+  padding: 1.5rem;
+}
+
+/* Sections du dossier */
+.dw-dossier-section {
+  margin-bottom: 2.5rem;
+}
+
+.dw-dossier-section:last-child {
+  margin-bottom: 0;
+}
+
+.dw-section-header {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--nc-copy);
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Grilles de données (Vue rapide / Profil) */
+.dw-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.dw-data-card {
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: background-color 0.2s ease;
+}
+
+.dw-data-card:hover {
+  background: #ffffff;
+}
+
+.dw-data-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--nc-copy-soft);
+  font-weight: 600;
+}
+
+.dw-data-value {
+  font-size: 0.95rem;
+  color: var(--nc-copy);
+  font-weight: 500;
+}
+
+body.dark-theme .dw-data-card,
+[data-theme="dark"] .dw-data-card {
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(51, 65, 85, 0.6);
+}
+
+body.dark-theme .dw-data-card:hover,
+[data-theme="dark"] .dw-data-card:hover {
+  background: rgba(30, 41, 59, 0.6);
+}
+
+/* Grille de scores cliniques */
+.dw-score-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.dw-score-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+body.dark-theme .dw-score-card,
+[data-theme="dark"] .dw-score-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(51, 65, 85, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dw-score-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--nc-copy-soft);
+  margin-bottom: 0.5rem;
+}
+
+.dw-score-value {
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.dw-score-desc {
+  font-size: 0.8rem;
+  color: var(--nc-copy-soft);
+  margin: 0;
+}
+
+/* Vue Overview (Cartes larges) */
+.dw-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.dw-overview-card {
+  background: rgba(248, 250, 252, 0.4);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+body.dark-theme .dw-overview-card,
+[data-theme="dark"] .dw-overview-card {
+  background: rgba(15, 23, 42, 0.3);
+  border-color: rgba(51, 65, 85, 0.6);
+}
+
+/* Dossier Médical / Évaluation */
+.dw-eval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dw-eval-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.dw-eval-row:hover {
+  background: rgba(248, 250, 252, 0.8);
+  border-color: rgba(203, 213, 225, 0.8);
+}
+
+.dw-eval-key {
+  font-size: 0.9rem;
+  color: var(--nc-copy-soft);
+  font-weight: 500;
+}
+
+.dw-eval-value {
+  font-size: 0.95rem;
+  color: var(--nc-copy);
+  text-align: right;
+  max-width: 50%;
+  word-break: break-word;
+}
+
+body.dark-theme .dw-eval-row,
+[data-theme="dark"] .dw-eval-row {
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(51, 65, 85, 0.5);
+}
+
+body.dark-theme .dw-eval-row:hover,
+[data-theme="dark"] .dw-eval-row:hover {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(71, 85, 105, 0.6);
+}
+
+/* Colors Utilities */
+.text-amber { color: #f59e0b !important; }
+.text-emerald { color: #10b981 !important; }
+.text-cobalt { color: #3b82f6 !important; }
+.text-rose { color: #f43f5e !important; }
+
+body.dark-theme .text-amber { color: #fbbf24 !important; }
+body.dark-theme .text-emerald { color: #34d399 !important; }
+body.dark-theme .text-cobalt { color: #60a5fa !important; }
+body.dark-theme .text-rose { color: #fb7185 !important; }

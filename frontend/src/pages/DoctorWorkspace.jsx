@@ -111,6 +111,25 @@ const humanize = (value) =>
     .replace(/_/g, " ")
     .replace(/^./, (char) => char.toUpperCase());
 
+const clinicalTranslationDict = {
+  "EDUCATION LEVEL": "Niveau d'éducation",
+  "CONSULTATION OBJECTIVE": "Objectif de consultation",
+  "OTHER SMOKERS AT HOME": "Fumeurs au domicile",
+  "RISK HYPERTENSION": "Hypertension artérielle",
+  "RISK DIABETES": "Diabète",
+  "RISK CARDIOVASCULAR": "Risque cardiovasculaire",
+  "RISK RESPIRATORY": "Problèmes respiratoires",
+  "PAST QUIT ATTEMPTS": "Tentatives d'arrêt passées",
+  "SMOKING DURATION YEARS": "Durée du tabagisme (Années)",
+  "CIGARETTES PER DAY": "Cigarettes par jour",
+  "WAKEUP SMOKE TIME": "Délai 1ère cigarette (Réveil)"
+};
+
+const translateClinicalKey = (key) => {
+  const upperKey = String(key || "").toUpperCase().replace(/_/g, " ");
+  return clinicalTranslationDict[upperKey] || humanize(key);
+};
+
 const formatDate = (value) => {
   if (!value) return "-";
   const date = new Date(value);
@@ -901,20 +920,32 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   const renderPatientHeader = () => {
     if (!dossier) return null;
+    const depLevel = selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel || "À évaluer";
+    const depStyle = getDepBadgeStyle(depLevel);
+    
     return (
-      <div className="doctor-selection-header">
-        <div>
-          <div className="section-title-sm">Patient selectionne</div>
-          <h3 className="mb-1">{dossier.patientName}</h3>
-          <p className="muted-text mb-0">{dossier.patientEmail}</p>
+      <div className="dw-modal-header">
+        <div className="d-flex align-items-center gap-3">
+          <div className="dw-patient-initials dw-modal-avatar" style={{ background: getInitialsGradient(dossier.patientName), width: "3.5rem", height: "3.5rem", fontSize: "1.25rem" }}>
+            {getPatientInitials(dossier.patientName)}
+          </div>
+          <div>
+            <div className="section-title-sm mb-1 text-muted">Dossier Médical Patient</div>
+            <h3 className="mb-0 fw-bold">{dossier.patientName}</h3>
+            <p className="text-muted mb-0 mt-1" style={{ fontSize: "0.85rem" }}>{dossier.patientEmail}</p>
+          </div>
         </div>
-        <div className="doctor-selection-meta">
-          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2 px-3 rounded-pill fw-semibold border border-danger border-opacity-25 bg-danger bg-opacity-10 text-danger hover-bg-danger-solid" onClick={exportClinicalReportPDF}>
+        <div className="dw-modal-actions d-flex flex-wrap gap-2 align-items-center justify-content-end">
+          <span className={`badge rounded-pill ${selectedPendingRequest ? "bg-warning text-dark border-warning" : "bg-primary-subtle text-primary border-primary"} border`} style={{ fontSize: "0.75rem", padding: "5px 12px", fontWeight: 600 }}>
+            {selectedPendingRequest ? "En attente d'action" : "Patient rattaché"}
+          </span>
+          <span className="badge rounded-pill fw-semibold" style={{ backgroundColor: depStyle.bg, color: depStyle.color, border: `1px solid ${depStyle.border}`, fontSize: "0.75rem", padding: "5px 12px" }}>
+            {displayValue(depLevel)}
+          </span>
+          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2 px-3 rounded-pill fw-semibold border-danger border-opacity-25 bg-danger bg-opacity-10 text-danger hover-bg-danger-solid" onClick={exportClinicalReportPDF}>
             <i className="bi bi-file-earmark-pdf-fill fs-6" />
-            <span>Exporter le Bilan Clinique</span>
+            <span>Exporter le Bilan</span>
           </button>
-          <span className={`doctor-status-chip ${selectedPendingRequest ? "status-pending" : "status-accepted"}`}>{selectedPendingRequest ? "Demande a traiter" : "Patient associe"}</span>
-          <span className="doctor-status-chip status-info">{displayValue(selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel || "A evaluer")}</span>
         </div>
       </div>
     );
@@ -923,13 +954,15 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   const renderPatientTabs = () => {
     if (!dossier) return null;
     return (
-      <div className="doctor-view-tabs">
-        {patientWorkspaceViews.map((view) => (
-          <button key={view.key} type="button" className={`doctor-view-tab ${selectedPatientView === view.key ? "is-active" : ""}`} onClick={() => setSelectedPatientView(view.key)}>
-            <i className={view.icon} />
-            <span>{view.label}</span>
-          </button>
-        ))}
+      <div className="dw-modal-nav-container">
+        <div className="dw-modal-nav">
+          {patientWorkspaceViews.map((view) => (
+            <button key={view.key} type="button" className={`dw-modal-nav-item ${selectedPatientView === view.key ? "is-active" : ""}`} onClick={() => setSelectedPatientView(view.key)}>
+              <i className={view.icon} />
+              <span>{view.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
@@ -951,79 +984,113 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
   };
 
   const renderOverview = () => (
-    <>
+    <div className="dw-modal-content-pad">
       {renderDecisionBox()}
-      <div className="doctor-dossier-section">
-        <strong>Vue rapide du patient</strong>
-        <div className="profile-card-grid mt-3">
+      <div className="dw-dossier-section">
+        <h4 className="dw-section-header"><i className="bi bi-person-bounding-box text-primary me-2"/>Vue rapide du patient</h4>
+        <div className="dw-data-grid mt-3">
           {patientCards.slice(0, 8).map(([label, value]) => (
-            <div key={label} className="profile-data-card">
-              <span className="profile-data-label">{label}</span>
-              <strong>{displayValue(value)}</strong>
+            <div key={label} className="dw-data-card">
+              <span className="dw-data-label">{label}</span>
+              <strong className="dw-data-value">{displayValue(value)}</strong>
             </div>
           ))}
         </div>
       </div>
-      <div className="doctor-dossier-section">
-        <strong>Indicateurs cles</strong>
-        <div className="doctor-score-grid mt-3">
-          <div className="doctor-score-card"><span>Fagerstrom</span><strong>{displayValue(dossier.latestFagerstrom?.totalScore)}</strong><p>{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p></div>
-          <div className="doctor-score-card"><span>HAD Anxiete</span><strong>{displayValue(dossier.latestHad?.anxietyScore)}</strong><p>{displayValue(dossier.latestHad?.anxietyInterpretation)}</p></div>
-          <div className="doctor-score-card"><span>HAD Depression</span><strong>{displayValue(dossier.latestHad?.depressionScore)}</strong><p>{displayValue(dossier.latestHad?.depressionInterpretation)}</p></div>
-          <div className="doctor-score-card"><span>Journal</span><strong>{safeList(dossier.dailyReports).length}</strong><p>Entrees quotidiennes</p></div>
+      <div className="dw-dossier-section">
+        <h4 className="dw-section-header"><i className="bi bi-activity text-emerald me-2"/>Indicateurs clés</h4>
+        <div className="dw-score-grid mt-3">
+          <div className="dw-score-card">
+            <span className="dw-score-label">Fagerström</span>
+            <strong className="dw-score-value text-amber">{displayValue(dossier.latestFagerstrom?.totalScore)}</strong>
+            <p className="dw-score-desc">{displayValue(dossier.latestFagerstrom?.dependenceLevel)}</p>
+          </div>
+          <div className="dw-score-card">
+            <span className="dw-score-label">HAD Anxiété</span>
+            <strong className="dw-score-value text-cobalt">{displayValue(dossier.latestHad?.anxietyScore)}</strong>
+            <p className="dw-score-desc">{displayValue(dossier.latestHad?.anxietyInterpretation)}</p>
+          </div>
+          <div className="dw-score-card">
+            <span className="dw-score-label">HAD Dépression</span>
+            <strong className="dw-score-value text-rose">{displayValue(dossier.latestHad?.depressionScore)}</strong>
+            <p className="dw-score-desc">{displayValue(dossier.latestHad?.depressionInterpretation)}</p>
+          </div>
+          <div className="dw-score-card">
+            <span className="dw-score-label">Journal Quotidien</span>
+            <strong className="dw-score-value text-emerald">{safeList(dossier.dailyReports).length}</strong>
+            <p className="dw-score-desc">Entrées complétées</p>
+          </div>
         </div>
       </div>
-      <div className="doctor-dossier-section doctor-overview-grid">
-        <div className="doctor-overview-card">
-          <span className="profile-data-label">Plan de Sevrage Actif</span>
+      <div className="dw-dossier-section dw-overview-grid mt-4">
+        <div className="dw-overview-card">
+          <span className="dw-data-label">Plan de Sevrage Actif</span>
           {dossier.validatedPlan ? (
             <div className="mt-2">
-              <strong className="text-primary d-block">{dossier.validatedPlan.title}</strong>
-              <p className="mb-0 small mt-1">{dossier.validatedPlan.summary}</p>
+              <strong className="text-primary d-block fs-6 mb-1">{dossier.validatedPlan.title}</strong>
+              <p className="mb-0 text-muted" style={{ fontSize: "0.85rem", lineHeight: "1.5" }}>{dossier.validatedPlan.summary}</p>
             </div>
           ) : (
-            <p className="mb-0 text-muted">Aucun plan validé. Consultez l'onglet "Plan de Sevrage IA".</p>
+            <p className="mb-0 text-muted mt-2" style={{ fontSize: "0.85rem" }}>Aucun plan validé. Consultez l'onglet "Plan de Sevrage IA".</p>
           )}
         </div>
-        <div className="doctor-overview-card">
-          <span className="profile-data-label">Dernier Rapport Médical</span>
+        <div className="dw-overview-card">
+          <span className="dw-data-label">Dernier Rapport Médical</span>
           {medicalReports.length > 0 ? (
             <div className="mt-2">
-              <strong className="d-block">{medicalReports[0].title}</strong>
-              <p className="mb-0 small text-secondary">{formatDate(medicalReports[0].consultationDate)} · {medicalReports[0].tobaccoConsumptionDaily} cig/j</p>
-              <button type="button" className="btn btn-link btn-sm p-0 mt-1" onClick={() => setSelectedPatientView("medical-reports")}>Voir tout l'historique</button>
+              <strong className="d-block fs-6 mb-1">{medicalReports[0].title}</strong>
+              <p className="mb-0 text-muted" style={{ fontSize: "0.85rem" }}>{formatDate(medicalReports[0].consultationDate)} · {medicalReports[0].tobaccoConsumptionDaily} cig/j</p>
+              <button type="button" className="btn btn-link btn-sm p-0 mt-2 text-decoration-none fw-semibold" onClick={() => setSelectedPatientView("medical-reports")}>Voir tout l'historique <i className="bi bi-arrow-right ms-1"/></button>
             </div>
           ) : (
-            <p className="mb-0 text-muted">Aucun rapport. Effectuez un bilan depuis l'agenda.</p>
+            <p className="mb-0 text-muted mt-2" style={{ fontSize: "0.85rem" }}>Aucun rapport. Effectuez un bilan depuis l'agenda.</p>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 
   const renderProfileSection = () => (
-    <div className="doctor-dossier-section">
-      <strong>Profil personnel du patient</strong>
-      <div className="profile-card-grid mt-3">
-        {patientCards.map(([label, value]) => (
-          <div key={label} className="profile-data-card">
-            <span className="profile-data-label">{label}</span>
-            <strong>{displayValue(value)}</strong>
-          </div>
-        ))}
+    <div className="dw-modal-content-pad">
+      <div className="dw-dossier-section">
+        <h4 className="dw-section-header"><i className="bi bi-person-vcard-fill text-primary me-2"/>Profil personnel du patient</h4>
+        <div className="dw-data-grid mt-3">
+          {patientCards.map(([label, value]) => (
+            <div key={label} className="dw-data-card">
+              <span className="dw-data-label">{label}</span>
+              <strong className="dw-data-value">{displayValue(value)}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="dw-overview-card mt-4">
+          <span className="dw-data-label mb-2 d-block">Notes médicales générales</span>
+          <p className="mb-0" style={{ fontSize: "0.9rem", color: "var(--nc-copy)", lineHeight: "1.6" }}>{displayValue(dossier.profile?.medicalHistoryNotes)}</p>
+        </div>
       </div>
-      <div className="doctor-bio-card mt-4"><span className="profile-data-label">Notes medicales generales</span><p className="mb-0">{displayValue(dossier.profile?.medicalHistoryNotes)}</p></div>
     </div>
   );
 
   const renderEvaluationSection = () => (
-    <div className="doctor-dossier-section">
-      <strong>Dossier medical initial complet</strong>
-      <p className="muted-text mb-0">Toutes les reponses de l'evaluation initiale sont visibles pour l'analyse clinique.</p>
-      <div className="doctor-dossier-answers mt-3">
-        {assessmentEntries.length === 0 ? <p className="muted-text mb-0">Aucune reponse d'evaluation disponible.</p> : assessmentEntries.map(([key, value]) => (
-          <div key={key} className="doctor-answer-row"><span>{humanize(key)}</span><strong>{displayValue(value)}</strong></div>
-        ))}
+    <div className="dw-modal-content-pad">
+      <div className="dw-dossier-section">
+        <h4 className="dw-section-header mb-1"><i className="bi bi-journal-medical text-primary me-2"/>Dossier médical initial complet</h4>
+        <p className="text-muted mb-4" style={{ fontSize: "0.85rem" }}>Toutes les réponses de l'évaluation initiale sont centralisées pour l'analyse clinique.</p>
+        
+        <div className="dw-eval-list">
+          {assessmentEntries.length === 0 ? (
+            <div className="text-center py-5 bg-light rounded-3 border border-light-subtle">
+              <i className="bi bi-folder-x text-muted fs-3 d-block mb-2"></i>
+              <p className="text-muted mb-0 small">Aucune donnée d'évaluation disponible.</p>
+            </div>
+          ) : (
+            assessmentEntries.map(([key, value]) => (
+              <div key={key} className="dw-eval-row">
+                <span className="dw-eval-key">{translateClinicalKey(key)}</span>
+                <strong className="dw-eval-value">{displayValue(value)}</strong>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1039,8 +1106,8 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     const diffDays = Math.max(0, (Date.now() - quitDate.getTime()) / (1000 * 60 * 60 * 24));
 
     return (
-      <div className="doctor-dossier-section">
-        <strong>Dashboard clinique et historiques de tests</strong>
+      <div className="dw-modal-content-pad">
+        <h4 className="dw-section-header"><i className="bi bi-speedometer2 text-primary me-2"/>Dashboard clinique et historiques de tests</h4>
         
         {/* 🫁 Visualisation 3D Interactive de l'Évolution Pulmonaire (Patient) */}
         <div className="mt-3">
@@ -1400,14 +1467,13 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
             scrollable
             contentClassName="doctor-patient-modal-content"
           >
-            <Modal.Header closeButton className="border-bottom pb-3">
-              <Modal.Title className="section-title-sm mb-0">Espace patient sélectionné</Modal.Title>
+            <Modal.Header closeButton className="border-bottom-0 pb-0 pt-4 px-4">
             </Modal.Header>
-            <Modal.Body className="p-4 bg-light">
-              <div className="doctor-overlay-panel-body p-0">
+            <Modal.Body className="p-0">
+              <div className="dw-modal-body-container">
                 {renderPatientHeader()}
                 {renderPatientTabs()}
-                <div className="doctor-dossier-stack mt-4">
+                <div className="dw-dossier-stack">
                   {renderSelectedPatientContent()}
                 </div>
               </div>
