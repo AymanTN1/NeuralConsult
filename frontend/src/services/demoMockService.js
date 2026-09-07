@@ -2370,6 +2370,22 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       return newApt;
     }
 
+    if (url.includes("/api/communities/social/profile")) {
+      try {
+        const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+        if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
+           storedDemoUsers[activeDemoEmail] = {
+             ...(storedDemoUsers[activeDemoEmail] || {}),
+             profilePhotoUrl: payload.profilePhotoUrl,
+             avatar: payload.profilePhotoUrl
+           };
+           localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
+        }
+      } catch (e) {}
+      const commData = getDemoCommunityData();
+      return commData.viewer;
+    }
+
     // 3. AI Support Chat Message sending
     if (url.includes("/api/support/current/messages") || url.includes("/api/support/doctor/patients")) {
       const activePatient = getDemoUserByEmail(activeDemoEmail) || DEMO_USERS.patient1;
@@ -2518,19 +2534,6 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   }
 
   if (url.includes("/api/communities/social/profile")) {
-    if (upperMethod === "PUT" || upperMethod === "PATCH") {
-      try {
-        const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-        if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
-           storedDemoUsers[activeDemoEmail] = {
-             ...(storedDemoUsers[activeDemoEmail] || {}),
-             profilePhotoUrl: payload.profilePhotoUrl,
-             avatar: payload.profilePhotoUrl // update both to be safe
-           };
-           localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
-        }
-      } catch (e) {}
-    }
     const commData = getDemoCommunityData();
     return commData.viewer;
   }
