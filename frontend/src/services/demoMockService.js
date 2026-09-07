@@ -599,21 +599,21 @@ export const createDemoDossier = (patientProfileId) => {
 
   const conversationMessages = isUrgent
     ? [
-        { id: "msg-k1", senderType: "PATIENT", content: "🚨 SOS Envie : J'ai une envie de fumer incontrôlable suite à une grosse crise au travail ! Je tremble et je suis prêt à descendre acheter un paquet. Aidez-moi vite !", createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString() },
-        { id: "msg-k2", senderType: "AI", content: "🚨 Karim, asseyez-vous immédiatement et restez avec moi ! Ne bougez pas. Prenez votre spray nicotinique ou votre gomme 2mg tout de suite. Inspirez en 4 secondes... Bloquez 7 secondes... Expirez lentement par la bouche en 8 secondes. Cette tempête dopaminergique est violente mais elle va redescendre dans 180 secondes. J'ai alerté le Dr. Tantani en priorité sur votre dossier.", createdAt: new Date(Date.now() - 3600000 * 1.4).toISOString() },
-        { id: "msg-k3", senderType: "PATIENT", content: "J'ai pris la gomme et je fais les respirations... Le tremblement diminue mais le manque physique me brûle.", createdAt: new Date(Date.now() - 3600000 * 0.8).toISOString() },
-        { id: "msg-k4", senderType: "AI", content: "Bravo pour votre immense courage, Karim ! Vous tenez bon. Buvez immédiatement un grand verre d'eau glacée. Le Dr. Tantani a reçu votre alerte d'urgence et peut initier une téléconsultation si nécessaire. Continuez la respiration 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 0.7).toISOString() }
+        { id: "msg-k1", senderType: "PATIENT", senderName: patient.patientName || "Karim Benali", content: "🚨 SOS Envie : J'ai une envie de fumer incontrôlable suite à une grosse crise au travail ! Je tremble et je suis prêt à descendre acheter un paquet. Aidez-moi vite !", createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString() },
+        { id: "msg-k2", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "🚨 Karim, asseyez-vous immédiatement et restez avec moi ! Ne bougez pas. Prenez votre spray nicotinique ou votre gomme 2mg tout de suite. Inspirez en 4 secondes... Bloquez 7 secondes... Expirez lentement par la bouche en 8 secondes. Cette tempête dopaminergique est violente mais elle va redescendre dans 180 secondes. J'ai alerté le Dr. Tantani en priorité sur votre dossier.", createdAt: new Date(Date.now() - 3600000 * 1.4).toISOString() },
+        { id: "msg-k3", senderType: "PATIENT", senderName: patient.patientName || "Karim Benali", content: "J'ai pris la gomme et je fais les respirations... Le tremblement diminue mais le manque physique me brûle.", createdAt: new Date(Date.now() - 3600000 * 0.8).toISOString() },
+        { id: "msg-k4", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bravo pour votre immense courage, Karim ! Vous tenez bon. Buvez immédiatement un grand verre d'eau glacée. Le Dr. Tantani a reçu votre alerte d'urgence et peut initier une téléconsultation si nécessaire. Continuez la respiration 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 0.7).toISOString() }
       ]
     : isSevere
     ? [
-        { id: "msg-m1", senderType: "PATIENT", content: "L'anxiété est très forte ce matin, je n'ai pas dormi de la nuit. Fumer une cigarette est la seule chose qui me vient à l'esprit.", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
-        { id: "msg-m2", senderType: "AI", content: "Mohamed, l'insomnie et l'irritabilité sont les manifestations typiques du sevrage nicotinique à J+2. Cela prouve que votre corps commence déjà à éliminer les toxines. Utilisez votre patch 21mg et accordez-vous une douche tiède pour relâcher les tensions musculaires.", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
+        { id: "msg-m1", senderType: "PATIENT", senderName: patient.patientName || "Mohamed Chraibi", content: "L'anxiété est très forte ce matin, je n'ai pas dormi de la nuit. Fumer une cigarette est la seule chose qui me vient à l'esprit.", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
+        { id: "msg-m2", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Mohamed, l'insomnie et l'irritabilité sont les manifestations typiques du sevrage nicotinique à J+2. Cela prouve que votre corps commence déjà à éliminer les toxines. Utilisez votre patch 21mg et accordez-vous une douche tiède pour relâcher les tensions musculaires.", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
       ]
     : [
-        { id: "msg-1", senderType: "PATIENT", content: "Bonjour, j'ai parfois un léger craving après le repas du midi. Que me conseillez-vous ?", createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
-        { id: "msg-2", senderType: "AI", content: "Bonjour Youssef ! C'est un déclencheur classique lié au rituel post-prandial. Prenez une gomme 2mg immédiatement après le repas, buvez un grand verre d'eau fraîche et faites 2 minutes de cohérence cardiaque 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 4.9).toISOString() },
-        { id: "msg-3", senderType: "PATIENT", content: "Merci beaucoup, la respiration m'a fait énormément de bien, l'envie est passée !", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
-        { id: "msg-4", senderType: "AI", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
+        { id: "msg-1", senderType: "PATIENT", senderName: patient.patientName || "Youssef El Fassi", content: "Bonjour, j'ai parfois un léger craving après le repas du midi. Que me conseillez-vous ?", createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
+        { id: "msg-2", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bonjour Youssef ! C'est un déclencheur classique lié au rituel post-prandial. Prenez une gomme 2mg immédiatement après le repas, buvez un grand verre d'eau fraîche et faites 2 minutes de cohérence cardiaque 4-7-8.", createdAt: new Date(Date.now() - 3600000 * 4.9).toISOString() },
+        { id: "msg-3", senderType: "PATIENT", senderName: patient.patientName || "Youssef El Fassi", content: "Merci beaucoup, la respiration m'a fait énormément de bien, l'envie est passée !", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
+        { id: "msg-4", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
       ];
 
   return {
@@ -674,8 +674,18 @@ export const createDemoDossier = (patientProfileId) => {
       ]
     },
     supportConversation: {
+      patientProfileId: patient.patientProfileId,
+      patientName: patient.patientName,
+      patientEmail: patient.patientEmail,
+      city: patient.city,
+      status: patient.status,
+      doctorName: "Dr. Ayman Tantani",
+      doctorSpecialty: "Tabacologue & Médecin Référent",
       latestRiskLevel: patient.riskLevel,
       latestSummary: patient.aiSummary,
+      fagerstromScore: patient.fagerstromScore,
+      hadAnxietyScore: patient.hadAnxietyScore,
+      hadDepressionScore: patient.hadDepressionScore,
       messages: conversationMessages
     },
     supportAlerts: [

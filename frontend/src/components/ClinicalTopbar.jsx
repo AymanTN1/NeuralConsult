@@ -8,52 +8,52 @@ import { requestNotificationPermission, processIncomingNotificationsForNativeAle
 
 const pageMeta = {
   "/dashboard": {
-    eyebrow: "Suivi clinique",
-    title: "Vue d'ensemble du parcours"
+    eyebrow: "Suivi Clinique · Vue d'ensemble",
+    title: "Tableau de bord du parcours"
   },
   "/evaluation": {
-    eyebrow: "Evaluation initiale",
-    title: "Consultation initiale structuree"
+    eyebrow: "Évaluation Initiale",
+    title: "Consultation initiale structurée"
   },
   "/doctors": {
-    eyebrow: "Alliance medecin-patient",
-    title: "Annuaire, matching et demandes"
+    eyebrow: "Alliance Thérapeutique",
+    title: "Annuaire praticiens & matching"
   },
   "/tests": {
-    eyebrow: "Scores cliniques",
-    title: "Fagerstrom, HAD et historique"
+    eyebrow: "Scores & Biométrie",
+    title: "Fagerström, HAD & Historique"
   },
   "/plan": {
-    eyebrow: "Strategie therapeutique",
-    title: "Plans de sevrage et protocole"
+    eyebrow: "Stratégie Thérapeutique",
+    title: "Plans de sevrage & protocoles"
   },
   "/journal": {
-    eyebrow: "Suivi quotidien",
-    title: "Respiration, cravings et rechute"
+    eyebrow: "Suivi Quotidien",
+    title: "Respiration, cravings & journal"
   },
   "/appointments": {
-    eyebrow: "Rendez-vous clinique",
-    title: "Organisation des seances et soutien psychique"
+    eyebrow: "Rendez-vous Cliniques",
+    title: "Consultations & soutien psychique"
   },
   "/notifications": {
-    eyebrow: "Boite de reception clinique",
-    title: "Notifications, rappels et messages importants"
+    eyebrow: "Boîte de Réception Clinique",
+    title: "Alertes, rappels & notifications"
   },
   "/support": {
-    eyebrow: "Soutien 24/7",
-    title: "Conversations IA, signaux de risque et escalade medecin"
+    eyebrow: "Espace Clinique · Télésurveillance",
+    title: "Conversations Assistées & Télésuivi IA"
   },
   "/communities": {
-    eyebrow: "Communautes patients",
-    title: "Salons d'entraide, discussions et moderation"
+    eyebrow: "Communautés Patients",
+    title: "Salons d'entraide & modération"
   },
   "/profile": {
-    eyebrow: "Identite patient",
-    title: "Profil personnel"
+    eyebrow: "Identité",
+    title: "Profil & Paramètres"
   },
   "/clinical-guidance": {
     eyebrow: "Ressources Cliniques",
-    title: "Assistant Clinique RAG & Guidelines"
+    title: "Assistant RAG & Guidelines HAS"
   }
 };
 
@@ -65,28 +65,25 @@ const ClinicalTopbar = () => {
   const adminMode = isAdmin(user);
   const doctorMode = isDoctor(user);
   const [unreadCount, setUnreadCount] = useState(0);
+
   const meta = adminMode
-    ? { eyebrow: "Validation clinique", title: "Comptes medecins en attente de validation" }
+    ? { eyebrow: "Administration Système", title: "Validation des comptes praticiens" }
     : doctorMode
     ? location.pathname === "/profile"
-      ? { eyebrow: "Identite praticien", title: "Profil medecin et positionnement" }
+      ? { eyebrow: "Identité Praticien", title: "Profil médecin & exercice" }
       : location.pathname === "/appointments"
-        ? { eyebrow: "Rendez-vous medecin", title: "Planning, confirmations et seances completes" }
+        ? { eyebrow: "Agenda Médical", title: "Planning des consultations & urgences" }
         : location.pathname === "/notifications"
-          ? { eyebrow: "Boite de reception medecin", title: "Alertes, rendez-vous et rappels a traiter" }
+          ? { eyebrow: "Télésurveillance", title: "Alertes cliniques & rappels patients" }
         : location.pathname === "/support"
-          ? { eyebrow: "Conversations assistees", title: "Alertes IA et suivi psychologique continu" }
+          ? { eyebrow: "Cockpit Médical · Télésurveillance", title: "Conversations Assistées & Triage IA" }
           : location.pathname === "/communities"
-            ? { eyebrow: "Communautes cliniques", title: "Groupes d'entraide et moderation" }
+            ? { eyebrow: "Communautés Cliniques", title: "Groupes d'entraide & veille" }
             : location.pathname === "/clinical-guidance"
-              ? { eyebrow: "Ressources Cliniques", title: "Assistant Clinique RAG & Guidelines" }
-      : { eyebrow: "Espace medecin", title: "Demandes, dossiers et validation de plans" }
+              ? { eyebrow: "Aide à la Décision", title: "Assistant Clinique RAG & Guidelines" }
+      : { eyebrow: "Espace Médical", title: "Dossiers patients & validation des protocoles" }
     : (pageMeta[location.pathname] || pageMeta["/dashboard"]);
-  const riskScore = Math.max(
-    user?.scores?.fagerstromScore || 0,
-    user?.scores?.hadAnxietyScore || 0,
-    user?.scores?.hadDepressionScore || 0
-  );
+
   const onboardingComplete = !isPatient(user) || user?.profile?.onboardingComplete;
 
   useEffect(() => {
@@ -129,7 +126,12 @@ const ClinicalTopbar = () => {
   return (
     <header className="clinical-topbar">
       <div className="d-flex align-items-center gap-3">
-        <img className="d-lg-none" src="/icons/icon_Neural_Consult_Sevrage.png" alt="Logo" style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover' }} />
+        <img
+          className="d-lg-none"
+          src="/icons/icon_Neural_Consult_Sevrage.png"
+          alt="Logo"
+          style={{ width: "36px", height: "36px", borderRadius: "10px", objectFit: "cover" }}
+        />
         <div>
           <div className="topbar-eyebrow">{meta.eyebrow}</div>
           <h1 className="topbar-title">{meta.title}</h1>
@@ -137,6 +139,68 @@ const ClinicalTopbar = () => {
       </div>
 
       <div className="topbar-actions">
+        {/* Live sync badge */}
+        <div className="topbar-status-indicator d-none d-xl-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill">
+          <span className="pulse-dot" />
+          <span className="topbar-status-text">Sync IA Active 24/7</span>
+        </div>
+
+        {/* Doctor or Patient verified identity card */}
+        {doctorMode ? (
+          <div className="topbar-doctor-card d-flex align-items-center gap-2 px-2.5 py-1.5 rounded-3">
+            <div className="topbar-doctor-avatar">
+              <i className="bi bi-person-badge-fill" />
+            </div>
+            <div className="d-flex flex-column line-height-tight">
+              <div className="d-flex align-items-center gap-1.5">
+                <span className="topbar-user-name text-truncate" style={{ maxWidth: "160px" }}>
+                  {user?.fullName || "Dr. Ayman Tantani"}
+                </span>
+                <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill x-small px-1.5 py-0">
+                  Médecin
+                </span>
+              </div>
+              <span className="topbar-user-sub">Tabacologue Référent</span>
+            </div>
+          </div>
+        ) : adminMode ? (
+          <div className="topbar-doctor-card d-flex align-items-center gap-2 px-2.5 py-1.5 rounded-3">
+            <div className="topbar-doctor-avatar admin-avatar">
+              <i className="bi bi-shield-lock-fill" />
+            </div>
+            <div className="d-flex flex-column line-height-tight">
+              <span className="topbar-user-name">{user?.fullName || "Administrateur"}</span>
+              <span className="topbar-user-sub">Supervision Clinique</span>
+            </div>
+          </div>
+        ) : (
+          <div className="topbar-doctor-card d-flex align-items-center gap-2 px-2.5 py-1.5 rounded-3">
+            <div className="topbar-doctor-avatar patient-avatar">
+              <i className="bi bi-person-heart" />
+            </div>
+            <div className="d-flex flex-column line-height-tight">
+              <span className="topbar-user-name text-truncate" style={{ maxWidth: "140px" }}>
+                {user?.fullName || "Patient"}
+              </span>
+              <span className="topbar-user-sub">
+                {onboardingComplete ? "Protocole Sevrage J+14" : "Parcours en cours"}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Notifications */}
+        <button
+          className="btn btn-sm topbar-notifications-btn position-relative"
+          onClick={() => navigate("/notifications")}
+          aria-label="Ouvrir les notifications"
+          title="Notifications cliniques"
+        >
+          <i className="bi bi-bell-fill" />
+          {unreadCount > 0 && <span className="topbar-notification-count">{unreadCount}</span>}
+        </button>
+
+        {/* Theme toggle */}
         <button
           className="theme-toggle-btn"
           onClick={toggleTheme}
@@ -144,36 +208,26 @@ const ClinicalTopbar = () => {
           title={isDark ? "Mode clair" : "Mode sombre"}
         >
           {isDark ? (
-            <span className="d-flex align-items-center gap-2">
+            <span className="d-flex align-items-center gap-1.5">
               <i className="bi bi-sun-fill text-warning" />
-              <span className="theme-toggle-label d-none d-md-inline">Clair</span>
+              <span className="theme-toggle-label d-none d-lg-inline">Clair</span>
             </span>
           ) : (
-            <span className="d-flex align-items-center gap-2">
+            <span className="d-flex align-items-center gap-1.5">
               <i className="bi bi-moon-stars-fill text-primary" />
-              <span className="theme-toggle-label d-none d-md-inline">Sombre</span>
+              <span className="theme-toggle-label d-none d-lg-inline">Sombre</span>
             </span>
           )}
         </button>
-        <div className={`clinical-score-chip severity-${riskScore >= 11 ? "critical" : riskScore >= 8 ? "warning" : "stable"}`}>
-          <span className="clinical-score-chip-label">{doctorMode || adminMode ? "Role" : "Repere"}</span>
-          <span className="clinical-score-chip-value">{adminMode ? "ADMIN" : doctorMode ? "MD" : riskScore}</span>
-        </div>
-        <div className={`clinical-score-chip ${onboardingComplete ? "severity-stable" : "severity-warning"}`}>
-          <span className="clinical-score-chip-label">Parcours</span>
-          <span className="clinical-score-chip-value">{onboardingComplete ? "Complet" : "En cours"}</span>
-        </div>
-        <div className="topbar-user">
-          <div className="topbar-user-name">{user?.fullName || "Patient"}</div>
-          <div className="topbar-user-copy">{user?.email}</div>
-        </div>
-        <button className="btn btn-outline-dark btn-sm topbar-notifications" onClick={() => navigate("/notifications")} aria-label="Ouvrir les notifications" title="Notifications">
-          <i className="bi bi-bell-fill" />
-          {unreadCount > 0 && <span className="topbar-notification-count">{unreadCount}</span>}
-        </button>
-        <button className="btn btn-outline-dark btn-sm topbar-logout" onClick={logout}>
-          <i className="bi bi-box-arrow-right me-1" />
-          Deconnexion
+
+        {/* Logout */}
+        <button
+          className="btn btn-outline-danger btn-sm topbar-logout-btn d-flex align-items-center gap-1"
+          onClick={logout}
+          title="Fermer la session clinique"
+        >
+          <i className="bi bi-box-arrow-right" />
+          <span className="d-none d-md-inline">Déconnexion</span>
         </button>
       </div>
     </header>
