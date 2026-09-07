@@ -801,6 +801,8 @@ body.dark-theme .btn-ghost-nav:hover,
   min-width: 0;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .clinical-topbar {
@@ -13376,6 +13378,219 @@ body.dark-theme .support-msg-bubble.ai-bubble {
   .support-chat-card {
     height: 560px;
   }
+}
+
+/* =====================================================================
+   🩺 SUPPORT PAGE: DARK MODE VISIBILITY FIXES
+   ===================================================================== */
+
+/* Fix: Sidebar card text (patient info, bilan) invisible in dark mode (black on navy) */
+body.dark-theme .support-card-glass {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .support-card-glass h6,
+body.dark-theme .support-card-glass .fw-bold {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .support-card-glass .text-muted {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .support-card-glass .text-truncate,
+body.dark-theme .support-card-glass strong {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .support-vital-item {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+body.dark-theme .support-vital-item .text-muted {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .support-summary-quote {
+  background: rgba(2, 132, 199, 0.08) !important;
+  border-left-color: #0284c7 !important;
+}
+
+body.dark-theme .support-summary-quote p {
+  color: #cbd5e1 !important;
+}
+
+/* Fix: Bottom white background glitch when scrolling to end */
+body.dark-theme .support-chat-card {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .support-chat-body {
+  background: transparent !important;
+}
+
+body.dark-theme .support-quick-chips {
+  background: rgba(15, 23, 42, 0.65) !important;
+}
+
+body.dark-theme .support-chat-input-area {
+  background: rgba(15, 23, 42, 0.85) !important;
+}
+
+body.dark-theme .support-studio-header {
+  background: rgba(15, 23, 42, 0.92) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .support-studio-header h5,
+body.dark-theme .support-studio-header .fw-bold {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .support-studio-header .text-muted {
+  color: #94a3b8 !important;
+}
+
+/* Dark mode: triage card text readability */
+body.dark-theme .support-triage-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .support-triage-card strong,
+body.dark-theme .support-triage-card .fw-bold {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .support-triage-card .text-muted,
+body.dark-theme .support-triage-card .x-small.text-muted {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .support-segmented-control {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .support-search-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .support-cockpit-bar {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .support-cockpit-bar .text-muted {
+  color: #94a3b8 !important;
+}
+
+/* =====================================================================
+   🩺 SUPPORT PAGE: LIGHT MODE VISIBILITY FIXES
+   ===================================================================== */
+
+/* Fix: Risk badge nearly invisible on white background in light mode */
+body.light-theme .support-risk-badge {
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+body.light-theme .support-card-glass {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(37, 99, 235, 0.12) !important;
+  color: #0f2f57 !important;
+}
+
+body.light-theme .support-card-glass h6,
+body.light-theme .support-card-glass .fw-bold {
+  color: #0f172a !important;
+}
+
+body.light-theme .support-card-glass .text-muted {
+  color: #64748b !important;
+}
+
+body.light-theme .support-card-glass strong {
+  color: #1e293b !important;
+}
+
+body.light-theme .support-vital-item {
+  background: rgba(241, 245, 249, 0.7) !important;
+  border-color: rgba(37, 99, 235, 0.08) !important;
+}
+
+body.light-theme .support-summary-quote {
+  background: rgba(239, 246, 255, 0.6) !important;
+}
+
+body.light-theme .support-summary-quote p {
+  color: #334155 !important;
+}
+
+body.light-theme .support-studio-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #0f2f57 !important;
+}
+
+body.light-theme .support-studio-header h5 {
+  color: #0f172a !important;
+}
+
+body.light-theme .support-chat-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(37, 99, 235, 0.1) !important;
+}
+
+body.light-theme .support-triage-card {
+  background: rgba(248, 250, 252, 0.85) !important;
+  border-color: rgba(37, 99, 235, 0.1) !important;
+}
+
+body.light-theme .support-triage-card strong {
+  color: #0f172a !important;
+}
+
+body.light-theme .support-chat-input-area {
+  background: rgba(248, 250, 252, 0.9) !important;
+}
+
+body.light-theme .support-quick-chips {
+  background: rgba(248, 250, 252, 0.85) !important;
+}
+
+/* =====================================================================
+   🩺 DOCTOR READ-ONLY FOOTER
+   ===================================================================== */
+
+.support-doctor-readonly-footer {
+  flex-shrink: 0;
+  background: var(--nc-panel, rgba(15, 23, 42, 0.5));
+  border-color: var(--nc-border, rgba(255, 255, 255, 0.08)) !important;
+  padding: 0.75rem 1.5rem;
+}
+
+body.dark-theme .support-doctor-readonly-footer {
+  background: rgba(15, 23, 42, 0.6) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .support-doctor-readonly-footer .text-muted {
+  color: #94a3b8 !important;
+}
+
+body.light-theme .support-doctor-readonly-footer {
+  background: rgba(241, 245, 249, 0.85) !important;
+  color: #64748b !important;
+}
+
+body.light-theme .support-doctor-readonly-footer .text-muted {
+  color: #64748b !important;
 }
 
 /* =====================================================================

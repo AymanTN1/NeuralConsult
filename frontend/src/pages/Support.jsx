@@ -747,65 +747,58 @@ const Support = () => {
             {/* Clinical Indicators & Summary Card */}
             <div className="card support-card-glass p-3 rounded-4 shadow-sm">
               <h6 className="fw-bold mb-2.5 d-flex align-items-center justify-content-between">
-                <span>{doctorMode ? "Bilan Patient Sélectionné" : "Indicateurs Cliniques"}</span>
+                <span>{doctorMode ? "Synthèse Clinique RAG" : "Indicateurs Cliniques"}</span>
                 <i className="bi bi-shield-check text-primary" />
               </h6>
 
-              <div className="support-vitals-list d-flex flex-column gap-2">
-                <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
-                  <span className="text-muted small">Niveau de risque :</span>
-                  <span
-                    className="badge rounded-pill fw-semibold px-2.5 py-1"
-                    style={{
-                      backgroundColor: `${riskColor[currentRisk]}22`,
-                      color: riskColor[currentRisk],
-                      border: `1px solid ${riskColor[currentRisk]}44`
-                    }}
-                  >
-                    ● {riskCopy[currentRisk] || currentRisk}
-                  </span>
-                </div>
+              {!doctorMode && (
+                <div className="support-vitals-list d-flex flex-column gap-2">
+                  <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
+                    <span className="text-muted small">Niveau de risque :</span>
+                    <span
+                      className="badge rounded-pill fw-semibold px-2.5 py-1"
+                      style={{
+                        backgroundColor: `${riskColor[currentRisk]}22`,
+                        color: riskColor[currentRisk],
+                        border: `1px solid ${riskColor[currentRisk]}44`
+                      }}
+                    >
+                      ● {riskCopy[currentRisk] || currentRisk}
+                    </span>
+                  </div>
 
-                <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
-                  <span className="text-muted small">Médecin traitant :</span>
-                  <strong className="small text-truncate" style={{ maxWidth: "140px" }}>
-                    {conversation?.doctorName || "Dr. Ayman Tantani"}
-                  </strong>
-                </div>
+                  <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
+                    <span className="text-muted small">Médecin traitant :</span>
+                    <strong className="small text-truncate" style={{ maxWidth: "140px" }}>
+                      {conversation?.doctorName || "Dr. Ayman Tantani"}
+                    </strong>
+                  </div>
 
-                {doctorMode ? (
-                  <>
-                    <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
-                      <span className="text-muted small">Score Fagerström :</span>
-                      <strong className="small text-primary fw-bold">
-                        {conversation?.fagerstromScore || selectedPatient?.fagerstromScore || 8}/10 (Forte)
-                      </strong>
-                    </div>
-                    <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
-                      <span className="text-muted small">Score HAD Anxiété :</span>
-                      <strong className="small text-warning fw-bold">
-                        {conversation?.hadAnxietyScore || selectedPatient?.hadAnxietyScore || 14}/21 (Élevé)
-                      </strong>
-                    </div>
-                  </>
-                ) : (
                   <div className="support-vital-item d-flex justify-content-between align-items-center p-2 rounded-3">
                     <span className="text-muted small">Alertes ouvertes :</span>
                     <span className="badge bg-secondary-subtle text-body rounded-pill px-2">
                       {conversation?.alerts?.length || 0}
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {conversation?.latestSummary && (
-                <div className="support-summary-quote mt-2.5 p-2.5 rounded-3">
-                  <div className="text-muted text-uppercase x-small fw-bold mb-1">
-                    <i className="bi bi-chat-quote me-1 text-primary" /> Synthèse Clinique RAG
-                  </div>
-                  <p className="mb-0 small text-body-secondary fst-italic">
+              {/* RAG Clinical Summary — always visible */}
+              {conversation?.latestSummary ? (
+                <div className={`support-summary-quote ${!doctorMode ? 'mt-2.5' : ''} p-2.5 rounded-3`}>
+                  {!doctorMode && (
+                    <div className="text-muted text-uppercase x-small fw-bold mb-1">
+                      <i className="bi bi-chat-quote me-1 text-primary" /> Synthèse Clinique RAG
+                    </div>
+                  )}
+                  <p className="mb-0 small fst-italic" style={{ color: 'var(--nc-copy, inherit)', opacity: 0.85 }}>
                     "{conversation.latestSummary}"
                   </p>
+                </div>
+              ) : (
+                <div className="text-center py-3 text-muted small">
+                  <i className="bi bi-chat-quote fs-4 d-block mb-1 opacity-50" />
+                  Aucune synthèse RAG disponible pour ce patient.
                 </div>
               )}
             </div>
@@ -888,11 +881,11 @@ const Support = () => {
                     {doctorMode && (
                       <>
                         <span
-                          className="badge rounded-pill fw-semibold px-2 py-0.5 x-small"
+                          className="badge rounded-pill fw-semibold px-2.5 py-1 x-small support-risk-badge"
                           style={{
-                            backgroundColor: `${riskColor[currentRisk]}18`,
+                            backgroundColor: `${riskColor[currentRisk]}30`,
                             color: riskColor[currentRisk],
-                            border: `1px solid ${riskColor[currentRisk]}44`
+                            border: `1.5px solid ${riskColor[currentRisk]}55`
                           }}
                         >
                           ● Risque {riskCopy[currentRisk] || currentRisk}
@@ -1100,115 +1093,92 @@ const Support = () => {
               )}
             </div>
 
-            {/* Clinical Accelerator Chips */}
-            <div className="support-quick-chips px-4 py-2.5 border-top">
-              <div className="d-flex align-items-center justify-content-between mb-1.5">
-                <span className="x-small text-muted fw-bold text-uppercase d-flex align-items-center gap-1">
-                  <i className="bi bi-lightning-charge-fill text-warning" />
-                  {doctorMode ? "Protocoles & Directives Cliniques Rapides (HAS) :" : "Suggestions d'urgence & questions fréquentes :"}
-                </span>
-              </div>
-              <div className="d-flex gap-2 overflow-x-auto pb-1">
-                {(doctorMode ? doctorClinicalChips : quickSuggestions).map((sug, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="btn btn-sm support-chip-btn text-nowrap rounded-pill"
-                    onClick={() => handleSendMessage(sug.text)}
-                    disabled={sending}
-                  >
-                    {sug.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Input Console */}
-            <div className="support-chat-input-area px-4 py-3 border-top">
-              {doctorMode && (
-                <div className="doctor-send-mode-toggle d-flex align-items-center gap-2 mb-2.5">
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1 text-nowrap fw-semibold ${
-                      sendMode === "patient" ? "btn-primary shadow-sm" : "btn-outline-secondary"
-                    }`}
-                    onClick={() => setSendMode("patient")}
-                  >
-                    <i className="bi bi-chat-text-fill me-1.5" />
-                    Répondre directement au patient
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1 text-nowrap fw-semibold ${
-                      sendMode === "ai_directive" ? "btn-info text-white shadow-sm" : "btn-outline-secondary"
-                    }`}
-                    onClick={() => setSendMode("ai_directive")}
-                  >
-                    <i className="bi bi-cpu-fill me-1.5" />
-                    Directive pour l'Agent IA RAG
-                  </button>
+            {/* Clinical Accelerator Chips - Patient mode only */}
+            {!doctorMode && (
+              <div className="support-quick-chips px-4 py-2.5 border-top">
+                <div className="d-flex align-items-center justify-content-between mb-1.5">
+                  <span className="x-small text-muted fw-bold text-uppercase d-flex align-items-center gap-1">
+                    <i className="bi bi-lightning-charge-fill text-warning" />
+                    Suggestions d'urgence & questions fréquentes :
+                  </span>
                 </div>
-              )}
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }}
-                className="support-input-form d-flex align-items-center gap-2.5"
-              >
-                <div className="support-textarea-container flex-grow-1 position-relative">
-                  <textarea
-                    ref={textareaRef}
-                    className="form-control support-chat-input"
-                    rows="2"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={
-                      doctorMode
-                        ? sendMode === "ai_directive"
-                          ? "Ajouter une directive clinique pour l'assistant IA (ex: 'Sensibiliser le patient au risque d'envie vespérale et ajuster la gomme')... (Entrée pour envoyer)"
-                          : "Écrire un message d'encouragement ou une consigne médicale directement au patient... (Entrée pour envoyer)"
-                        : "Expliquez ce qui vous pèse : envie soudaine, stress, sommeil, substituts... (Entrée pour envoyer)"
-                    }
-                    disabled={sending}
-                  />
+                <div className="d-flex gap-2 overflow-x-auto pb-1">
+                  {quickSuggestions.map((sug, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="btn btn-sm support-chip-btn text-nowrap rounded-pill"
+                      onClick={() => handleSendMessage(sug.text)}
+                      disabled={sending}
+                    >
+                      {sug.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
+            )}
 
-                <button
-                  type="submit"
-                  className={`btn support-send-btn rounded-circle d-flex align-items-center justify-content-center ${
-                    doctorMode && sendMode === "ai_directive" ? "btn-info text-white" : "btn-primary"
-                  }`}
-                  disabled={!draft.trim() || sending}
-                  title="Envoyer"
+            {/* Input Console - Patient mode only (Doctor is read-only observer) */}
+            {!doctorMode ? (
+              <div className="support-chat-input-area px-4 py-3 border-top">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }}
+                  className="support-input-form d-flex align-items-center gap-2.5"
                 >
-                  {sending ? (
-                    <span className="spinner-border spinner-border-sm text-white" role="status" />
-                  ) : (
-                    <i className={doctorMode && sendMode === "ai_directive" ? "bi bi-cpu-fill" : "bi bi-send-fill"} />
-                  )}
-                </button>
-              </form>
+                  <div className="support-textarea-container flex-grow-1 position-relative">
+                    <textarea
+                      ref={textareaRef}
+                      className="form-control support-chat-input"
+                      rows="2"
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Expliquez ce qui vous pèse : envie soudaine, stress, sommeil, substituts... (Entrée pour envoyer)"
+                      disabled={sending}
+                    />
+                  </div>
 
-              <div className="d-flex justify-content-between align-items-center mt-2 px-1">
-                <span className="text-muted x-small">
-                  <i className="bi bi-info-circle me-1" />
-                  Appuyez sur <strong>Entrée</strong> pour envoyer, <strong>Maj + Entrée</strong> pour un saut de ligne.
-                </span>
-
-                {sosActive && !doctorMode && (
                   <button
-                    type="button"
-                    className="btn btn-link text-muted x-small p-0 text-decoration-none"
-                    onClick={() => setSosActive(false)}
+                    type="submit"
+                    className="btn support-send-btn rounded-circle d-flex align-items-center justify-content-center btn-primary"
+                    disabled={!draft.trim() || sending}
+                    title="Envoyer"
                   >
-                    Désactiver le mode SOS
+                    {sending ? (
+                      <span className="spinner-border spinner-border-sm text-white" role="status" />
+                    ) : (
+                      <i className="bi bi-send-fill" />
+                    )}
                   </button>
-                )}
+                </form>
+
+                <div className="d-flex justify-content-between align-items-center mt-2 px-1">
+                  <span className="text-muted x-small">
+                    <i className="bi bi-info-circle me-1" />
+                    Appuyez sur <strong>Entrée</strong> pour envoyer, <strong>Maj + Entrée</strong> pour un saut de ligne.
+                  </span>
+
+                  {sosActive && (
+                    <button
+                      type="button"
+                      className="btn btn-link text-muted x-small p-0 text-decoration-none"
+                      onClick={() => setSosActive(false)}
+                    >
+                      Désactiver le mode SOS
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Doctor read-only footer */
+              <div className="support-doctor-readonly-footer px-4 py-2.5 border-top d-flex align-items-center justify-content-center gap-2">
+                <i className="bi bi-eye-fill opacity-50" />
+                <span className="text-muted small">Mode lecture seule — Transcription de la conversation patient × IA RAG</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
