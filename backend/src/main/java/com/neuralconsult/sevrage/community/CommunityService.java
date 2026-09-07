@@ -338,8 +338,8 @@ public class CommunityService {
     CommunityPost post = postRepository.findById(postId)
         .orElseThrow(() -> new IllegalArgumentException("Publication introuvable"));
     boolean isAuthor = post.getAuthor().getId().equals(actor.getId());
-    boolean isPrivileged = actor.getRole() == com.neuralconsult.sevrage.user.UserRole.DOCTOR 
-        || actor.getRole() == com.neuralconsult.sevrage.user.UserRole.ADMIN;
+    boolean isPrivileged = actor.getRoles().contains("ROLE_DOCTOR") 
+        || actor.getRoles().contains("ROLE_ADMIN");
     if (!isAuthor && !isPrivileged) {
       throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer cette publication.");
     }

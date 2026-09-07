@@ -350,18 +350,22 @@ export const getDemoUserByEmail = (email) => {
   }
   
   if (baseUser && typeof window !== "undefined") {
+    const originalProfilePhotoUrl = baseUser.profilePhotoUrl;
+    
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       if (overrides[baseUser.email]) {
         baseUser = { ...baseUser, ...overrides[baseUser.email] };
       }
     } catch (e) {}
-    // Provide fallback avatars so they are always present
-    if (!baseUser.clinicalAvatarUrl && baseUser.profilePhotoUrl) {
-      baseUser.clinicalAvatarUrl = baseUser.profilePhotoUrl;
+    
+    // Provide fallback avatars so they are always present.
+    // Use the ORIGINAL photo for clinical avatar, to avoid the doctor seeing the community avatar.
+    if (!baseUser.clinicalAvatarUrl && originalProfilePhotoUrl) {
+      baseUser.clinicalAvatarUrl = originalProfilePhotoUrl;
     }
-    if (!baseUser.communityAvatarUrl && baseUser.profilePhotoUrl) {
-      baseUser.communityAvatarUrl = baseUser.profilePhotoUrl;
+    if (!baseUser.communityAvatarUrl && originalProfilePhotoUrl) {
+      baseUser.communityAvatarUrl = originalProfilePhotoUrl;
     }
     return baseUser;
   }
@@ -2381,11 +2385,10 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     if (url.includes("/api/communities/social/profile")) {
       try {
         const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-        if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
+        if (activeDemoEmail && payload?.communityAvatarUrl !== undefined) {
            storedDemoUsers[activeDemoEmail] = {
              ...(storedDemoUsers[activeDemoEmail] || {}),
-             profilePhotoUrl: payload.profilePhotoUrl,
-             avatar: payload.profilePhotoUrl
+             communityAvatarUrl: payload.communityAvatarUrl
            };
            localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
         }

@@ -26,6 +26,7 @@ import com.neuralconsult.sevrage.doctor.dto.DoctorPatientSummaryResponse;
 import com.neuralconsult.sevrage.doctor.dto.PatientDoctorAssociationResponse;
 import com.neuralconsult.sevrage.doctor.dto.DoctorProfileRequest;
 import com.neuralconsult.sevrage.doctor.dto.DoctorProfileResponse;
+import java.time.LocalDate;
 import com.neuralconsult.sevrage.medical.tests.FagerstromTest;
 import com.neuralconsult.sevrage.medical.tests.FagerstromTestRepository;
 import com.neuralconsult.sevrage.medical.tests.HadTest;

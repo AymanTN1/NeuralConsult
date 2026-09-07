@@ -48,6 +48,7 @@ public class PatientProfileController {
         toProfileResponse(profile),
         new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
         user.getRoles(),
+        user.getClinicalAvatarUrl(),
         user.getCommunityAvatarUrl()
     );
   }
@@ -71,6 +72,7 @@ public class PatientProfileController {
         toProfileResponse(profile),
         new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
         user.getRoles(),
+        user.getClinicalAvatarUrl(),
         user.getCommunityAvatarUrl()
     );
   }
@@ -91,6 +93,7 @@ public class PatientProfileController {
         toProfileResponse(profile),
         new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore()),
         user.getRoles(),
+        user.getClinicalAvatarUrl(),
         user.getCommunityAvatarUrl()
     );
   }
