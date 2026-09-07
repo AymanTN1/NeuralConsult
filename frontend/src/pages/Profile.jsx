@@ -162,10 +162,8 @@ const Profile = () => {
           }
 
           // Update via API
-          await api.put("/api/communities/social/profile", { 
-            ...user.profile, 
-            profilePhotoUrl: dataUrl,
-            username: username
+          await api.put("/api/me/clinical-avatar", { 
+            clinicalAvatarUrl: dataUrl
           });
           
           await refetch();
@@ -231,9 +229,9 @@ const Profile = () => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               style={{ width: '100px', height: '100px' }}
             >
-              {user?.profilePhotoUrl ? (
+              {user?.clinicalAvatarUrl ? (
                 <img 
-                  src={user.profilePhotoUrl} 
+                  src={user.clinicalAvatarUrl} 
                   alt={user.fullName} 
                   className="rounded-circle w-100 h-100 object-fit-cover border" 
                 />
@@ -256,10 +254,8 @@ const Profile = () => {
                 </label>
                 <hr className="my-1" />
                 <button type="button" className="profile-option-item text-danger" onClick={async () => {
-                  await api.put("/api/communities/social/profile", { 
-                    ...user.profile, 
-                    profilePhotoUrl: "",
-                    username: user.profile?.username || user.fullName?.toLowerCase().replace(/\s+/g, ".")
+                  await api.put("/api/me/clinical-avatar", { 
+                    clinicalAvatarUrl: ""
                   });
                   await refetch();
                   setShowProfileMenu(false);

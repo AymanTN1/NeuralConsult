@@ -999,8 +999,15 @@ const Support = () => {
                                 ? "doctor-avatar"
                                 : "ai-avatar"
                             }`}
+                            style={
+                              isPatient && (doctorMode ? selectedPatient?.clinicalAvatarUrl : user?.clinicalAvatarUrl)
+                                ? { backgroundImage: `url(${doctorMode ? selectedPatient?.clinicalAvatarUrl : user?.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', border: isSosMessage ? '2px solid #dc3545' : 'none', color: 'transparent' }
+                                : isDoctorSender && doctorMode && user?.clinicalAvatarUrl
+                                ? { backgroundImage: `url(${user.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' }
+                                : {}
+                            }
                           >
-                            {isPatient ? (
+                            {(isPatient && (doctorMode ? selectedPatient?.clinicalAvatarUrl : user?.clinicalAvatarUrl)) || (isDoctorSender && doctorMode && user?.clinicalAvatarUrl) ? null : isPatient ? (
                               <i className={isSosMessage ? "bi bi-exclamation-octagon-fill text-danger" : "bi bi-person-fill"} />
                             ) : isDoctorSender ? (
                               <i className="bi bi-person-badge-fill" />
@@ -1061,10 +1068,17 @@ const Support = () => {
                         {isRightAligned && (
                           <div
                             className={`support-msg-avatar ${
-                              isDoctorSender ? "doctor-avatar" : "patient-avatar"
+                              isDoctorSender ? "doctor-avatar" : (isSosMessage ? "patient-sos-avatar" : "patient-avatar")
                             }`}
+                            style={
+                              isPatient && (doctorMode ? selectedPatient?.clinicalAvatarUrl : user?.clinicalAvatarUrl)
+                                ? { backgroundImage: `url(${doctorMode ? selectedPatient?.clinicalAvatarUrl : user?.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', border: isSosMessage ? '2px solid #dc3545' : 'none', color: 'transparent' }
+                                : isDoctorSender && doctorMode && user?.clinicalAvatarUrl
+                                ? { backgroundImage: `url(${user.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' }
+                                : {}
+                            }
                           >
-                            {isDoctorSender ? (
+                            {(isPatient && (doctorMode ? selectedPatient?.clinicalAvatarUrl : user?.clinicalAvatarUrl)) || (isDoctorSender && doctorMode && user?.clinicalAvatarUrl) ? null : isDoctorSender ? (
                               <i className="bi bi-person-badge-fill" />
                             ) : (
                               <i className="bi bi-person-fill" />

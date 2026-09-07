@@ -15,6 +15,7 @@ public record UserProfileResponse(
     PatientProfileResponse profile,
     ScoresResponse scores,
     Set<String> roles,
-    String profilePhotoUrl
+    String clinicalAvatarUrl,
+    String communityAvatarUrl
 ) {
 }

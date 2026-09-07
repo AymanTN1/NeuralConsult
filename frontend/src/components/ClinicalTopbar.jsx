@@ -143,8 +143,8 @@ const ClinicalTopbar = () => {
         {/* Doctor or Patient verified identity card */}
         {doctorMode ? (
           <div className="topbar-doctor-card d-flex align-items-center gap-2 px-2.5 py-1.5 rounded-3">
-            <div className="topbar-doctor-avatar">
-              <i className="bi bi-person-badge-fill" />
+            <div className="topbar-doctor-avatar" style={user?.clinicalAvatarUrl ? { backgroundImage: `url(${user.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}}>
+              {!user?.clinicalAvatarUrl && <i className="bi bi-person-badge-fill" />}
             </div>
             <div className="d-flex flex-column line-height-tight">
               <div className="d-flex align-items-center gap-1.5">
@@ -170,8 +170,8 @@ const ClinicalTopbar = () => {
           </div>
         ) : (
           <div className="topbar-doctor-card d-flex align-items-center gap-2 px-2.5 py-1.5 rounded-3">
-            <div className="topbar-doctor-avatar patient-avatar">
-              <i className="bi bi-person-heart" />
+            <div className="topbar-doctor-avatar patient-avatar" style={user?.clinicalAvatarUrl ? { backgroundImage: `url(${user.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}}>
+              {!user?.clinicalAvatarUrl && <i className="bi bi-person-heart" />}
             </div>
             <div className="d-flex flex-column line-height-tight">
               <span className="topbar-user-name text-truncate" style={{ maxWidth: "140px" }}>

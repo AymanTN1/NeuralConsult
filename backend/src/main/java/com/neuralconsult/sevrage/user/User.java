@@ -68,6 +68,10 @@ public class User extends AuditableEntity {
   private String communityUsername;
 
   @Lob
+  @Column(name = "clinical_avatar_url")
+  private String clinicalAvatarUrl;
+
+  @Lob
   @Column(name = "community_avatar_url")
   private String communityAvatarUrl;
 

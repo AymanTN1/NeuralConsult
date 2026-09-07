@@ -926,9 +926,13 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     return (
       <div className="dw-modal-header">
         <div className="d-flex align-items-center gap-3">
-          <div className="dw-patient-initials dw-modal-avatar" style={{ background: getInitialsGradient(dossier.patientName), width: "3.5rem", height: "3.5rem", fontSize: "1.25rem" }}>
-            {getPatientInitials(dossier.patientName)}
-          </div>
+          {dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl ? (
+            <div className="dw-patient-initials dw-modal-avatar" style={{ backgroundImage: `url(${dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', width: "3.5rem", height: "3.5rem", fontSize: "1.25rem", color: "transparent", border: '1px solid #e5e7eb' }} />
+          ) : (
+            <div className="dw-patient-initials dw-modal-avatar" style={{ background: getInitialsGradient(dossier.patientName), width: "3.5rem", height: "3.5rem", fontSize: "1.25rem" }}>
+              {getPatientInitials(dossier.patientName)}
+            </div>
+          )}
           <div>
             <div className="section-title-sm mb-1 text-muted">Dossier Médical Patient</div>
             <h3 className="mb-0 fw-bold">{dossier.patientName}</h3>
@@ -1414,7 +1418,11 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
               ) : (
                 <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-sm-table-cell">Matching</th><th className="d-none d-md-table-cell">Message</th><th className="d-none d-lg-table-cell">Demande</th><th className="text-end">Actions</th></tr></thead><tbody>{pendingRequests.map((request) => { const isBusy = decisionLoadingId === request.id; const mStyle = matchingColor[request.matchingMode] || matchingColor.SAME_CITY; return <tr key={request.id} className={selectedPatientId === request.patientProfileId ? "is-selected" : ""}><td>
                   <div className="d-flex align-items-center gap-2.5">
-                    <div className="dw-patient-initials" style={{ background: getInitialsGradient(request.patientName) }}>{getPatientInitials(request.patientName)}</div>
+                    {request.clinicalAvatarUrl ? (
+                      <div className="dw-patient-initials" style={{ backgroundImage: `url(${request.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
+                    ) : (
+                      <div className="dw-patient-initials" style={{ background: getInitialsGradient(request.patientName) }}>{getPatientInitials(request.patientName)}</div>
+                    )}
                     <div>
                       <button type="button" className="doctor-table-link" onClick={() => openPatientView(request.patientProfileId, "overview")}>{request.patientName}</button>
                       <div className="d-sm-none mt-1"><span className="badge rounded-pill" style={{ backgroundColor: mStyle.bg, color: mStyle.color, border: `1px solid ${mStyle.border}`, fontSize: "0.7rem", padding: "2px 8px" }}>{matchingCopy[request.matchingMode] || "Matching standard"}</span></div>
@@ -1437,7 +1445,11 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
               </div>
               {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.patientEmail; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; const depStyle = getDepBadgeStyle(depLevel); const rassVal = calculateRassScore(fScore, hAnx, hDep); return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td>
                 <div className="d-flex align-items-center gap-2.5">
-                  <div className="dw-patient-initials" style={{ background: getInitialsGradient(pName) }}>{getPatientInitials(pName)}</div>
+                  {patient.clinicalAvatarUrl || fallbackPatient.clinicalAvatarUrl ? (
+                    <div className="dw-patient-initials" style={{ backgroundImage: `url(${patient.clinicalAvatarUrl || fallbackPatient.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
+                  ) : (
+                    <div className="dw-patient-initials" style={{ background: getInitialsGradient(pName) }}>{getPatientInitials(pName)}</div>
+                  )}
                   <div>
                     <button type="button" className="doctor-table-link" onClick={() => openPatientView(pid, "overview")}>{pName}</button>
                     <div className="doctor-table-subcopy">{pEmail}</div>

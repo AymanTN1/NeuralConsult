@@ -353,9 +353,16 @@ export const getDemoUserByEmail = (email) => {
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       if (overrides[baseUser.email]) {
-        return { ...baseUser, ...overrides[baseUser.email] };
+        baseUser = { ...baseUser, ...overrides[baseUser.email] };
       }
     } catch (e) {}
+    // Provide fallback avatars so they are always present
+    if (!baseUser.clinicalAvatarUrl && baseUser.profilePhotoUrl) {
+      baseUser.clinicalAvatarUrl = baseUser.profilePhotoUrl;
+    }
+    if (!baseUser.communityAvatarUrl && baseUser.profilePhotoUrl) {
+      baseUser.communityAvatarUrl = baseUser.profilePhotoUrl;
+    }
     return baseUser;
   }
   return null;
@@ -681,6 +688,7 @@ export const createDemoDossier = (patientProfileId) => {
     patientProfileId: patient.patientProfileId,
     patientName: patient.patientName,
     patientEmail: patient.patientEmail,
+    patientClinicalAvatarUrl: patient.clinicalAvatarUrl || patient.avatar || patient.profilePhotoUrl,
     profile: {
       id: patient.patientProfileId,
       dateOfBirth: patient.dateOfBirth,
@@ -2607,24 +2615,52 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     return createDemoDossier(patientId);
   }
   if (url.includes("/api/doctors/patients") || url.includes("/api/doctor/patients")) {
+    let patients = DEMO_DOCTOR_PATIENTS;
     try {
       const storedPatients = localStorage.getItem("nc_demo_doctor_patients");
       if (storedPatients) {
         const parsed = JSON.parse(storedPatients);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) patients = parsed;
       }
     } catch (e) {}
-    return DEMO_DOCTOR_PATIENTS;
+    
+    // Enrich with avatars from user overrides based on email matching
+    try {
+      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+      patients = patients.map(p => {
+        const override = overrides[p.patientEmail || p.email];
+        return {
+          ...p,
+          clinicalAvatarUrl: override?.clinicalAvatarUrl || p.clinicalAvatarUrl || p.avatar || p.profilePhotoUrl
+        };
+      });
+    } catch(e) {}
+    
+    return patients;
   }
   if (url.includes("/api/doctors/requests/doctor")) {
+    let reqs = DEMO_DOCTOR_REQUESTS;
     try {
       const storedRequests = localStorage.getItem("nc_demo_doctor_requests");
       if (storedRequests) {
         const parsed = JSON.parse(storedRequests);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) reqs = parsed;
       }
     } catch (e) {}
-    return DEMO_DOCTOR_REQUESTS;
+    
+    // Enrich with avatars
+    try {
+      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+      reqs = reqs.map(r => {
+        const override = overrides[r.patientEmail || r.email];
+        return {
+          ...r,
+          clinicalAvatarUrl: override?.clinicalAvatarUrl || r.clinicalAvatarUrl || r.avatar || r.profilePhotoUrl
+        };
+      });
+    } catch(e) {}
+    
+    return reqs;
   }
   if (url.includes("/api/support/doctor/alerts")) {
     let dynamicAlerts = [];

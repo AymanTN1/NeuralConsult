@@ -1816,6 +1816,46 @@ export default function Communities() {
       </div>
 
       {/* ========================================================================= */}
+      {/* 🖼 COMMUNITY AVATAR HANDLER                                                */}
+      {/* ========================================================================= */}
+      <input 
+        type="file" 
+        accept="image/*" 
+        id="communityAvatarUpload" 
+        className="d-none" 
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          try {
+            const reader = new FileReader();
+            reader.onload = async () => {
+              try {
+                const dataUrl = String(reader.result || "");
+                if (dataUrl.length > 10_000_000) {
+                  showToast("L'image est trop lourde (max ~7 Mo).", "error");
+                  return;
+                }
+                await api.put("/api/communities/social/profile", { communityAvatarUrl: dataUrl });
+                await loadCommunityData(); // Refresh all community data
+                await refetch(); // Refresh auth user data
+                showToast("Photo de profil communautaire mise à jour !", "success");
+                // Immediately close modal to reflect update safely
+                setShowProfileModal(false);
+              } catch (error) {
+                showToast("Erreur lors de la mise à jour de la photo.", "error");
+              } finally {
+                e.target.value = null;
+              }
+            };
+            reader.readAsDataURL(file);
+          } catch (err) {
+            showToast("Impossible de lire le fichier.", "error");
+            e.target.value = null;
+          }
+        }} 
+      />
+
+      {/* ========================================================================= */}
       {/* 👤 USER PROFILE MODAL (ONE-CLICK ON AVATAR OR USERNAME ANYWHERE)         */}
       {/* ========================================================================= */}
       <Modal
@@ -1853,8 +1893,8 @@ export default function Communities() {
                 {/* Profile Avatar & Primary Actions */}
                 <div className="profile-avatar-row">
                   <div className="profile-avatar-lg">
-                    {selectedUserProfile.user?.profilePhotoUrl ? (
-                      <img src={selectedUserProfile.user.profilePhotoUrl} alt="Avatar" />
+                    {selectedUserProfile.user?.communityAvatarUrl ? (
+                      <img src={selectedUserProfile.user.communityAvatarUrl} alt="Avatar" />
                     ) : (
                       <span>{getAvatarLetter(selectedUserProfile.user?.name, selectedUserProfile.user?.username)}</span>
                     )}
@@ -1872,15 +1912,20 @@ export default function Communities() {
                       );
                       if (isOwnProfile) {
                         return (
-                          <button
-                            className="btn-follow-lg following"
-                            onClick={() => {
-                              setShowProfileModal(false);
-                              navigate("/profile");
-                            }}
-                          >
-                            <i className="bi bi-person-gear me-1"></i> Gérer mon profil
-                          </button>
+                          <div className="d-flex gap-2">
+                            <label htmlFor="communityAvatarUpload" className="btn-follow-lg following bg-light text-dark border d-flex align-items-center justify-content-center cursor-pointer mb-0">
+                              <i className="bi bi-camera-fill me-1"></i> Changer photo
+                            </label>
+                            <button
+                              className="btn-follow-lg following"
+                              onClick={() => {
+                                setShowProfileModal(false);
+                                navigate("/profile");
+                              }}
+                            >
+                              <i className="bi bi-person-gear me-1"></i> Identité légale
+                            </button>
+                          </div>
                         );
                       }
                       if (authUser) {

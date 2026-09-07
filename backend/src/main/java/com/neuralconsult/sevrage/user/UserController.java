@@ -11,7 +11,10 @@ import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import java.util.Map;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -46,8 +49,17 @@ public class UserController {
             ? new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
             : null,
         normalizeRoles(user),
+        user.getClinicalAvatarUrl(),
         user.getCommunityAvatarUrl()
     );
+  }
+
+  @PutMapping("/me/clinical-avatar")
+  public void updateClinicalAvatar(@AuthenticationPrincipal UserDetails principal, @RequestBody Map<String, String> payload) {
+    User user = userRepository.findByEmailIgnoreCase(principal.getUsername())
+        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    user.setClinicalAvatarUrl(payload.get("clinicalAvatarUrl"));
+    userRepository.save(user);
   }
 
   private boolean isPatient(User user) {
