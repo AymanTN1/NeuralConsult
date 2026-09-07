@@ -138,13 +138,23 @@ const ClinicalTopbar = () => {
         </div>
       </div>
 
-      <div className="topbar-actions">
-        {/* Live sync badge */}
-        <div className="topbar-status-indicator d-none d-xl-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill">
-          <span className="pulse-dot" />
-          <span className="topbar-status-text">Sync IA Active 24/7</span>
+      {/* Centered Clinical AI Telemetry Badge */}
+      <div className="topbar-center-telemetry d-none d-md-flex align-items-center justify-content-center">
+        <div className="topbar-telemetry-pill d-flex align-items-center gap-2.5 px-3 py-1.5 rounded-pill">
+          <span className="pulse-dot-large" />
+          <div className="d-flex flex-column text-start">
+            <div className="d-flex align-items-center gap-2">
+              <span className="telemetry-pill-title">Sync IA Active 24/7</span>
+              <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill x-small px-1.5 py-0">
+                RAG v2.4
+              </span>
+            </div>
+            <span className="telemetry-pill-sub">Télésurveillance continue & détection des rechutes</span>
+          </div>
         </div>
+      </div>
 
+      <div className="topbar-actions">
         {/* Doctor or Patient verified identity card */}
         {doctorMode ? (
           <div className="topbar-doctor-card d-flex align-items-center gap-2 px-2.5 py-1.5 rounded-3">

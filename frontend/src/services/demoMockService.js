@@ -2363,6 +2363,22 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       };
     }
 
+    // 4. Acknowledge doctor support alert
+    if (url.includes("/api/support/doctor/alerts/") && url.includes("/acknowledge")) {
+      const match = url.match(/alerts\/([^/]+)\/acknowledge/);
+      const alertId = match ? match[1] : null;
+      if (alertId) {
+        try {
+          const ackList = JSON.parse(localStorage.getItem("nc_acknowledged_alerts") || "[]");
+          if (!ackList.includes(alertId)) {
+            ackList.push(alertId);
+            localStorage.setItem("nc_acknowledged_alerts", JSON.stringify(ackList));
+          }
+        } catch (e) {}
+      }
+      return { success: true, message: "Alerte accusée et prise en charge." };
+    }
+
     // 8. Direct Messaging POST
     if (url.includes("/api/communities/social/direct/") && upperMethod === "POST") {
       return {
@@ -2480,7 +2496,12 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     try {
       dynamicAlerts = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
     } catch (e) {}
-    return [...dynamicAlerts, ...DEMO_SUPPORT_ALERTS];
+    let ackList = [];
+    try {
+      ackList = JSON.parse(localStorage.getItem("nc_acknowledged_alerts") || "[]");
+    } catch (e) {}
+    const combined = [...dynamicAlerts, ...DEMO_SUPPORT_ALERTS];
+    return combined.map((a) => (ackList.includes(a.id) ? { ...a, status: "ACKNOWLEDGED" } : a));
   }
   if (url.includes("/api/support/doctor/patients/")) {
     const match = url.match(/patients\/([^/]+)/);

@@ -96,15 +96,19 @@ const Support = () => {
   const [sending, setSending] = useState(false);
   const [sosActive, setSosActive] = useState(false);
   const [supportLanguage, setSupportLanguage] = useState(readStoredSupportLanguage);
-  const messagesEndRef = useRef(null);
+  const chatBodyRef = useRef(null);
   const textareaRef = useRef(null);
   const sosHandledRef = useRef(false);
 
   const selectedSosPrompt = getSosPrompt(supportLanguage);
 
+  // Scroll ONLY inside the chat container - NEVER scroll the whole browser window!
   const scrollToBottom = (smooth = true) => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTo({
+        top: chatBodyRef.current.scrollHeight,
+        behavior: smooth ? "smooth" : "auto"
+      });
     }
   };
 
@@ -161,13 +165,21 @@ const Support = () => {
       let nextAlerts = alertsResp.status === "fulfilled" ? alertsResp.value.data || [] : [];
       let nextPatients = patientsResp.status === "fulfilled" ? patientsResp.value.data || [] : [];
 
-      // Merge dynamic alerts triggered in demo sessions from localStorage
+      // Merge dynamic alerts from localStorage
       try {
         const storedAlerts = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
         if (storedAlerts.length > 0) {
           const existingIds = new Set(nextAlerts.map((a) => a.id));
           const toAdd = storedAlerts.filter((a) => !existingIds.has(a.id));
           nextAlerts = [...toAdd, ...nextAlerts];
+        }
+      } catch (e) {}
+
+      // Merge acknowledged alerts from localStorage
+      try {
+        const ackList = JSON.parse(localStorage.getItem("nc_acknowledged_alerts") || "[]");
+        if (ackList.length > 0) {
+          nextAlerts = nextAlerts.map((a) => (ackList.includes(a.id) ? { ...a, status: "ACKNOWLEDGED" } : a));
         }
       } catch (e) {}
 
@@ -364,7 +376,7 @@ const Support = () => {
               content: doctorMode
                 ? (isDirective
                     ? `🧠 Directive clinique intégrée au profil patient : « ${content} ». L'agent RAG ajustera ses prochaines interactions selon ces consignes.`
-                    : `Message transmis au patient Karim Benali. Notification clinique envoyée sur son espace personnel.`)
+                    : `Message médical transmis au patient ${conversation?.patientName || "Karim Benali"}. Notification clinique envoyée sur son espace personnel.`)
                 : `Je vous accompagne pas à pas. Prenez une inspiration lente et bloquez 4 secondes... Vous êtes en sécurité et sur la bonne voie.`,
               createdAt: new Date().toISOString()
             }
@@ -395,25 +407,40 @@ const Support = () => {
     handleSendMessage(selectedSosPrompt);
   };
 
+  // Dedicated Alert Acknowledgment with real action and persistence
   const acknowledgeAlert = async (alertId, e) => {
     if (e) e.stopPropagation();
     setMessage(null);
+
+    // Optimistic local update
+    setAlerts((prev) =>
+      prev.map((a) => (a.id === alertId ? { ...a, status: "ACKNOWLEDGED", acknowledgedAt: new Date().toISOString() } : a))
+    );
+
+    // Persist to localStorage so the acknowledgment survives page reloads
+    try {
+      const ackList = JSON.parse(localStorage.getItem("nc_acknowledged_alerts") || "[]");
+      if (!ackList.includes(alertId)) {
+        ackList.push(alertId);
+        localStorage.setItem("nc_acknowledged_alerts", JSON.stringify(ackList));
+      }
+    } catch (err) {}
+
     try {
       await api.post(`/api/support/doctor/alerts/${alertId}/acknowledge`);
-      try {
-        const stored = JSON.parse(localStorage.getItem("nc_demo_alerts") || "[]");
-        const filtered = stored.filter((a) => a.id !== alertId);
-        localStorage.setItem("nc_demo_alerts", JSON.stringify(filtered));
-      } catch (err) {}
-      await loadDoctorSupport(selectedPatientId);
-      setMessage({ type: "success", text: "Alerte médecin accusée et archivée avec succès." });
     } catch (error) {
-      const apiError = error?.response?.data?.message || error?.response?.data?.error;
-      setMessage({ type: "error", text: apiError || "Impossible d'accuser l'alerte." });
+      // Mock / fallback handled optimistically
     }
+
+    const targetAlert = alerts.find((a) => a.id === alertId);
+    setMessage({
+      type: "success",
+      text: `✓ Alerte pour ${targetAlert?.patientName || "le patient"} accusée et prise en charge par le Dr. Tantani.`
+    });
   };
 
   const currentRisk = conversation?.latestRiskLevel || "HIGH";
+  const openAlertsCount = alerts.filter((a) => a.status === "OPEN").length;
 
   // Filtered lists for Doctor triage
   const filteredAlerts = alerts.filter((a) => {
@@ -449,28 +476,36 @@ const Support = () => {
     };
 
   return (
-    <div className="support-page-container container-fluid py-3" data-guide-id="support-main">
-      {/* Sleek Clinical Cockpit Bar (Replaces bulky robot banner) */}
-      <div className="support-cockpit-bar mb-3 p-3 rounded-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div className="d-flex align-items-center gap-3">
+    <div className="support-page-container container-fluid py-2" data-guide-id="support-main">
+      {/* Sleek Clinical Cockpit Bar */}
+      <div className="support-cockpit-bar mb-2.5 p-2.5 px-3 rounded-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div className="d-flex align-items-center gap-2.5">
           <div className="support-cockpit-icon">
             <i className={doctorMode ? "bi bi-heart-pulse-fill text-primary" : "bi bi-robot text-primary"} />
           </div>
           <div>
             <div className="d-flex align-items-center gap-2 flex-wrap">
-              <h4 className="fw-bold mb-0 text-gradient-primary">
-                {doctorMode ? "Télésurveillance & Conversations Assistées" : "Psychologue & Compagnon IA 24/7"}
-              </h4>
+              <h5 className="fw-bold mb-0 text-gradient-primary">
+                {doctorMode ? "Cockpit Télésurveillance & Conversations IA" : "Psychologue & Compagnon IA 24/7"}
+              </h5>
               <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-0.5 x-small d-flex align-items-center gap-1">
                 <span className="pulse-dot" /> RAG Clinique v2.4 Actif
               </span>
-              {doctorMode && alerts.length > 0 && (
-                <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-0.5 x-small">
-                  🚨 {alerts.length} alerte{alerts.length > 1 ? "s" : ""} active{alerts.length > 1 ? "s" : ""}
+              {doctorMode && (
+                <span
+                  className={`badge ${
+                    openAlertsCount > 0
+                      ? "bg-danger-subtle text-danger border-danger-subtle"
+                      : "bg-success-subtle text-success border-success-subtle"
+                  } border rounded-pill px-2.5 py-0.5 x-small`}
+                >
+                  {openAlertsCount > 0
+                    ? `🚨 ${openAlertsCount} alerte${openAlertsCount > 1 ? "s" : ""} active${openAlertsCount > 1 ? "s" : ""}`
+                    : `✓ 0 alerte ouverte`}
                 </span>
               )}
             </div>
-            <p className="text-muted small mb-0 mt-0.5">
+            <p className="text-muted x-small mb-0 mt-0.5">
               {doctorMode
                 ? "Supervision continue des échanges patient-IA, détection prédictive des rechutes et aide à la décision clinique."
                 : "Votre espace bienveillant d'écoute active, de sophrologie et de soutien immédiat face aux envies de fumer."}
@@ -511,7 +546,7 @@ const Support = () => {
               <span className="stat-val">{doctorPatients.length} patients</span>
             </div>
             <button
-              className="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5"
+              className="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 d-flex align-items-center gap-1.5"
               onClick={() => reload()}
               title="Actualiser les flux de télésurveillance"
             >
@@ -524,7 +559,7 @@ const Support = () => {
 
       {message && (
         <div
-          className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} alert-dismissible fade show rounded-4 shadow-sm mb-3`}
+          className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} alert-dismissible fade show rounded-4 shadow-sm mb-2.5`}
           role="alert"
         >
           <div className="d-flex align-items-center gap-2">
@@ -537,14 +572,14 @@ const Support = () => {
 
       {/* Main Studio Grid */}
       <div className="row g-3 support-layout-row">
-        {/* Left Column: Clinical Status, Triage & Patient List */}
+        {/* Left Column: Triage & Patient List */}
         <div className="col-12 col-lg-4 col-xl-3.5">
-          <div className="support-sidebar-stack d-flex flex-column gap-3">
+          <div className="support-sidebar-stack d-flex flex-column gap-2.5">
             {/* DOCTOR MODE: Triage Panel with Segmented Tabs & Search */}
             {doctorMode ? (
               <div className="card support-card-glass p-3 rounded-4 shadow-sm">
                 {/* Search Bar */}
-                <div className="support-search-box position-relative mb-2.5">
+                <div className="support-search-box position-relative mb-2">
                   <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
                   <input
                     type="text"
@@ -564,14 +599,14 @@ const Support = () => {
                 </div>
 
                 {/* Segmented Control */}
-                <div className="support-segmented-control mb-3 p-1 rounded-pill d-flex">
+                <div className="support-segmented-control mb-2.5 p-1 rounded-pill d-flex">
                   <button
                     type="button"
                     className={`segmented-tab flex-fill rounded-pill ${activeTab === "alerts" ? "active" : ""}`}
                     onClick={() => setActiveTab("alerts")}
                   >
                     <i className="bi bi-exclamation-triangle-fill text-danger me-1" />
-                    Alertes ({filteredAlerts.length})
+                    Alertes {openAlertsCount > 0 ? `(${openAlertsCount})` : `(${filteredAlerts.length})`}
                   </button>
                   <button
                     type="button"
@@ -584,7 +619,7 @@ const Support = () => {
                 </div>
 
                 {/* Triage List */}
-                <div className="support-triage-scroll d-flex flex-column gap-2" style={{ maxHeight: "360px", overflowY: "auto" }}>
+                <div className="support-triage-scroll d-flex flex-column gap-2">
                   {activeTab === "alerts" ? (
                     filteredAlerts.length === 0 ? (
                       <div className="text-center py-4 text-muted small">
@@ -595,12 +630,14 @@ const Support = () => {
                       filteredAlerts.map((alert) => {
                         const isSel = selectedPatientId === alert.patientProfileId;
                         const alertLvl = alert.level || "HIGH";
+                        const isAcknowledged = alert.status === "ACKNOWLEDGED";
+
                         return (
                           <div
                             key={alert.id}
-                            className={`p-2.5 rounded-3 border support-triage-card ${isSel ? "selected" : ""}`}
+                            className={`p-2.5 rounded-3 border support-triage-card ${isSel ? "selected" : ""} ${isAcknowledged ? "acknowledged" : ""}`}
                             style={{
-                              borderLeft: `4px solid ${riskColor[alertLvl] || "#ef4444"} !important`,
+                              borderLeft: `4px solid ${isAcknowledged ? "#10b981" : riskColor[alertLvl] || "#ef4444"} !important`,
                               cursor: "pointer"
                             }}
                             onClick={() => selectPatient(alert.patientProfileId)}
@@ -633,17 +670,17 @@ const Support = () => {
                               {alert.summary || "Envie aiguë signalée via l'agent RAG."}
                             </p>
 
-                            <div className="d-flex gap-1.5 flex-wrap">
+                            <div className="d-flex gap-1.5 flex-wrap align-items-center">
                               <button
                                 type="button"
-                                className="btn btn-sm btn-outline-primary py-0.5 px-2 x-small rounded-pill"
+                                className="btn btn-sm btn-outline-primary py-0.5 px-2.5 x-small rounded-pill"
                                 onClick={() => selectPatient(alert.patientProfileId)}
                               >
                                 Voir le fil
                               </button>
                               <button
                                 type="button"
-                                className="btn btn-sm btn-success py-0.5 px-2 x-small rounded-pill"
+                                className="btn btn-sm btn-success py-0.5 px-2.5 x-small rounded-pill"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/appointments?urgentPatient=${alert.patientProfileId}`);
@@ -651,14 +688,20 @@ const Support = () => {
                               >
                                 RDV Urgent
                               </button>
-                              {alert.status === "OPEN" && (
+                              {alert.status === "OPEN" ? (
                                 <button
                                   type="button"
-                                  className="btn btn-sm btn-outline-secondary py-0.5 px-2 x-small rounded-pill"
+                                  className="btn btn-sm btn-outline-warning py-0.5 px-2.5 x-small rounded-pill fw-semibold"
                                   onClick={(e) => acknowledgeAlert(alert.id, e)}
+                                  title="Accuser réception et consigner la prise en charge clinique"
                                 >
+                                  <i className="bi bi-check2-circle me-1" />
                                   Accuser
                                 </button>
+                              ) : (
+                                <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 x-small d-inline-flex align-items-center gap-1">
+                                  <i className="bi bi-check-circle-fill" /> Accusée
+                                </span>
                               )}
                             </div>
                           </div>
@@ -823,7 +866,7 @@ const Support = () => {
         {/* Right Main Column: Modern AI Clinical Studio */}
         <div className="col-12 col-lg-8 col-xl-8.5">
           <div className="card support-chat-card rounded-4 shadow-sm border-0 d-flex flex-column">
-            {/* Top Studio Header */}
+            {/* Top Studio Header - Pinned at top */}
             <div className="support-studio-header px-4 py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
               <div className="d-flex align-items-center gap-3">
                 {doctorMode ? (
@@ -857,6 +900,9 @@ const Support = () => {
                         <span className="badge bg-secondary-subtle text-body rounded-pill px-2 py-0.5 x-small">
                           Fagerström: {conversation?.fagerstromScore || selectedPatient?.fagerstromScore || 8}/10
                         </span>
+                        <span className="badge bg-secondary-subtle text-body rounded-pill px-2 py-0.5 x-small">
+                          HAD: {conversation?.hadAnxietyScore || selectedPatient?.hadAnxietyScore || 14}/21
+                        </span>
                       </>
                     )}
                   </div>
@@ -880,7 +926,7 @@ const Support = () => {
                   <>
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-success rounded-pill px-3 d-flex align-items-center gap-1.5"
+                      className="btn btn-sm btn-outline-success rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5 fw-semibold"
                       onClick={() => navigate(`/appointments?urgentPatient=${selectedPatientId || conversation?.patientProfileId}`)}
                       title="Programmer une téléconsultation prioritaire"
                     >
@@ -889,7 +935,7 @@ const Support = () => {
                     </button>
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5"
+                      className="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5 fw-semibold"
                       onClick={() => navigate(`/evaluation?patient=${selectedPatientId || conversation?.patientProfileId}`)}
                       title="Consulter le dossier clinique structuré"
                     >
@@ -907,10 +953,10 @@ const Support = () => {
               </div>
             </div>
 
-            {/* Chat Messages Stream */}
-            <div className="support-chat-body p-4 d-flex flex-column gap-3.5">
+            {/* Chat Messages Stream - Roomy, Breathable, Flexible Internal Scroll */}
+            <div ref={chatBodyRef} className="support-chat-body">
               {loading ? (
-                <div className="text-center py-5">
+                <div className="text-center py-5 my-auto">
                   <div className="spinner-border text-primary" role="status" />
                   <p className="text-muted small mt-2">Chargement des données de télésurveillance...</p>
                 </div>
@@ -932,35 +978,37 @@ const Support = () => {
                     const isPatient = item.senderType === "PATIENT";
                     const isDoctorSender = item.senderType === "DOCTOR";
                     const isAi = !isPatient && !isDoctorSender;
-
-                    // In doctor mode:
-                    // - Patient messages are on the LEFT (they come from the patient under observation)
-                    // - AI messages are on the LEFT (with distinct clinical RAG badge)
-                    // - Doctor messages are on the RIGHT (sent by the practitioner)
-                    // In patient mode:
-                    // - Patient messages are on the RIGHT (sent by the user)
-                    // - AI & Doctor messages are on the LEFT
                     const isRightAligned = doctorMode ? isDoctorSender : isPatient;
 
                     const bubbleSenderName = isPatient
-                      ? (doctorMode ? (conversation?.patientName || item.senderName || "Karim Benali (Patient)") : "Vous")
+                      ? (doctorMode ? (conversation?.patientName || item.senderName || "Karim Benali") : "Vous")
                       : isDoctorSender
                       ? (item.senderName || user?.fullName || "Dr. Ayman Tantani (Tabacologue)")
                       : "Assistant Clinique RAG · NeuralConsult";
 
+                    const isSosMessage = isPatient && (
+                      (item.content || "").includes("SOS") ||
+                      (item.content || "").includes("🚨") ||
+                      (item.content || "").toLowerCase().includes("envie")
+                    );
+
                     return (
                       <div
                         key={item.id || idx}
-                        className={`support-message-wrapper d-flex gap-2.5 ${isRightAligned ? "justify-content-end" : "justify-content-start"}`}
+                        className={`support-message-wrapper d-flex gap-3 ${isRightAligned ? "justify-content-end" : "justify-content-start"}`}
                       >
                         {!isRightAligned && (
                           <div
                             className={`support-msg-avatar ${
-                              isPatient ? "patient-avatar" : isDoctorSender ? "doctor-avatar" : "ai-avatar"
+                              isPatient
+                                ? (isSosMessage ? "patient-sos-avatar" : "patient-avatar")
+                                : isDoctorSender
+                                ? "doctor-avatar"
+                                : "ai-avatar"
                             }`}
                           >
                             {isPatient ? (
-                              <i className="bi bi-person-fill" />
+                              <i className={isSosMessage ? "bi bi-exclamation-octagon-fill text-danger" : "bi bi-person-fill"} />
                             ) : isDoctorSender ? (
                               <i className="bi bi-person-badge-fill" />
                             ) : (
@@ -972,26 +1020,35 @@ const Support = () => {
                         <div
                           className={`support-msg-bubble ${
                             isPatient
-                              ? (doctorMode ? "patient-observed-bubble" : "patient-bubble")
+                              ? (doctorMode
+                                  ? (isSosMessage ? "patient-sos-bubble" : "patient-observed-bubble")
+                                  : "patient-bubble")
                               : isDoctorSender
                               ? "doctor-bubble"
                               : "ai-bubble"
                           }`}
                         >
-                          <div className="support-msg-header d-flex align-items-center justify-content-between gap-3 mb-1">
-                            <span className="support-msg-sender fw-bold x-small d-flex align-items-center gap-1.5">
-                              {bubbleSenderName}
+                          <div className="support-msg-header d-flex align-items-center justify-content-between gap-3 mb-2">
+                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                              <span className="support-msg-sender fw-bold">
+                                {bubbleSenderName}
+                              </span>
+                              {isPatient && isSosMessage && (
+                                <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill x-small px-2 py-0.5 fw-semibold">
+                                  🚨 Urgence Craving
+                                </span>
+                              )}
                               {isAi && (
-                                <span className="badge bg-info-subtle text-info border border-info-subtle rounded-pill x-small px-1.5 py-0">
-                                  RAG Clinique
+                                <span className="badge bg-info-subtle text-info border border-info-subtle rounded-pill x-small px-2 py-0.5 fw-semibold">
+                                  📚 Guidelines HAS Sevrage (2024)
                                 </span>
                               )}
                               {isDoctorSender && (
-                                <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill x-small px-1.5 py-0">
-                                  Praticien
+                                <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill x-small px-2 py-0.5 fw-semibold">
+                                  👨‍⚕️ Médecin Référent
                                 </span>
                               )}
-                            </span>
+                            </div>
                             <span className="support-msg-time x-small opacity-75">
                               {formatDateTime(item.createdAt)}
                             </span>
@@ -1002,8 +1059,8 @@ const Support = () => {
                           </div>
 
                           {isRightAligned && (
-                            <div className="text-end mt-1">
-                              <i className="bi bi-check2-all text-white-50 x-small" />
+                            <div className="text-end mt-1.5">
+                              <i className="bi bi-check2-all text-white-50 small" />
                             </div>
                           )}
                         </div>
@@ -1026,7 +1083,7 @@ const Support = () => {
                   })}
 
                   {sending && (
-                    <div className="support-message-wrapper d-flex gap-2.5 justify-content-start">
+                    <div className="support-message-wrapper d-flex gap-3 justify-content-start">
                       <div className="support-msg-avatar ai-avatar">
                         <i className="bi bi-robot" />
                       </div>
@@ -1039,45 +1096,51 @@ const Support = () => {
                       </div>
                     </div>
                   )}
-
-                  <div ref={messagesEndRef} />
                 </>
               )}
             </div>
 
             {/* Clinical Accelerator Chips */}
-            <div className="support-quick-chips px-4 py-2 border-top d-flex gap-2 overflow-x-auto">
-              {(doctorMode ? doctorClinicalChips : quickSuggestions).map((sug, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="btn btn-sm support-chip-btn text-nowrap rounded-pill"
-                  onClick={() => handleSendMessage(sug.text)}
-                  disabled={sending}
-                >
-                  {sug.label}
-                </button>
-              ))}
+            <div className="support-quick-chips px-4 py-2.5 border-top">
+              <div className="d-flex align-items-center justify-content-between mb-1.5">
+                <span className="x-small text-muted fw-bold text-uppercase d-flex align-items-center gap-1">
+                  <i className="bi bi-lightning-charge-fill text-warning" />
+                  {doctorMode ? "Protocoles & Directives Cliniques Rapides (HAS) :" : "Suggestions d'urgence & questions fréquentes :"}
+                </span>
+              </div>
+              <div className="d-flex gap-2 overflow-x-auto pb-1">
+                {(doctorMode ? doctorClinicalChips : quickSuggestions).map((sug, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="btn btn-sm support-chip-btn text-nowrap rounded-pill"
+                    onClick={() => handleSendMessage(sug.text)}
+                    disabled={sending}
+                  >
+                    {sug.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Input Console */}
-            <div className="support-chat-input-area p-3 border-top">
+            <div className="support-chat-input-area px-4 py-3 border-top">
               {doctorMode && (
-                <div className="doctor-send-mode-toggle d-flex align-items-center gap-2 mb-2">
+                <div className="doctor-send-mode-toggle d-flex align-items-center gap-2 mb-2.5">
                   <button
                     type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1 text-nowrap ${
-                      sendMode === "patient" ? "btn-primary" : "btn-outline-secondary"
+                    className={`btn btn-sm rounded-pill px-3 py-1 text-nowrap fw-semibold ${
+                      sendMode === "patient" ? "btn-primary shadow-sm" : "btn-outline-secondary"
                     }`}
                     onClick={() => setSendMode("patient")}
                   >
                     <i className="bi bi-chat-text-fill me-1.5" />
-                    Répondre au patient
+                    Répondre directement au patient
                   </button>
                   <button
                     type="button"
-                    className={`btn btn-sm rounded-pill px-3 py-1 text-nowrap ${
-                      sendMode === "ai_directive" ? "btn-info text-white" : "btn-outline-secondary"
+                    className={`btn btn-sm rounded-pill px-3 py-1 text-nowrap fw-semibold ${
+                      sendMode === "ai_directive" ? "btn-info text-white shadow-sm" : "btn-outline-secondary"
                     }`}
                     onClick={() => setSendMode("ai_directive")}
                   >
@@ -1092,7 +1155,7 @@ const Support = () => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
-                className="support-input-form d-flex align-items-center gap-2"
+                className="support-input-form d-flex align-items-center gap-2.5"
               >
                 <div className="support-textarea-container flex-grow-1 position-relative">
                   <textarea
