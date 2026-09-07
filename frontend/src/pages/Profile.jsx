@@ -208,9 +208,9 @@ const Profile = () => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               style={{ width: '100px', height: '100px' }}
             >
-              {user?.profile?.profilePhotoUrl ? (
+              {user?.profilePhotoUrl ? (
                 <img 
-                  src={user.profile.profilePhotoUrl} 
+                  src={user.profilePhotoUrl} 
                   alt={user.fullName} 
                   className="rounded-circle w-100 h-100 object-fit-cover border" 
                 />
@@ -233,7 +233,11 @@ const Profile = () => {
                 </label>
                 <hr className="my-1" />
                 <button type="button" className="profile-option-item text-danger" onClick={async () => {
-                  await api.put("/api/communities/social/profile", { ...user.profile, profilePhotoUrl: "" });
+                  await api.put("/api/communities/social/profile", { 
+                    ...user.profile, 
+                    profilePhotoUrl: "",
+                    username: user.profile?.username || user.fullName?.toLowerCase().replace(/\s+/g, ".")
+                  });
                   await refetch();
                   setShowProfileMenu(false);
                 }}>

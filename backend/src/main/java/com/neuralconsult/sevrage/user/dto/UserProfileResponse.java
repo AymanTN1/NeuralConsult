@@ -14,6 +14,7 @@ public record UserProfileResponse(
     boolean identityVerified,
     PatientProfileResponse profile,
     ScoresResponse scores,
-    Set<String> roles
+    Set<String> roles,
+    String profilePhotoUrl
 ) {
 }

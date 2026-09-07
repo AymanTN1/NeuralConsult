@@ -45,7 +45,8 @@ public class UserController {
         profile != null
             ? new ScoresResponse(profile.getFagerstromScore(), profile.getHadAnxietyScore(), profile.getHadDepressionScore())
             : null,
-        normalizeRoles(user)
+        normalizeRoles(user),
+        user.getCommunityAvatarUrl()
     );
   }
 
