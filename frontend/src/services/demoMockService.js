@@ -587,17 +587,72 @@ export const DEMO_DOCTOR_PATIENTS = [
   }
 ];
 
+export const DEMO_NEW_PATIENT_SAMIRA = {
+  id: "p0c70000-0000-0000-0000-000000000006",
+  patientProfileId: "p0c70000-0000-0000-0000-000000000006",
+  patientName: "Samira Alami",
+  name: "Samira Alami",
+  fullName: "Samira Alami",
+  patientEmail: "samira.alami@gmail.com",
+  email: "samira.alami@gmail.com",
+  avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+  dateOfBirth: "1992-05-14",
+  age: 34,
+  city: "Rabat",
+  occupation: "Ingénieure Télécoms",
+  status: "DEMANDE EN ATTENTE (J-0)",
+  statusType: "warning",
+  daysSmokeFree: 0,
+  cigarettesPerDayBefore: 18,
+  currentCigarettes: 18,
+  fagerstromScore: 7,
+  hadAnxietyScore: 11,
+  hadDepressionScore: 4,
+  dependenceLevel: "DÉPENDANCE FORTE",
+  onboardingComplete: true,
+  testsComplete: true,
+  journalComplete: true,
+  riskLevel: "MOYEN",
+  lastReportDate: "Aujourd'hui 14h",
+  aiSummary: "Nouvelle patiente en demande d'accompagnement. Dépendance physique marquée (Fagerström 7/10) avec composante anxieuse vespérale (HAD A 11/21). Protocole d'initiation combiné recommandé.",
+  treatment: "Protocole d'initiation proposé : Nicopatch 21mg/24h + Spray buccal 1mg"
+};
+
+export const DEMO_DOCTOR_REQUESTS = [
+  {
+    id: "req-p01",
+    doctorProfileId: "doc-prof-01",
+    patientProfileId: "p0c70000-0000-0000-0000-000000000006",
+    patientName: "Samira Alami",
+    patientEmail: "samira.alami@gmail.com",
+    matchingMode: "SAME_CITY",
+    matchingScore: 96,
+    patientMessage: "Bonjour Docteur Tantani, je fume 18 cigarettes par jour depuis 12 ans. Forte envie d'arrêter définitivement, mais rechutes répétées en soirée sous stress professionnel. Je sollicite votre suivi médical personnalisé.",
+    doctorResponseNote: null,
+    answeredAt: null,
+    createdAt: new Date(Date.now() - 3600000 * 2.5).toISOString(),
+    status: "PENDING"
+  }
+];
+
 // Helper to create a complete clinical dossier for Doctor Workspace
 export const createDemoDossier = (patientProfileId) => {
-  const patient = DEMO_DOCTOR_PATIENTS.find(
+  const patient = [DEMO_NEW_PATIENT_SAMIRA, ...DEMO_DOCTOR_PATIENTS].find(
     p => p.patientProfileId === patientProfileId || p.id === patientProfileId || p.email === patientProfileId
   ) || DEMO_DOCTOR_PATIENTS[0];
   const tests = generateDemoTests();
 
   const isUrgent = patient.patientEmail === "aymantantani18@gmail.com" || patient.patientName?.includes("Karim");
   const isSevere = patient.patientEmail === "testaccsimo@gmail.com" || patient.patientName?.includes("Mohamed");
+  const isSamira = patient.patientEmail === "samira.alami@gmail.com" || patient.patientName?.includes("Samira");
 
-  const conversationMessages = isUrgent
+  const conversationMessages = isSamira
+    ? [
+        { id: "msg-s1", senderType: "PATIENT", senderName: "Samira Alami", content: "Bonjour Docteur Tantani, je vous transmets ma demande de prise en charge avec mon bilan initial et mes tests Fagerström / HAD complétés. J'ai hâte de commencer mon protocole médical.", createdAt: new Date(Date.now() - 3600000 * 2.4).toISOString() },
+        { id: "msg-s2", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bonjour Samira ! Félicitations pour votre engagement. Votre score Fagerström de 7/10 traduit une dépendance physique nette avec cravings vespéraux. Le Dr. Tantani examine votre dossier pour valider votre stratégie thérapeutique personnalisée. En attendant, identifiez vos déclencheurs de fin de journée.", createdAt: new Date(Date.now() - 3600000 * 2.3).toISOString() }
+      ]
+    : isUrgent
+
     ? [
         { id: "msg-k1", senderType: "PATIENT", senderName: patient.patientName || "Karim Benali", content: "🚨 SOS Envie : J'ai une envie de fumer incontrôlable suite à une grosse crise au travail ! Je tremble et je suis prêt à descendre acheter un paquet. Aidez-moi vite !", createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString() },
         { id: "msg-k2", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "🚨 Karim, asseyez-vous immédiatement et restez avec moi ! Ne bougez pas. Prenez votre spray nicotinique ou votre gomme 2mg tout de suite. Inspirez en 4 secondes... Bloquez 7 secondes... Expirez lentement par la bouche en 8 secondes. Cette tempête dopaminergique est violente mais elle va redescendre dans 180 secondes. J'ai alerté le Dr. Tantani en priorité sur votre dossier.", createdAt: new Date(Date.now() - 3600000 * 1.4).toISOString() },
@@ -2379,6 +2434,50 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       return { success: true, message: "Alerte accusée et prise en charge." };
     }
 
+    // 5. Doctor Patient Request Decision (Accept / Refuse)
+    if (url.includes("/api/doctors/requests/") && (url.includes("/accept") || url.includes("/refuse"))) {
+      const isAccept = url.includes("/accept");
+      const match = url.match(/requests\/([^/]+)\/(accept|refuse)/);
+      const requestId = match ? match[1] : "req-p01";
+      let storedReqs = [];
+      try {
+        const raw = localStorage.getItem("nc_demo_doctor_requests");
+        storedReqs = raw ? JSON.parse(raw) : [...DEMO_DOCTOR_REQUESTS];
+      } catch (e) {
+        storedReqs = [...DEMO_DOCTOR_REQUESTS];
+      }
+      const idx = storedReqs.findIndex(r => r.id === requestId);
+      if (idx !== -1) {
+        storedReqs[idx] = {
+          ...storedReqs[idx],
+          status: isAccept ? "ACCEPTED" : "REFUSED",
+          answeredAt: new Date().toISOString(),
+          doctorResponseNote: payload?.note || (isAccept ? "Demande acceptée par le Dr. Tantani." : "Médecin indisponible actuellement.")
+        };
+        try {
+          localStorage.setItem("nc_demo_doctor_requests", JSON.stringify(storedReqs));
+        } catch (e) {}
+      }
+
+      if (isAccept) {
+        try {
+          const rawPatients = localStorage.getItem("nc_demo_doctor_patients");
+          const currPatients = rawPatients ? JSON.parse(rawPatients) : [...DEMO_DOCTOR_PATIENTS];
+          if (!currPatients.some(p => p.patientProfileId === DEMO_NEW_PATIENT_SAMIRA.patientProfileId)) {
+            currPatients.push({ ...DEMO_NEW_PATIENT_SAMIRA, status: "DOSSIER ASSOCIÉ (J-0)", statusType: "success" });
+            localStorage.setItem("nc_demo_doctor_patients", JSON.stringify(currPatients));
+          }
+        } catch (e) {}
+      }
+
+      return {
+        id: requestId,
+        status: isAccept ? "ACCEPTED" : "REFUSED",
+        success: true,
+        message: isAccept ? "Demande acceptée et patient rattaché à votre file active." : "Demande de suivi refusée."
+      };
+    }
+
     // 8. Direct Messaging POST
     if (url.includes("/api/communities/social/direct/") && upperMethod === "POST") {
       return {
@@ -2486,10 +2585,24 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     return createDemoDossier(patientId);
   }
   if (url.includes("/api/doctors/patients") || url.includes("/api/doctor/patients")) {
+    try {
+      const storedPatients = localStorage.getItem("nc_demo_doctor_patients");
+      if (storedPatients) {
+        const parsed = JSON.parse(storedPatients);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
     return DEMO_DOCTOR_PATIENTS;
   }
   if (url.includes("/api/doctors/requests/doctor")) {
-    return [];
+    try {
+      const storedRequests = localStorage.getItem("nc_demo_doctor_requests");
+      if (storedRequests) {
+        const parsed = JSON.parse(storedRequests);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return DEMO_DOCTOR_REQUESTS;
   }
   if (url.includes("/api/support/doctor/alerts")) {
     let dynamicAlerts = [];
