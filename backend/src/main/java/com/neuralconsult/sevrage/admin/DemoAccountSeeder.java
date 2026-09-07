@@ -453,11 +453,11 @@ public class DemoAccountSeeder implements ApplicationRunner {
         user.setAccountEnabled(true);
         user.setIdentityVerified(true);
         user.setStatus(User.UserStatus.ACTIVE);
-        user = userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        PatientProfile p = patientProfileRepository.findByUser(user).orElseGet(() -> {
+        PatientProfile p = patientProfileRepository.findByUser(savedUser).orElseGet(() -> {
             PatientProfile profile = new PatientProfile();
-            profile.setUser(user);
+            profile.setUser(savedUser);
             return profile;
         });
         p.setDateOfBirth(dob);
@@ -690,11 +690,11 @@ public class DemoAccountSeeder implements ApplicationRunner {
                     pUser.setAccountEnabled(true);
                     pUser.setIdentityVerified(true);
                     pUser.setStatus(User.UserStatus.ACTIVE);
-                    pUser = userRepository.save(pUser);
+                    User savedPUser = userRepository.save(pUser);
 
-                    PatientProfile pProf = patientProfileRepository.findByUser(pUser).orElseGet(() -> {
+                    PatientProfile pProf = patientProfileRepository.findByUser(savedPUser).orElseGet(() -> {
                         PatientProfile pp = new PatientProfile();
-                        pp.setUser(pUser);
+                        pp.setUser(savedPUser);
                         return pp;
                     });
                     pProf.setDateOfBirth(seed.dob());
