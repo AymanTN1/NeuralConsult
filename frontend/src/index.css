@@ -17752,8 +17752,8 @@ body.dark-theme .dw-modal-avatar {
 }
 
 .dw-modal-nav-item.is-active {
-  color: var(--nc-primary);
-  border-bottom-color: var(--nc-primary);
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
 }
 
 body.dark-theme .dw-modal-nav-item.is-active {
@@ -18017,8 +18017,8 @@ body.dark-theme .nc-test-question,
 
 .nc-choice-card.is-selected {
   background: rgba(59, 130, 246, 0.05);
-  border-color: var(--nc-primary);
-  color: var(--nc-primary);
+  border-color: #0d6efd;
+  color: #0d6efd;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
@@ -18103,7 +18103,7 @@ body.dark-theme .nc-choice-card.is-selected,
 }
 
 .nc-likert-option.is-selected {
-  background: var(--nc-primary);
+  background: #0d6efd;
   color: #ffffff;
   font-weight: 600;
 }
