@@ -654,9 +654,17 @@ export const DEMO_DOCTOR_REQUESTS = [
 
 // Helper to create a complete clinical dossier for Doctor Workspace
 export const createDemoDossier = (patientProfileId) => {
-  const patient = [DEMO_NEW_PATIENT_SAMIRA, ...DEMO_DOCTOR_PATIENTS].find(
+  let patient = [DEMO_NEW_PATIENT_SAMIRA, ...DEMO_DOCTOR_PATIENTS].find(
     p => p.patientProfileId === patientProfileId || p.id === patientProfileId || p.email === patientProfileId
   ) || DEMO_DOCTOR_PATIENTS[0];
+  // Apply avatar overrides from localStorage
+  try {
+    const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+    const override = overrides[patient.patientEmail || patient.email];
+    if (override) {
+      patient = { ...patient, ...override };
+    }
+  } catch (e) {}
   const tests = generateDemoTests();
 
   const isUrgent = patient.patientEmail === "aymantantani18@gmail.com" || patient.patientName?.includes("Karim");
@@ -2602,9 +2610,10 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   }
 
   if (url.includes("/api/me")) {
+    const resolved = getDemoUserByEmail(activeDemoEmail);
+    if (resolved) return resolved;
     if (isDoctor) return DEMO_USERS.doctor;
-    const p = getDemoUserByEmail(activeDemoEmail);
-    return p || DEMO_USERS.patient1;
+    return DEMO_USERS.patient1;
   }
   if (url.includes("/api/doctors/profile/me")) {
     return {
