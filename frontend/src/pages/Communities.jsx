@@ -1835,7 +1835,11 @@ export default function Communities() {
                   showToast("L'image est trop lourde (max ~7 Mo).", "error");
                   return;
                 }
-                await api.put("/api/communities/social/profile", { profilePhotoUrl: dataUrl });
+                await api.put("/api/communities/social/profile", { 
+                  username: resolvedProfile?.username || "membre_actif",
+                  bio: resolvedProfile?.bio || "",
+                  profilePhotoUrl: dataUrl 
+                });
                 await loadCommunityData(); // Refresh all community data
                 await refetch(); // Refresh auth user data
                 showToast("Photo de profil communautaire mise à jour !", "success");

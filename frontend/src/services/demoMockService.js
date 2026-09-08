@@ -2388,7 +2388,9 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
         if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
            storedDemoUsers[activeDemoEmail] = {
              ...(storedDemoUsers[activeDemoEmail] || {}),
-             communityAvatarUrl: payload.profilePhotoUrl
+             ...(payload?.profilePhotoUrl !== undefined ? { communityAvatarUrl: payload.profilePhotoUrl } : {}),
+             ...(payload?.username !== undefined ? { username: payload.username, communityUsername: payload.username } : {}),
+             ...(payload?.bio !== undefined ? { bio: payload.bio, communityBio: payload.bio } : {})
            };
            localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
         }
