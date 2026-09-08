@@ -2002,7 +2002,7 @@ export const getDemoCommunityData = () => {
     id: commPerson?.id || demoUser?.id || "user-viewer",
     name: commPerson?.name || demoUser?.fullName || "Membre NeuralConsult",
     username: commPerson?.username || demoUser?.username || (demoUser?.email ? demoUser.email.split("@")[0] : "membre_nc"),
-    profilePhotoUrl: commPerson?.profilePhotoUrl || demoUser?.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    profilePhotoUrl: commPerson?.profilePhotoUrl || demoUser?.communityAvatarUrl || demoUser?.clinicalAvatarUrl || demoUser?.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
     role: commPerson?.role || demoUser?.role || "Patient en Sevrage",
     isDoctor: Boolean(commPerson?.isDoctor || demoUser?.isDoctor),
     smokeFreeStatus: commPerson?.smokeFreeStatus || demoUser?.smokeFreeStatus || "Suivi actif",
@@ -2395,6 +2395,20 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       } catch (e) {}
       const commData = getDemoCommunityData();
       return commData.viewer;
+    }
+
+    if (url.includes("/api/me/clinical-avatar")) {
+      try {
+        const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+        if (activeDemoEmail && payload?.clinicalAvatarUrl !== undefined) {
+           storedDemoUsers[activeDemoEmail] = {
+             ...(storedDemoUsers[activeDemoEmail] || {}),
+             clinicalAvatarUrl: payload.clinicalAvatarUrl
+           };
+           localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
+        }
+      } catch (e) {}
+      return { success: true };
     }
 
     // 3. AI Support Chat Message sending
