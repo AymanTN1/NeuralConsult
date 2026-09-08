@@ -337,7 +337,8 @@ public class DoctorController {
                 assignment.getPatientProfile().getDependenceLevel() != null
                     ? assignment.getPatientProfile().getDependenceLevel().name()
                     : null,
-                assignment.getAssignedAt()
+                assignment.getAssignedAt(),
+                pUser.getClinicalAvatarUrl()
             );
         })
         .toList();
@@ -437,7 +438,8 @@ public class DoctorController {
         ),
         appointments,
         supportConversation,
-        supportAlerts
+        supportAlerts,
+        patientProfile.getUser().getClinicalAvatarUrl()
     );
   }
 

@@ -28,6 +28,7 @@ public record DoctorPatientDossierResponse(
     ClinicalIntelligenceResponse clinicalIntelligence,
     List<AppointmentResponse> appointments,
     SupportConversationResponse supportConversation,
-    List<DoctorAlertResponse> supportAlerts
+    List<DoctorAlertResponse> supportAlerts,
+    String clinicalAvatarUrl
 ) {
 }

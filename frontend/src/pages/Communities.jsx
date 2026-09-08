@@ -126,7 +126,7 @@ export default function Communities() {
         username: "dr_tantani",
         role: "Médecin Tabacologue",
         isDoctor: true,
-        profilePhotoUrl: authUser?.profilePhotoUrl || "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: authUser?.communityAvatarUrl || authUser?.clinicalAvatarUrl || "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
         smokeFreeStatus: "Médecin Référent"
       };
     }
@@ -140,7 +140,7 @@ export default function Communities() {
         username: authUser.username || (authUser.email ? authUser.email.split("@")[0] : "membre_actif"),
         role: "Patient en Sevrage",
         isDoctor: false,
-        profilePhotoUrl: authUser.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: authUser.communityAvatarUrl || authUser.clinicalAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
         smokeFreeStatus: "Suivi actif"
       };
     }
@@ -1835,7 +1835,7 @@ export default function Communities() {
                   showToast("L'image est trop lourde (max ~7 Mo).", "error");
                   return;
                 }
-                await api.put("/api/communities/social/profile", { communityAvatarUrl: dataUrl });
+                await api.put("/api/communities/social/profile", { profilePhotoUrl: dataUrl });
                 await loadCommunityData(); // Refresh all community data
                 await refetch(); // Refresh auth user data
                 showToast("Photo de profil communautaire mise à jour !", "success");

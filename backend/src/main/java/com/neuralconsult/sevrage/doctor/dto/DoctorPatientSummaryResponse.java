@@ -18,6 +18,7 @@ public record DoctorPatientSummaryResponse(
     boolean testsComplete,
     boolean journalComplete,
     String dependenceLevel,
-    Instant assignedAt
+    Instant assignedAt,
+    String clinicalAvatarUrl
 ) {
 }

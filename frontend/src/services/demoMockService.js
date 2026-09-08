@@ -2385,10 +2385,10 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     if (url.includes("/api/communities/social/profile")) {
       try {
         const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-        if (activeDemoEmail && payload?.communityAvatarUrl !== undefined) {
+        if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
            storedDemoUsers[activeDemoEmail] = {
              ...(storedDemoUsers[activeDemoEmail] || {}),
-             communityAvatarUrl: payload.communityAvatarUrl
+             communityAvatarUrl: payload.profilePhotoUrl
            };
            localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
         }
