@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { DEMO_DOCTOR_PATIENTS, createDemoDossier } from "../services/demoMockService";
+import { DEMO_DOCTOR_PATIENTS, DEMO_DOCTOR_REQUESTS, DEMO_NEW_PATIENT_SAMIRA, createDemoDossier } from "../services/demoMockService";
 import { chartTheme } from "../theme/chartTheme";
 
 const InteractiveLung3D = lazy(() => import("../components/InteractiveLung3D"));
@@ -610,118 +610,125 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
   const loadWorkspace = async (options = {}) => {
     setLoading(true);
-    const [profileResp, requestsResp, patientsResp] = await Promise.allSettled([
-      api.get("/api/doctors/profile/me"),
-      api.get("/api/doctors/requests/doctor"),
-      api.get("/api/doctors/patients"),
-    ]);
-
-    const profileData = profileResp.status === "fulfilled" ? profileResp.value.data : null;
-    const requestData = requestsResp.status === "fulfilled" ? requestsResp.value.data || [] : [];
-    const rawPatients = patientsResp.status === "fulfilled" && Array.isArray(patientsResp.value.data) && patientsResp.value.data.length > 0
-      ? patientsResp.value.data
-      : DEMO_DOCTOR_PATIENTS;
-
-    let userOverrides = {};
     try {
-      userOverrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-    } catch (e) {}
+      const [profileResp, requestsResp, patientsResp] = await Promise.allSettled([
+        api.get("/api/doctors/profile/me"),
+        api.get("/api/doctors/requests/doctor"),
+        api.get("/api/doctors/patients"),
+      ]);
 
-    const enrichedRequests = requestData.map((req) => {
-      const rEmail = (req.patientEmail || req.email || "").trim().toLowerCase();
-      const rOverride = userOverrides[rEmail] || userOverrides[req.patientEmail] || userOverrides[req.email];
-      const fallbackReq = DEMO_DOCTOR_REQUESTS.find(dr => (dr.patientEmail || "").toLowerCase() === rEmail) || DEMO_NEW_PATIENT_SAMIRA || {};
-      const resolved = rOverride?.clinicalAvatarUrl || req.clinicalAvatarUrl || fallbackReq.clinicalAvatarUrl || fallbackReq.avatar || req.avatar || null;
-      return {
-        ...fallbackReq,
-        ...req,
-        clinicalAvatarUrl: resolved,
-        avatar: resolved
-      };
-    });
+      const profileData = profileResp.status === "fulfilled" ? profileResp.value.data : null;
+      const requestData = requestsResp.status === "fulfilled" ? requestsResp.value.data || [] : [];
+      const rawPatients = patientsResp.status === "fulfilled" && Array.isArray(patientsResp.value.data) && patientsResp.value.data.length > 0
+        ? patientsResp.value.data
+        : (DEMO_DOCTOR_PATIENTS || []);
 
-    const enrichedPatients = rawPatients.map((patient, index) => {
-      const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne")
-        ? patient.patientEmail
-        : (patient.email && patient.email !== "-")
-        ? patient.email
-        : null;
-      const pEmailClean = (pEmail || "").trim().toLowerCase();
+      let userOverrides = {};
+      try {
+        userOverrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+      } catch (e) {}
 
-      const fallback = DEMO_DOCTOR_PATIENTS.find(
-        dp => (pEmailClean && (dp.email || "").toLowerCase() === pEmailClean) ||
-              (pEmailClean && (dp.patientEmail || "").toLowerCase() === pEmailClean) ||
-              dp.patientProfileId === patient.patientProfileId ||
-              dp.id === patient.patientProfileId ||
-              dp.id === patient.id
-      ) || DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0];
+      const demoRequestsList = Array.isArray(DEMO_DOCTOR_REQUESTS) ? DEMO_DOCTOR_REQUESTS : [];
+      const enrichedRequests = requestData.map((req) => {
+        const rEmail = (req.patientEmail || req.email || "").trim().toLowerCase();
+        const rOverride = userOverrides[rEmail] || userOverrides[req.patientEmail] || userOverrides[req.email];
+        const fallbackReq = demoRequestsList.find(dr => (dr.patientEmail || "").toLowerCase() === rEmail) || DEMO_NEW_PATIENT_SAMIRA || {};
+        const resolved = rOverride?.clinicalAvatarUrl || req.clinicalAvatarUrl || fallbackReq.clinicalAvatarUrl || fallbackReq.avatar || req.avatar || null;
+        return {
+          ...fallbackReq,
+          ...req,
+          clinicalAvatarUrl: resolved,
+          avatar: resolved
+        };
+      });
 
-      const pid = patient.patientProfileId || patient.id || fallback.patientProfileId;
-      const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne")
-        ? patient.patientName
-        : (patient.name && patient.name !== "-")
-        ? patient.name
-        : (patient.fullName && patient.fullName !== "-")
-        ? patient.fullName
-        : fallback.patientName;
-      const finalEmail = pEmail || fallback.patientEmail;
-      const pDob = (patient.dateOfBirth && patient.dateOfBirth !== "-") ? patient.dateOfBirth : fallback.dateOfBirth;
-      const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallback.city;
-      const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallback.occupation;
-      const fScore = patient.fagerstromScore ?? fallback.fagerstromScore ?? 0;
-      const hAnx = patient.hadAnxietyScore ?? fallback.hadAnxietyScore ?? 2;
-      const hDep = patient.hadDepressionScore ?? fallback.hadDepressionScore ?? 1;
-      const depLevel = patient.dependenceLevel || fallback.dependenceLevel || "SEVRÉ (J+30)";
+      const demoPatientsList = Array.isArray(DEMO_DOCTOR_PATIENTS) && DEMO_DOCTOR_PATIENTS.length > 0 ? DEMO_DOCTOR_PATIENTS : [];
+      const enrichedPatients = rawPatients.map((patient, index) => {
+        const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne")
+          ? patient.patientEmail
+          : (patient.email && patient.email !== "-")
+          ? patient.email
+          : null;
+        const pEmailClean = (pEmail || "").trim().toLowerCase();
 
-      const patientOverride = userOverrides[pEmailClean] || (finalEmail ? userOverrides[finalEmail.toLowerCase()] : null) || userOverrides[patient.patientEmail] || userOverrides[patient.email];
+        const fallback = demoPatientsList.find(
+          dp => (pEmailClean && (dp.email || "").toLowerCase() === pEmailClean) ||
+                (pEmailClean && (dp.patientEmail || "").toLowerCase() === pEmailClean) ||
+                dp.patientProfileId === patient.patientProfileId ||
+                dp.id === patient.patientProfileId ||
+                dp.id === patient.id
+        ) || demoPatientsList[index % (demoPatientsList.length || 1)] || demoPatientsList[0] || {};
 
-      // Strictly patient's clinical identity avatar (NOT community avatar)
-      const resolvedClinicalAvatar = patientOverride?.clinicalAvatarUrl || patient.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || patient.avatar || null;
+        const pid = patient.patientProfileId || patient.id || fallback.patientProfileId;
+        const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne")
+          ? patient.patientName
+          : (patient.name && patient.name !== "-")
+          ? patient.name
+          : (patient.fullName && patient.fullName !== "-")
+          ? patient.fullName
+          : (fallback.patientName || "Patient");
+        const finalEmail = pEmail || fallback.patientEmail;
+        const pDob = (patient.dateOfBirth && patient.dateOfBirth !== "-") ? patient.dateOfBirth : fallback.dateOfBirth;
+        const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallback.city;
+        const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallback.occupation;
+        const fScore = patient.fagerstromScore ?? fallback.fagerstromScore ?? 0;
+        const hAnx = patient.hadAnxietyScore ?? fallback.hadAnxietyScore ?? 2;
+        const hDep = patient.hadDepressionScore ?? fallback.hadDepressionScore ?? 1;
+        const depLevel = patient.dependenceLevel || fallback.dependenceLevel || "SEVRÉ (J+30)";
 
-      return {
-        ...fallback,
-        ...patient,
-        patientProfileId: pid,
-        id: pid,
-        patientName: pName,
-        name: pName,
-        patientEmail: finalEmail,
-        email: finalEmail,
-        clinicalAvatarUrl: resolvedClinicalAvatar,
-        avatar: resolvedClinicalAvatar,
-        dateOfBirth: pDob,
-        city: pCity,
-        occupation: pOccupation,
-        fagerstromScore: fScore,
-        hadAnxietyScore: hAnx,
-        hadDepressionScore: hDep,
-        dependenceLevel: depLevel,
-        onboardingComplete: true,
-        testsComplete: true,
-        journalComplete: true
-      };
-    });
+        const patientOverride = userOverrides[pEmailClean] || (finalEmail ? userOverrides[finalEmail.toLowerCase()] : null) || userOverrides[patient.patientEmail] || userOverrides[patient.email];
 
-    setProfile(profileData);
-    setRequests(enrichedRequests);
-    setPatients(enrichedPatients);
-    setForm({
-      city: profileData?.city || "Rabat",
-      countryCode: profileData?.countryCode || "MA",
-      specialty: profileData?.specialty || "Tabacologue & Addictologue",
-      bio: profileData?.bio || "Médecin spécialiste en tabacologie clinique et addictologie comportementale. Accompagnement bienveillant et protocoles validés HAS / OMS.",
-      acceptsTeleconsultation: profileData?.acceptsTeleconsultation ?? true,
-      yearsExperience: profileData?.yearsExperience || 12
-    });
+        // Strictly patient's clinical identity avatar (NOT community avatar)
+        const resolvedClinicalAvatar = patientOverride?.clinicalAvatarUrl || patient.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || patient.avatar || null;
 
-    const nextPatientId = resolveNextPatientId(options.preferredPatientId, selectedPatientId, requestData, enrichedPatients);
-    setSelectedPatientId(nextPatientId);
-    if (!nextPatientId) {
-      setDossier(null);
-      setDossierError(null);
+        return {
+          ...fallback,
+          ...patient,
+          patientProfileId: pid,
+          id: pid,
+          patientName: pName,
+          name: pName,
+          patientEmail: finalEmail,
+          email: finalEmail,
+          clinicalAvatarUrl: resolvedClinicalAvatar,
+          avatar: resolvedClinicalAvatar,
+          dateOfBirth: pDob,
+          city: pCity,
+          occupation: pOccupation,
+          fagerstromScore: fScore,
+          hadAnxietyScore: hAnx,
+          hadDepressionScore: hDep,
+          dependenceLevel: depLevel,
+          onboardingComplete: true,
+          testsComplete: true,
+          journalComplete: true
+        };
+      });
+
+      setProfile(profileData);
+      setRequests(enrichedRequests);
+      setPatients(enrichedPatients);
+      setForm({
+        city: profileData?.city || "Rabat",
+        countryCode: profileData?.countryCode || "MA",
+        specialty: profileData?.specialty || "Tabacologue & Addictologue",
+        bio: profileData?.bio || "Médecin spécialiste en tabacologie clinique et addictologie comportementale. Accompagnement bienveillant et protocoles validés HAS / OMS.",
+        acceptsTeleconsultation: profileData?.acceptsTeleconsultation ?? true,
+        yearsExperience: profileData?.yearsExperience || 12
+      });
+
+      const nextPatientId = resolveNextPatientId(options.preferredPatientId, selectedPatientId, requestData, enrichedPatients);
+      setSelectedPatientId(nextPatientId);
+      if (!nextPatientId) {
+        setDossier(null);
+        setDossierError(null);
+      }
+      return { nextPatientId };
+    } catch (err) {
+      console.error("loadWorkspace error:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    return { nextPatientId };
   };
 
   useEffect(() => {
