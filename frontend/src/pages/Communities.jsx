@@ -1854,18 +1854,21 @@ export default function Communities() {
                   img.onerror = () => resolve(rawDataUrl);
                   img.src = rawDataUrl;
                 });
+                // Step 1: Upload the photo
                 await api.put("/api/communities/social/profile", { 
-                  username: resolvedProfile?.username || "membre_actif",
-                  bio: resolvedProfile?.bio || "",
+                  username: resolvedProfile?.username || myProfile?.username || "membre_actif",
+                  bio: resolvedProfile?.bio || myProfile?.bio || "",
                   profilePhotoUrl: dataUrl 
                 });
-                await loadCommunityData(); // Refresh all community data
-                await refetch(); // Refresh auth user data
+                // Step 2: Refresh data (don't let refresh errors block success)
+                try { await loadCommunityData(); } catch (_) {}
+                try { await refetch(); } catch (_) {}
                 showToast("Photo de profil communautaire mise à jour !", "success");
-                // Immediately close modal to reflect update safely
                 setShowProfileModal(false);
               } catch (error) {
-                showToast("Erreur lors de la mise à jour de la photo.", "error");
+                console.error("[NeuralConsult] Community avatar upload error:", error);
+                const msg = error?.response?.data?.message || error?.response?.data?.error || error?.message || "";
+                showToast(msg || "Erreur lors de la mise à jour de la photo.", "error");
               } finally {
                 e.target.value = null;
               }
