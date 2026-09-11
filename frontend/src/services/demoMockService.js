@@ -47,6 +47,9 @@ export const DEMO_USERS = {
     fullName: "Youssef El Fassi",
     firstName: "Youssef",
     lastName: "El Fassi",
+    profilePhotoUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1994-08-22",
     identityVerified: true,
     active: true,
@@ -104,6 +107,9 @@ export const DEMO_USERS = {
     fullName: "Karim Benali",
     firstName: "Karim",
     lastName: "Benali",
+    profilePhotoUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+    avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1984-03-15",
     identityVerified: true,
     active: true,
@@ -161,6 +167,9 @@ export const DEMO_USERS = {
     fullName: "Sara Mansour",
     firstName: "Sara",
     lastName: "Mansour",
+    profilePhotoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1998-11-04",
     identityVerified: true,
     active: true,
@@ -218,6 +227,9 @@ export const DEMO_USERS = {
     fullName: "Said Alaoui",
     firstName: "Said",
     lastName: "Alaoui",
+    profilePhotoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1968-01-30",
     identityVerified: true,
     active: true,
@@ -275,6 +287,9 @@ export const DEMO_USERS = {
     fullName: "Mohamed Chraibi",
     firstName: "Mohamed",
     lastName: "Chraibi",
+    profilePhotoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1990-06-19",
     identityVerified: true,
     active: true,
@@ -354,8 +369,10 @@ export const getDemoUserByEmail = (email) => {
     
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-      if (overrides[baseUser.email]) {
-        baseUser = { ...baseUser, ...overrides[baseUser.email] };
+      const userKey = baseUser.email ? baseUser.email.toLowerCase() : "";
+      const userOverride = overrides[userKey] || overrides[baseUser.email];
+      if (userOverride) {
+        baseUser = { ...baseUser, ...userOverride };
       }
     } catch (e) {}
     
@@ -460,8 +477,8 @@ export const DEMO_DOCTOR_PATIENTS = [
     fullName: "Youssef El Fassi",
     patientEmail: "tantaniayman0@gmail.com",
     email: "tantaniayman0@gmail.com",
-    avatar: null,
-    clinicalAvatarUrl: null,
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1994-08-22",
     age: 32,
     city: "Rabat",
@@ -492,6 +509,7 @@ export const DEMO_DOCTOR_PATIENTS = [
     patientEmail: "aymantantani18@gmail.com",
     email: "aymantantani18@gmail.com",
     avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1984-03-15",
     age: 42,
     city: "Casablanca",
@@ -522,6 +540,7 @@ export const DEMO_DOCTOR_PATIENTS = [
     patientEmail: "projetfinetude4@gmail.com",
     email: "projetfinetude4@gmail.com",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1998-11-04",
     age: 28,
     city: "Marrakech",
@@ -552,6 +571,7 @@ export const DEMO_DOCTOR_PATIENTS = [
     patientEmail: "saidpa1969@gmail.com",
     email: "saidpa1969@gmail.com",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1968-01-30",
     age: 58,
     city: "Fès",
@@ -582,6 +602,7 @@ export const DEMO_DOCTOR_PATIENTS = [
     patientEmail: "testaccsimo@gmail.com",
     email: "testaccsimo@gmail.com",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     dateOfBirth: "1990-06-19",
     age: 36,
     city: "Tanger",
@@ -601,7 +622,7 @@ export const DEMO_DOCTOR_PATIENTS = [
     riskLevel: "CRITIQUE",
     lastReportDate: "Aujourd'hui 08h",
     aiSummary: "Score HAD anxiété au plafond (12/21). Besoin d'un renforcement du soutien psychologique TCC d'urgence.",
-    treatment: "Patch 21mg + Thérapie TCC active"
+    treatment: "Nicopatch 21mg/24h + Inhaleur nicotine 15mg"
   }
 ];
 
@@ -614,6 +635,7 @@ export const DEMO_NEW_PATIENT_SAMIRA = {
   patientEmail: "samira.alami@gmail.com",
   email: "samira.alami@gmail.com",
   avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+  clinicalAvatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
   dateOfBirth: "1992-05-14",
   age: 34,
   city: "Rabat",
@@ -643,6 +665,8 @@ export const DEMO_DOCTOR_REQUESTS = [
     patientProfileId: "p0c70000-0000-0000-0000-000000000006",
     patientName: "Samira Alami",
     patientEmail: "samira.alami@gmail.com",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+    clinicalAvatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
     matchingMode: "SAME_CITY",
     matchingScore: 96,
     patientMessage: "Bonjour Docteur Tantani, je fume 18 cigarettes par jour depuis 12 ans. Forte envie d'arrêter définitivement, mais rechutes répétées en soirée sous stress professionnel. Je sollicite votre suivi médical personnalisé.",
@@ -699,8 +723,12 @@ export const createDemoDossier = (patientProfileId) => {
         { id: "msg-4", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
       ];
 
-  // Strictly prioritize clinical identity avatar (NOT community avatar, NOT dummy stock photo)
-  const resolvedAvatar = override?.clinicalAvatarUrl || patient.clinicalAvatarUrl || null;
+  // Strictly prioritize clinical identity avatar (NOT community avatar)
+  const fallback = [DEMO_NEW_PATIENT_SAMIRA, ...DEMO_DOCTOR_PATIENTS].find(
+    dp => (dp.patientProfileId === patient.patientProfileId) ||
+          ((dp.patientEmail || dp.email || "").toLowerCase() === (patient.patientEmail || patient.email || "").toLowerCase())
+  ) || DEMO_DOCTOR_PATIENTS[0];
+  const resolvedAvatar = override?.clinicalAvatarUrl || patient.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || patient.avatar || null;
 
   return {
     patientProfileId: patient.patientProfileId,
@@ -2755,9 +2783,12 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       patients = patients.map(p => {
         const emailKey = (p.patientEmail || p.email || "").trim().toLowerCase();
         const override = overrides[emailKey] || overrides[p.patientEmail] || overrides[p.email];
+        const fallback = DEMO_DOCTOR_PATIENTS.find(dp => (dp.email || "").toLowerCase() === emailKey || (dp.patientEmail || "").toLowerCase() === emailKey) || {};
+        const resolved = override?.clinicalAvatarUrl || p.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || p.avatar || null;
         return {
           ...p,
-          clinicalAvatarUrl: override?.clinicalAvatarUrl || p.clinicalAvatarUrl || null
+          clinicalAvatarUrl: resolved,
+          avatar: resolved
         };
       });
     } catch(e) {}
@@ -2780,9 +2811,12 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       reqs = reqs.map(r => {
         const emailKey = (r.patientEmail || r.email || "").trim().toLowerCase();
         const override = overrides[emailKey] || overrides[r.patientEmail] || overrides[r.email];
+        const fallback = DEMO_DOCTOR_REQUESTS.find(dr => (dr.patientEmail || "").toLowerCase() === emailKey) || DEMO_NEW_PATIENT_SAMIRA || {};
+        const resolved = override?.clinicalAvatarUrl || r.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || r.avatar || null;
         return {
           ...r,
-          clinicalAvatarUrl: override?.clinicalAvatarUrl || r.clinicalAvatarUrl || null
+          clinicalAvatarUrl: resolved,
+          avatar: resolved
         };
       });
     } catch(e) {}
