@@ -119,6 +119,7 @@ export default function Communities() {
 
   // Resolved public identity of the logged-in viewer
   const resolvedProfile = useMemo(() => {
+    const avatar = authUser?.communityAvatarUrl || myProfile?.communityAvatarUrl || myProfile?.profilePhotoUrl || authUser?.clinicalAvatarUrl;
     if (isDoc) {
       return {
         id: "user-tantani",
@@ -126,12 +127,15 @@ export default function Communities() {
         username: "dr_tantani",
         role: "Médecin Tabacologue",
         isDoctor: true,
-        profilePhotoUrl: authUser?.communityAvatarUrl || authUser?.clinicalAvatarUrl || "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: avatar || "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
         smokeFreeStatus: "Médecin Référent"
       };
     }
     if (myProfile) {
-      return myProfile;
+      return {
+        ...myProfile,
+        profilePhotoUrl: avatar || myProfile.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+      };
     }
     if (authUser) {
       return {
@@ -140,7 +144,7 @@ export default function Communities() {
         username: authUser.username || (authUser.email ? authUser.email.split("@")[0] : "membre_actif"),
         role: "Patient en Sevrage",
         isDoctor: false,
-        profilePhotoUrl: authUser.communityAvatarUrl || authUser.clinicalAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
         smokeFreeStatus: "Suivi actif"
       };
     }
@@ -1860,11 +1864,45 @@ export default function Communities() {
                   bio: resolvedProfile?.bio || myProfile?.bio || "",
                   profilePhotoUrl: dataUrl 
                 });
+
+                // Immediately update local modal state and profile state so it reflects instantaneously!
+                setSelectedUserProfile(prev => prev ? {
+                  ...prev,
+                  user: {
+                    ...prev.user,
+                    profilePhotoUrl: dataUrl,
+                    communityAvatarUrl: dataUrl
+                  }
+                } : prev);
+
+                setMyProfile(prev => prev ? {
+                  ...prev,
+                  profilePhotoUrl: dataUrl,
+                  communityAvatarUrl: dataUrl
+                } : prev);
+
+                // Update author photo across feed
+                setPosts(prev => prev.map(p => {
+                  const isCurrent = p.author?.id === authUser?.id ||
+                    (resolvedProfile && p.author?.username === resolvedProfile.username) ||
+                    (isDoc && (p.author?.id === "user-tantani" || p.author?.username === "dr_tantani"));
+                  if (isCurrent) {
+                    return {
+                      ...p,
+                      author: {
+                        ...p.author,
+                        profilePhotoUrl: dataUrl,
+                        communityAvatarUrl: dataUrl
+                      }
+                    };
+                  }
+                  return p;
+                }));
+
                 // Step 2: Refresh data (don't let refresh errors block success)
                 try { await loadCommunityData(); } catch (_) {}
                 try { await refetch(); } catch (_) {}
                 showToast("Photo de profil communautaire mise à jour !", "success");
-                setShowProfileModal(false);
               } catch (error) {
                 console.error("[NeuralConsult] Community avatar upload error:", error);
                 const msg = error?.response?.data?.message || error?.response?.data?.error || error?.message || "";
@@ -1919,11 +1957,25 @@ export default function Communities() {
                 {/* Profile Avatar & Primary Actions */}
                 <div className="profile-avatar-row">
                   <div className="profile-avatar-lg">
-                    {selectedUserProfile.user?.communityAvatarUrl ? (
-                      <img src={selectedUserProfile.user.communityAvatarUrl} alt="Avatar" />
-                    ) : (
-                      <span>{getAvatarLetter(selectedUserProfile.user?.name, selectedUserProfile.user?.username)}</span>
-                    )}
+                    {(() => {
+                      const isOwn = Boolean(
+                        authUser && selectedUserProfile.user && (
+                          selectedUserProfile.user.id === authUser.id ||
+                          (isDoc && (selectedUserProfile.user.id === "user-tantani" || selectedUserProfile.user.username === "dr_tantani" || selectedUserProfile.user.isDoctor)) ||
+                          selectedUserProfile.user.email === authUser.email ||
+                          (resolvedProfile && selectedUserProfile.user.username === resolvedProfile.username)
+                        )
+                      );
+                      const avatarUrl = (isOwn ? (authUser?.communityAvatarUrl || resolvedProfile?.profilePhotoUrl) : null) ||
+                        selectedUserProfile.user?.communityAvatarUrl ||
+                        selectedUserProfile.user?.profilePhotoUrl ||
+                        selectedUserProfile.user?.clinicalAvatarUrl ||
+                        selectedUserProfile.user?.avatar;
+                      if (avatarUrl) {
+                        return <img src={avatarUrl} alt="Avatar" />;
+                      }
+                      return <span>{getAvatarLetter(selectedUserProfile.user?.name, selectedUserProfile.user?.username)}</span>;
+                    })()}
                   </div>
 
                   <div className="profile-action-buttons">

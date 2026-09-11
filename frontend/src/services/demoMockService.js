@@ -1991,11 +1991,14 @@ export const getDemoCommunityData = () => {
   const demoUser = activeDemoEmail ? getDemoUserByEmail(activeDemoEmail) : null;
   const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
 
+  const activeAvatar = demoUser?.communityAvatarUrl || demoUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || demoUser?.clinicalAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
+
   const viewer = isDoctor ? {
     id: "user-tantani",
     name: "Dr. Ayman Tantani",
     username: "dr_tantani",
-    profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+    profilePhotoUrl: demoUser?.communityAvatarUrl || demoUser?.profilePhotoUrl || DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+    communityAvatarUrl: demoUser?.communityAvatarUrl || demoUser?.profilePhotoUrl || DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
     role: "Médecin Tabacologue",
     isDoctor: true,
     smokeFreeStatus: "Médecin Référent",
@@ -2010,7 +2013,8 @@ export const getDemoCommunityData = () => {
     id: commPerson?.id || demoUser?.id || "user-viewer",
     name: commPerson?.name || demoUser?.fullName || "Membre NeuralConsult",
     username: commPerson?.username || demoUser?.username || (demoUser?.email ? demoUser.email.split("@")[0] : "membre_nc"),
-    profilePhotoUrl: commPerson?.profilePhotoUrl || demoUser?.communityAvatarUrl || demoUser?.clinicalAvatarUrl || demoUser?.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    profilePhotoUrl: activeAvatar,
+    communityAvatarUrl: activeAvatar,
     role: commPerson?.role || demoUser?.role || "Patient en Sevrage",
     isDoctor: Boolean(commPerson?.isDoctor || demoUser?.isDoctor),
     smokeFreeStatus: commPerson?.smokeFreeStatus || demoUser?.smokeFreeStatus || "Suivi actif",
@@ -2018,10 +2022,32 @@ export const getDemoCommunityData = () => {
     badges: ["🏆 Sevrage Actif", "🌟 Membre Vérifié", "🫁 Capacité Restaurée", "🤝 Entraide Pro"]
   };
 
+  let overrides = {};
+  try {
+    overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+  } catch (e) {}
+
+  const mergedPeople = DEMO_COMMUNITY_PEOPLE.map(p => {
+    const o = overrides[p.email];
+    if (o) {
+      const av = o.communityAvatarUrl || o.profilePhotoUrl || p.profilePhotoUrl;
+      return {
+        ...p,
+        ...o,
+        profilePhotoUrl: av,
+        communityAvatarUrl: av
+      };
+    }
+    return {
+      ...p,
+      communityAvatarUrl: p.profilePhotoUrl
+    };
+  });
+
   return {
     posts: mergedPosts,
     servers: DEMO_COMMUNITY_SERVERS,
-    people: DEMO_COMMUNITY_PEOPLE,
+    people: mergedPeople,
     viewer,
     conversations: [
       {
@@ -2056,11 +2082,13 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
       const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
 
+      const authorAvatar = activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
       const postAuthor = payload?.author || (isDoctor ? {
         id: "user-tantani",
         name: "Dr. Ayman Tantani",
         username: "dr_tantani",
-        profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+        profilePhotoUrl: activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+        communityAvatarUrl: activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
         role: "Médecin Tabacologue & Addictologue",
         isDoctor: true,
         smokeFreeStatus: "Médecin Référent",
@@ -2069,7 +2097,8 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
         id: commPerson?.id || activeUser.id || "user-viewer",
         name: commPerson?.name || activeUser.fullName || activeUser.name || "Membre NeuralConsult",
         username: commPerson?.username || activeUser.username || "membre_actif",
-        profilePhotoUrl: commPerson?.profilePhotoUrl || activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: authorAvatar,
+        communityAvatarUrl: authorAvatar,
         role: commPerson?.role || activeUser.role || "Patient en Sevrage",
         isDoctor: Boolean(commPerson?.isDoctor || activeUser.isDoctor),
         smokeFreeStatus: commPerson?.smokeFreeStatus || activeUser.smokeFreeStatus || "Suivi actif",
@@ -2195,11 +2224,13 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       let target = data.posts.find(p => p.id === postId) || DEMO_COMMUNITY_POSTS[0];
       const updated = { ...target };
 
+      const commAuthorAvatar = activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
       const commentAuthor = isDoctor ? {
         id: "user-tantani",
         name: "Dr. Ayman Tantani",
         username: "dr_tantani",
-        profilePhotoUrl: DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+        profilePhotoUrl: activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
+        communityAvatarUrl: activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || DEMO_COMMUNITY_PEOPLE[0].profilePhotoUrl,
         role: "Médecin Tabacologue",
         isDoctor: true,
         smokeFreeStatus: "Médecin Référent"
@@ -2207,7 +2238,8 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
         id: commPerson?.id || activeUser.id || "user-viewer",
         name: commPerson?.name || activeUser.fullName || activeUser.name || "Membre NeuralConsult",
         username: commPerson?.username || activeUser.username || "membre_actif",
-        profilePhotoUrl: commPerson?.profilePhotoUrl || activeUser.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: commAuthorAvatar,
+        communityAvatarUrl: commAuthorAvatar,
         role: commPerson?.role || activeUser.role || "Patient en Sevrage",
         isDoctor: Boolean(commPerson?.isDoctor || activeUser.isDoctor),
         smokeFreeStatus: commPerson?.smokeFreeStatus || activeUser.smokeFreeStatus || "Suivi actif"
@@ -2393,14 +2425,37 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     if (url.includes("/api/communities/social/profile")) {
       try {
         const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-        if (activeDemoEmail && payload?.profilePhotoUrl !== undefined) {
-           storedDemoUsers[activeDemoEmail] = {
-             ...(storedDemoUsers[activeDemoEmail] || {}),
-             ...(payload?.profilePhotoUrl !== undefined ? { communityAvatarUrl: payload.profilePhotoUrl } : {}),
+        const targetEmail = activeDemoEmail || "tantaniayman0@gmail.com";
+        if (targetEmail && payload?.profilePhotoUrl !== undefined) {
+           storedDemoUsers[targetEmail] = {
+             ...(storedDemoUsers[targetEmail] || {}),
+             communityAvatarUrl: payload.profilePhotoUrl,
+             profilePhotoUrl: payload.profilePhotoUrl,
              ...(payload?.username !== undefined ? { username: payload.username, communityUsername: payload.username } : {}),
              ...(payload?.bio !== undefined ? { bio: payload.bio, communityBio: payload.bio } : {})
            };
            localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
+
+           // Also update any posts created by this user in localStorage
+           try {
+             const storedPosts = JSON.parse(localStorage.getItem("nc_demo_community_posts") || "[]");
+             if (storedPosts.length > 0) {
+               const updated = storedPosts.map(p => {
+                 if (p.author?.email === targetEmail || p.author?.username === payload.username || (isDoctor && p.author?.isDoctor)) {
+                   return {
+                     ...p,
+                     author: {
+                       ...p.author,
+                       profilePhotoUrl: payload.profilePhotoUrl,
+                       communityAvatarUrl: payload.profilePhotoUrl
+                     }
+                   };
+                 }
+                 return p;
+               });
+               localStorage.setItem("nc_demo_community_posts", JSON.stringify(updated));
+             }
+           } catch (_) {}
         }
       } catch (e) {}
       const commData = getDemoCommunityData();
@@ -2575,8 +2630,11 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   if (url.includes("/api/communities/social/users/by-username/")) {
     const rawUsername = url.split("/by-username/")[1].split("?")[0].replace("@", "").toLowerCase();
     const isDocLookup = rawUsername === "dr_tantani" || rawUsername.includes("tantani");
-    const person = isDocLookup ? DEMO_COMMUNITY_PEOPLE[0] : (DEMO_COMMUNITY_PEOPLE.find(p => (p.username || "").toLowerCase() === rawUsername) || DEMO_COMMUNITY_PEOPLE[0]);
     const commData = getDemoCommunityData();
+    let person = isDocLookup ? commData.people[0] : (commData.people.find(p => (p.username || "").toLowerCase() === rawUsername) || commData.people[0]);
+    if (commData.viewer && (person.id === commData.viewer.id || person.username === commData.viewer.username)) {
+      person = { ...person, ...commData.viewer };
+    }
     const allPosts = commData.posts || [];
     const userPosts = allPosts.filter(p => p.author?.id === person.id || (p.author?.username || "").toLowerCase() === (person.username || "").toLowerCase() || (person.isDoctor && p.author?.isDoctor));
     return {
@@ -2590,8 +2648,11 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   if (url.includes("/api/communities/social/users/")) {
     const userId = url.split("/users/")[1].split("?")[0];
     const isDocLookup = userId === "user-tantani" || userId === "d0c70000-0000-0000-0000-000000000001" || (userId.startsWith("d0c7") && isDoctor);
-    const person = isDocLookup ? DEMO_COMMUNITY_PEOPLE[0] : (DEMO_COMMUNITY_PEOPLE.find(p => p.id === userId) || DEMO_COMMUNITY_PEOPLE[0]);
     const commData = getDemoCommunityData();
+    let person = isDocLookup ? commData.people[0] : (commData.people.find(p => p.id === userId) || commData.people[0]);
+    if (commData.viewer && (person.id === commData.viewer.id || person.username === commData.viewer.username)) {
+      person = { ...person, ...commData.viewer };
+    }
     const allPosts = commData.posts || [];
     const userPosts = allPosts.filter(p => p.author?.id === person.id || (p.author?.username || "").toLowerCase() === (person.username || "").toLowerCase() || (person.isDoctor && p.author?.isDoctor));
     return {
