@@ -460,7 +460,8 @@ export const DEMO_DOCTOR_PATIENTS = [
     fullName: "Youssef El Fassi",
     patientEmail: "tantaniayman0@gmail.com",
     email: "tantaniayman0@gmail.com",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    avatar: null,
+    clinicalAvatarUrl: null,
     dateOfBirth: "1994-08-22",
     age: 32,
     city: "Rabat",
@@ -658,9 +659,11 @@ export const createDemoDossier = (patientProfileId) => {
     p => p.patientProfileId === patientProfileId || p.id === patientProfileId || p.email === patientProfileId
   ) || DEMO_DOCTOR_PATIENTS[0];
   // Apply avatar overrides from localStorage
+  let override = null;
   try {
     const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-    const override = overrides[patient.patientEmail || patient.email];
+    const pEmail = (patient.patientEmail || patient.email || "").trim().toLowerCase();
+    override = overrides[pEmail] || overrides[patient.patientEmail] || overrides[patient.email];
     if (override) {
       patient = { ...patient, ...override };
     }
@@ -696,13 +699,18 @@ export const createDemoDossier = (patientProfileId) => {
         { id: "msg-4", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
       ];
 
+  // Strictly prioritize clinical identity avatar (NOT community avatar, NOT dummy stock photo)
+  const resolvedAvatar = override?.clinicalAvatarUrl || patient.clinicalAvatarUrl || null;
+
   return {
     patientProfileId: patient.patientProfileId,
     patientName: patient.patientName,
     patientEmail: patient.patientEmail,
-    patientClinicalAvatarUrl: patient.clinicalAvatarUrl || patient.avatar || patient.profilePhotoUrl,
+    clinicalAvatarUrl: resolvedAvatar,
+    patientClinicalAvatarUrl: resolvedAvatar,
     profile: {
       id: patient.patientProfileId,
+      clinicalAvatarUrl: resolvedAvatar,
       dateOfBirth: patient.dateOfBirth,
       sex: "MALE",
       heightCm: 180,
@@ -2464,13 +2472,41 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
 
     if (url.includes("/api/me/clinical-avatar")) {
       try {
+        const userFromStorage = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("nc_user") || "{}") : {};
+        const targetEmail = activeDemoEmail || userFromStorage?.email || "tantaniayman0@gmail.com";
         const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-        if (activeDemoEmail && payload?.clinicalAvatarUrl !== undefined) {
-           storedDemoUsers[activeDemoEmail] = {
-             ...(storedDemoUsers[activeDemoEmail] || {}),
+        if (targetEmail && payload?.clinicalAvatarUrl !== undefined) {
+           const existing = storedDemoUsers[targetEmail] || storedDemoUsers[targetEmail.toLowerCase()] || {};
+           const updatedRecord = {
+             ...existing,
              clinicalAvatarUrl: payload.clinicalAvatarUrl
            };
+           storedDemoUsers[targetEmail] = updatedRecord;
+           storedDemoUsers[targetEmail.toLowerCase()] = updatedRecord;
            localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
+
+           if (userFromStorage && (userFromStorage.email === targetEmail || userFromStorage.email?.toLowerCase() === targetEmail.toLowerCase())) {
+             userFromStorage.clinicalAvatarUrl = payload.clinicalAvatarUrl;
+             localStorage.setItem("nc_user", JSON.stringify(userFromStorage));
+           }
+
+           try {
+             const storedDocPatients = JSON.parse(localStorage.getItem("nc_demo_doctor_patients") || "[]");
+             if (Array.isArray(storedDocPatients) && storedDocPatients.length > 0) {
+               const updatedDocPatients = storedDocPatients.map(p => {
+                 if ((p.patientEmail || p.email || "").toLowerCase() === targetEmail.toLowerCase()) {
+                   return { ...p, clinicalAvatarUrl: payload.clinicalAvatarUrl };
+                 }
+                 return p;
+               });
+               localStorage.setItem("nc_demo_doctor_patients", JSON.stringify(updatedDocPatients));
+             }
+           } catch (_) {}
+
+           const demoP = DEMO_DOCTOR_PATIENTS.find(p => (p.patientEmail || p.email || "").toLowerCase() === targetEmail.toLowerCase());
+           if (demoP) {
+             demoP.clinicalAvatarUrl = payload.clinicalAvatarUrl;
+           }
         }
       } catch (e) {}
       return { success: true };
@@ -2717,10 +2753,11 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       patients = patients.map(p => {
-        const override = overrides[p.patientEmail || p.email];
+        const emailKey = (p.patientEmail || p.email || "").trim().toLowerCase();
+        const override = overrides[emailKey] || overrides[p.patientEmail] || overrides[p.email];
         return {
           ...p,
-          clinicalAvatarUrl: override?.clinicalAvatarUrl || p.clinicalAvatarUrl || p.avatar || p.profilePhotoUrl
+          clinicalAvatarUrl: override?.clinicalAvatarUrl || p.clinicalAvatarUrl || null
         };
       });
     } catch(e) {}
@@ -2741,10 +2778,11 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       reqs = reqs.map(r => {
-        const override = overrides[r.patientEmail || r.email];
+        const emailKey = (r.patientEmail || r.email || "").trim().toLowerCase();
+        const override = overrides[emailKey] || overrides[r.patientEmail] || overrides[r.email];
         return {
           ...r,
-          clinicalAvatarUrl: override?.clinicalAvatarUrl || r.clinicalAvatarUrl || r.avatar || r.profilePhotoUrl
+          clinicalAvatarUrl: override?.clinicalAvatarUrl || r.clinicalAvatarUrl || null
         };
       });
     } catch(e) {}

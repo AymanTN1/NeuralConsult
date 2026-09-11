@@ -552,19 +552,51 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     const targetId = patientId || patients[0]?.patientProfileId || "p0c70000-0000-0000-0000-000000000001";
     setDossierLoading(true);
     setDossierError(null);
+
+    let userOverrides = {};
+    try {
+      userOverrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+    } catch (e) {}
+
+    const resolveAvatarForDossier = (dossierObj) => {
+      if (!dossierObj) return null;
+      const patientInState = patients.find(p => p.patientProfileId === targetId || p.id === targetId || p.email === dossierObj.patientEmail || p.patientEmail === dossierObj.patientEmail);
+      const pEmail = (dossierObj.patientEmail || patientInState?.patientEmail || patientInState?.email || "").trim().toLowerCase();
+      const override = userOverrides[pEmail] || userOverrides[dossierObj.patientEmail] || userOverrides[patientInState?.email];
+      return dossierObj.clinicalAvatarUrl || dossierObj.patientClinicalAvatarUrl || patientInState?.clinicalAvatarUrl || override?.clinicalAvatarUrl || null;
+    };
+
     try {
       const { data } = await api.get(`/api/doctors/patients/${targetId}/dossier`);
       if (data && (data.patientName || data.profile || data.fagerstromHistory || data.dailyReports)) {
-        setDossier(data);
-        return data;
+        const resolvedAvatar = resolveAvatarForDossier(data);
+        const enriched = {
+          ...data,
+          clinicalAvatarUrl: resolvedAvatar,
+          patientClinicalAvatarUrl: resolvedAvatar
+        };
+        setDossier(enriched);
+        return enriched;
       }
       const mockDossier = createDemoDossier(targetId);
-      setDossier(mockDossier);
-      return mockDossier;
+      const resolvedAvatar = resolveAvatarForDossier(mockDossier);
+      const enriched = {
+        ...mockDossier,
+        clinicalAvatarUrl: resolvedAvatar,
+        patientClinicalAvatarUrl: resolvedAvatar
+      };
+      setDossier(enriched);
+      return enriched;
     } catch (error) {
       const mockDossier = createDemoDossier(targetId);
-      setDossier(mockDossier);
-      return mockDossier;
+      const resolvedAvatar = resolveAvatarForDossier(mockDossier);
+      const enriched = {
+        ...mockDossier,
+        clinicalAvatarUrl: resolvedAvatar,
+        patientClinicalAvatarUrl: resolvedAvatar
+      };
+      setDossier(enriched);
+      return enriched;
     } finally {
       setDossierLoading(false);
     }
@@ -583,6 +615,20 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     const rawPatients = patientsResp.status === "fulfilled" && Array.isArray(patientsResp.value.data) && patientsResp.value.data.length > 0
       ? patientsResp.value.data
       : DEMO_DOCTOR_PATIENTS;
+
+    let userOverrides = {};
+    try {
+      userOverrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+    } catch (e) {}
+
+    const enrichedRequests = requestData.map((req) => {
+      const rEmail = (req.patientEmail || req.email || "").trim().toLowerCase();
+      const rOverride = userOverrides[rEmail] || userOverrides[req.patientEmail] || userOverrides[req.email];
+      return {
+        ...req,
+        clinicalAvatarUrl: req.clinicalAvatarUrl || rOverride?.clinicalAvatarUrl || null
+      };
+    });
 
     const enrichedPatients = rawPatients.map((patient, index) => {
       const fallback = DEMO_DOCTOR_PATIENTS.find(
@@ -614,6 +660,12 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
       const hDep = patient.hadDepressionScore ?? fallback.hadDepressionScore ?? 1;
       const depLevel = patient.dependenceLevel || fallback.dependenceLevel || "SEVRÉ (J+30)";
 
+      const pEmailClean = (pEmail || "").trim().toLowerCase();
+      const patientOverride = userOverrides[pEmailClean] || userOverrides[pEmail] || userOverrides[patient.patientEmail] || userOverrides[patient.email];
+
+      // Strictly patient's clinical identity avatar (NOT community avatar, NOT dummy stock photo)
+      const resolvedClinicalAvatar = patient.clinicalAvatarUrl || patientOverride?.clinicalAvatarUrl || fallback.clinicalAvatarUrl || null;
+
       return {
         ...fallback,
         ...patient,
@@ -623,6 +675,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         name: pName,
         patientEmail: pEmail,
         email: pEmail,
+        clinicalAvatarUrl: resolvedClinicalAvatar,
         dateOfBirth: pDob,
         city: pCity,
         occupation: pOccupation,
@@ -637,7 +690,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     });
 
     setProfile(profileData);
-    setRequests(requestData);
+    setRequests(enrichedRequests);
     setPatients(enrichedPatients);
     setForm({
       city: profileData?.city || "Rabat",
@@ -926,8 +979,8 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     return (
       <div className="dw-modal-header">
         <div className="d-flex align-items-center gap-3">
-          {dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl ? (
-            <div className="dw-patient-initials dw-modal-avatar" style={{ backgroundImage: `url(${dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', width: "3.5rem", height: "3.5rem", fontSize: "1.25rem", color: "transparent", border: '1px solid #e5e7eb' }} />
+          {dossier.clinicalAvatarUrl || dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl ? (
+            <div className="dw-patient-initials dw-modal-avatar" style={{ backgroundImage: `url(${dossier.clinicalAvatarUrl || dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', width: "3.5rem", height: "3.5rem", fontSize: "1.25rem", color: "transparent", border: '1px solid #e5e7eb' }} />
           ) : (
             <div className="dw-patient-initials dw-modal-avatar" style={{ background: getInitialsGradient(dossier.patientName), width: "3.5rem", height: "3.5rem", fontSize: "1.25rem" }}>
               {getPatientInitials(dossier.patientName)}
@@ -1443,10 +1496,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
                   </div>
                 </div>
               </div>
-              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.patientEmail; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; const depStyle = getDepBadgeStyle(depLevel); const rassVal = calculateRassScore(fScore, hAnx, hDep); return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td>
+              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.email; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; const depStyle = getDepBadgeStyle(depLevel); const rassVal = calculateRassScore(fScore, hAnx, hDep); return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td>
                 <div className="d-flex align-items-center gap-2.5">
-                  {patient.clinicalAvatarUrl || fallbackPatient.clinicalAvatarUrl ? (
-                    <div className="dw-patient-initials" style={{ backgroundImage: `url(${patient.clinicalAvatarUrl || fallbackPatient.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
+                  {patient.clinicalAvatarUrl ? (
+                    <div className="dw-patient-initials" style={{ backgroundImage: `url(${patient.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
                   ) : (
                     <div className="dw-patient-initials" style={{ background: getInitialsGradient(pName) }}>{getPatientInitials(pName)}</div>
                   )}
