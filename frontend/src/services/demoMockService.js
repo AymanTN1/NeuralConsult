@@ -346,11 +346,74 @@ export const DEMO_USERS = {
 // Aliases for backwards compatibility
 DEMO_USERS.patient = DEMO_USERS.patient1;
 
+// Helper to resolve patient profile photo across user overrides, active user state, and mock fallbacks
+export const resolvePatientAvatar = (patientOrEmail, fallbackObj = null) => {
+  if (!patientOrEmail && !fallbackObj) return null;
+  const email = (typeof patientOrEmail === "string"
+    ? patientOrEmail
+    : patientOrEmail?.patientEmail || patientOrEmail?.email || ""
+  ).trim().toLowerCase();
+
+  // 1. Check user overrides in localStorage (nc_demo_users_override)
+  if (typeof window !== "undefined" && email) {
+    try {
+      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+      const matchedKey = Object.keys(overrides).find(k => k.trim().toLowerCase() === email);
+      const override = matchedKey ? overrides[matchedKey] : (overrides[email] || null);
+      if (override) {
+        const custom = override.clinicalAvatarUrl || override.profilePhotoUrl || override.avatar || override.communityAvatarUrl;
+        if (custom) return custom;
+      }
+    } catch (_) {}
+  }
+
+  // 2. Check active user in nc_user if it matches this email
+  if (typeof window !== "undefined" && email) {
+    try {
+      const ncUser = JSON.parse(localStorage.getItem("nc_user") || "null");
+      if (ncUser && (ncUser.email || "").trim().toLowerCase() === email) {
+        const custom = ncUser.clinicalAvatarUrl || ncUser.profilePhotoUrl || ncUser.avatar || ncUser.communityAvatarUrl;
+        if (custom) return custom;
+      }
+    } catch (_) {}
+  }
+
+  // 3. Check if patient object already has a custom data URL or blob
+  const pObj = typeof patientOrEmail === "object" ? patientOrEmail : null;
+  if (pObj) {
+    const custom = [pObj.clinicalAvatarUrl, pObj.patientClinicalAvatarUrl, pObj.avatar, pObj.profilePhotoUrl]
+      .find(u => u && typeof u === "string" && (u.startsWith("data:") || u.startsWith("blob:")));
+    if (custom) return custom;
+  }
+
+  // 4. Check getDemoUserByEmail for custom avatar
+  if (email) {
+    try {
+      const demoU = getDemoUserByEmail(email);
+      if (demoU) {
+        const custom = [demoU.clinicalAvatarUrl, demoU.profilePhotoUrl, demoU.avatar, demoU.communityAvatarUrl]
+          .find(u => u && typeof u === "string" && (u.startsWith("data:") || u.startsWith("blob:")));
+        if (custom) return custom;
+      }
+    } catch (_) {}
+  }
+
+  // 5. Fallbacks: patient clinicalAvatar, fallback clinicalAvatar, fallback avatar
+  return pObj?.clinicalAvatarUrl ||
+         pObj?.patientClinicalAvatarUrl ||
+         pObj?.avatar ||
+         pObj?.profilePhotoUrl ||
+         fallbackObj?.clinicalAvatarUrl ||
+         fallbackObj?.avatar ||
+         fallbackObj?.profilePhotoUrl ||
+         null;
+};
+
 export const getDemoUserByEmail = (email) => {
   if (!email) return null;
   const clean = email.toLowerCase().trim();
   let baseUser = null;
-  if (clean === "ayman.tantani@uit.ac.ma" || clean.includes("dr_tantani") || clean.includes("doctor")) {
+  if (clean === "ayman.tantani@uit.ac.ma" || clean.includes("dr_tantani") || clean === "doctor@demo.ma") {
     baseUser = DEMO_USERS.doctor;
   } else if (clean === "tantaniayman0@gmail.com" || clean.includes("samy_zen") || clean === "patient@demo.ma") {
     baseUser = DEMO_USERS.patient1;
@@ -370,14 +433,21 @@ export const getDemoUserByEmail = (email) => {
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       const userKey = baseUser.email ? baseUser.email.toLowerCase() : "";
-      const userOverride = overrides[userKey] || overrides[baseUser.email];
+      const matchedKey = Object.keys(overrides).find(k => k.trim().toLowerCase() === userKey);
+      const userOverride = matchedKey ? overrides[matchedKey] : (overrides[userKey] || overrides[baseUser.email]);
       if (userOverride) {
         baseUser = { ...baseUser, ...userOverride };
+        const customAvatar = userOverride.clinicalAvatarUrl || userOverride.profilePhotoUrl || userOverride.avatar || userOverride.communityAvatarUrl;
+        if (customAvatar) {
+          baseUser.clinicalAvatarUrl = customAvatar;
+          baseUser.profilePhotoUrl = customAvatar;
+          baseUser.avatar = customAvatar;
+          baseUser.communityAvatarUrl = customAvatar;
+        }
       }
     } catch (e) {}
     
-    // Provide fallback avatars so they are always present.
-    // Use the ORIGINAL photo for clinical avatar, to avoid the doctor seeing the community avatar.
+    // Provide fallback avatars so they are always present
     if (!baseUser.clinicalAvatarUrl && originalProfilePhotoUrl) {
       baseUser.clinicalAvatarUrl = originalProfilePhotoUrl;
     }
@@ -687,9 +757,15 @@ export const createDemoDossier = (patientProfileId) => {
   try {
     const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
     const pEmail = (patient.patientEmail || patient.email || "").trim().toLowerCase();
-    override = overrides[pEmail] || overrides[patient.patientEmail] || overrides[patient.email];
+    const matchedKey = Object.keys(overrides).find(k => k.trim().toLowerCase() === pEmail);
+    override = matchedKey ? overrides[matchedKey] : (overrides[pEmail] || overrides[patient.patientEmail] || overrides[patient.email]);
     if (override) {
       patient = { ...patient, ...override };
+      const customAv = override.clinicalAvatarUrl || override.profilePhotoUrl || override.avatar || override.communityAvatarUrl;
+      if (customAv) {
+        patient.clinicalAvatarUrl = customAv;
+        patient.avatar = customAv;
+      }
     }
   } catch (e) {}
   const tests = generateDemoTests();
@@ -723,12 +799,12 @@ export const createDemoDossier = (patientProfileId) => {
         { id: "msg-4", senderType: "AI", senderName: "Compagnon IA NeuralConsult", content: "Bravo Youssef ! Chaque vague surmontée renforce votre cerveau contre la nicotine. Continuez comme cela !", createdAt: new Date(Date.now() - 3600000 * 3.9).toISOString() }
       ];
 
-  // Strictly prioritize clinical identity avatar (NOT community avatar)
+  // Strictly synchronize patient identity avatar across views
   const fallback = [DEMO_NEW_PATIENT_SAMIRA, ...DEMO_DOCTOR_PATIENTS].find(
     dp => (dp.patientProfileId === patient.patientProfileId) ||
           ((dp.patientEmail || dp.email || "").toLowerCase() === (patient.patientEmail || patient.email || "").toLowerCase())
   ) || DEMO_DOCTOR_PATIENTS[0];
-  const resolvedAvatar = override?.clinicalAvatarUrl || patient.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || patient.avatar || null;
+  const resolvedAvatar = resolvePatientAvatar(patient, fallback);
 
   return {
     patientProfileId: patient.patientProfileId,
@@ -2463,14 +2539,38 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
         const storedDemoUsers = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
         const targetEmail = activeDemoEmail || "tantaniayman0@gmail.com";
         if (targetEmail && payload?.profilePhotoUrl !== undefined) {
-           storedDemoUsers[targetEmail] = {
+           const updatedRecord = {
              ...(storedDemoUsers[targetEmail] || {}),
              communityAvatarUrl: payload.profilePhotoUrl,
              profilePhotoUrl: payload.profilePhotoUrl,
+             clinicalAvatarUrl: payload.profilePhotoUrl,
+             avatar: payload.profilePhotoUrl,
              ...(payload?.username !== undefined ? { username: payload.username, communityUsername: payload.username } : {}),
              ...(payload?.bio !== undefined ? { bio: payload.bio, communityBio: payload.bio } : {})
            };
+           storedDemoUsers[targetEmail] = updatedRecord;
+           storedDemoUsers[targetEmail.toLowerCase()] = updatedRecord;
            localStorage.setItem("nc_demo_users_override", JSON.stringify(storedDemoUsers));
+
+           // Also update any doctor patient caches
+           try {
+             const storedDocPatients = JSON.parse(localStorage.getItem("nc_demo_doctor_patients") || "[]");
+             if (Array.isArray(storedDocPatients) && storedDocPatients.length > 0) {
+               const updatedDocPatients = storedDocPatients.map(p => {
+                 if ((p.patientEmail || p.email || "").toLowerCase() === targetEmail.toLowerCase()) {
+                   return { ...p, clinicalAvatarUrl: payload.profilePhotoUrl, avatar: payload.profilePhotoUrl };
+                 }
+                 return p;
+               });
+               localStorage.setItem("nc_demo_doctor_patients", JSON.stringify(updatedDocPatients));
+             }
+           } catch (_) {}
+
+           const demoP = DEMO_DOCTOR_PATIENTS.find(p => (p.patientEmail || p.email || "").toLowerCase() === targetEmail.toLowerCase());
+           if (demoP) {
+             demoP.clinicalAvatarUrl = payload.profilePhotoUrl;
+             demoP.avatar = payload.profilePhotoUrl;
+           }
 
            // Also update any posts created by this user in localStorage
            try {
@@ -2483,7 +2583,8 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
                      author: {
                        ...p.author,
                        profilePhotoUrl: payload.profilePhotoUrl,
-                       communityAvatarUrl: payload.profilePhotoUrl
+                       communityAvatarUrl: payload.profilePhotoUrl,
+                       clinicalAvatarUrl: payload.profilePhotoUrl
                      }
                    };
                  }
@@ -2507,7 +2608,10 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
            const existing = storedDemoUsers[targetEmail] || storedDemoUsers[targetEmail.toLowerCase()] || {};
            const updatedRecord = {
              ...existing,
-             clinicalAvatarUrl: payload.clinicalAvatarUrl
+             clinicalAvatarUrl: payload.clinicalAvatarUrl,
+             profilePhotoUrl: payload.clinicalAvatarUrl,
+             avatar: payload.clinicalAvatarUrl,
+             communityAvatarUrl: payload.clinicalAvatarUrl
            };
            storedDemoUsers[targetEmail] = updatedRecord;
            storedDemoUsers[targetEmail.toLowerCase()] = updatedRecord;
@@ -2515,6 +2619,9 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
 
            if (userFromStorage && (userFromStorage.email === targetEmail || userFromStorage.email?.toLowerCase() === targetEmail.toLowerCase())) {
              userFromStorage.clinicalAvatarUrl = payload.clinicalAvatarUrl;
+             userFromStorage.profilePhotoUrl = payload.clinicalAvatarUrl;
+             userFromStorage.avatar = payload.clinicalAvatarUrl;
+             userFromStorage.communityAvatarUrl = payload.clinicalAvatarUrl;
              localStorage.setItem("nc_user", JSON.stringify(userFromStorage));
            }
 
@@ -2523,7 +2630,7 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
              if (Array.isArray(storedDocPatients) && storedDocPatients.length > 0) {
                const updatedDocPatients = storedDocPatients.map(p => {
                  if ((p.patientEmail || p.email || "").toLowerCase() === targetEmail.toLowerCase()) {
-                   return { ...p, clinicalAvatarUrl: payload.clinicalAvatarUrl };
+                   return { ...p, clinicalAvatarUrl: payload.clinicalAvatarUrl, avatar: payload.clinicalAvatarUrl };
                  }
                  return p;
                });
@@ -2534,6 +2641,7 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
            const demoP = DEMO_DOCTOR_PATIENTS.find(p => (p.patientEmail || p.email || "").toLowerCase() === targetEmail.toLowerCase());
            if (demoP) {
              demoP.clinicalAvatarUrl = payload.clinicalAvatarUrl;
+             demoP.avatar = payload.clinicalAvatarUrl;
            }
         }
       } catch (e) {}
@@ -2779,12 +2887,10 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     
     // Enrich with avatars from user overrides based on email matching
     try {
-      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       patients = patients.map(p => {
         const emailKey = (p.patientEmail || p.email || "").trim().toLowerCase();
-        const override = overrides[emailKey] || overrides[p.patientEmail] || overrides[p.email];
         const fallback = DEMO_DOCTOR_PATIENTS.find(dp => (dp.email || "").toLowerCase() === emailKey || (dp.patientEmail || "").toLowerCase() === emailKey) || {};
-        const resolved = override?.clinicalAvatarUrl || p.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || p.avatar || null;
+        const resolved = resolvePatientAvatar(p, fallback);
         return {
           ...p,
           clinicalAvatarUrl: resolved,
@@ -2807,12 +2913,10 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     
     // Enrich with avatars
     try {
-      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
       reqs = reqs.map(r => {
         const emailKey = (r.patientEmail || r.email || "").trim().toLowerCase();
-        const override = overrides[emailKey] || overrides[r.patientEmail] || overrides[r.email];
         const fallback = DEMO_DOCTOR_REQUESTS.find(dr => (dr.patientEmail || "").toLowerCase() === emailKey) || DEMO_NEW_PATIENT_SAMIRA || {};
-        const resolved = override?.clinicalAvatarUrl || r.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || r.avatar || null;
+        const resolved = resolvePatientAvatar(r, fallback);
         return {
           ...r,
           clinicalAvatarUrl: resolved,

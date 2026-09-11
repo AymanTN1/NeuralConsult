@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { DEMO_DOCTOR_PATIENTS, DEMO_DOCTOR_REQUESTS, DEMO_NEW_PATIENT_SAMIRA, createDemoDossier } from "../services/demoMockService";
+import { DEMO_DOCTOR_PATIENTS, DEMO_DOCTOR_REQUESTS, DEMO_NEW_PATIENT_SAMIRA, createDemoDossier, resolvePatientAvatar } from "../services/demoMockService";
 import { chartTheme } from "../theme/chartTheme";
 
 const InteractiveLung3D = lazy(() => import("../components/InteractiveLung3D"));
@@ -560,7 +560,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
 
     const resolveAvatarForDossier = (dossierObj) => {
       if (!dossierObj) return null;
-      const pEmail = (dossierObj.patientEmail || "").trim().toLowerCase();
+      const pEmail = (dossierObj.patientEmail || dossierObj.email || "").trim().toLowerCase();
       const patientInState = patients.find(p => p.patientProfileId === targetId || p.id === targetId || (p.email && p.email.toLowerCase() === pEmail) || (p.patientEmail && p.patientEmail.toLowerCase() === pEmail));
       const fallback = DEMO_DOCTOR_PATIENTS.find(
         dp => (dp.email && dp.email.toLowerCase() === pEmail) ||
@@ -568,8 +568,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
               dp.patientProfileId === targetId ||
               dp.id === targetId
       ) || DEMO_DOCTOR_PATIENTS[0];
-      const override = userOverrides[pEmail] || (patientInState?.email && userOverrides[patientInState.email.toLowerCase()]) || userOverrides[dossierObj.patientEmail];
-      return override?.clinicalAvatarUrl || dossierObj.clinicalAvatarUrl || dossierObj.patientClinicalAvatarUrl || patientInState?.clinicalAvatarUrl || fallback?.clinicalAvatarUrl || fallback?.avatar || null;
+      return resolvePatientAvatar(dossierObj, patientInState || fallback);
     };
 
     try {
@@ -623,17 +622,11 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         ? patientsResp.value.data
         : (DEMO_DOCTOR_PATIENTS || []);
 
-      let userOverrides = {};
-      try {
-        userOverrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
-      } catch (e) {}
-
       const demoRequestsList = Array.isArray(DEMO_DOCTOR_REQUESTS) ? DEMO_DOCTOR_REQUESTS : [];
       const enrichedRequests = requestData.map((req) => {
         const rEmail = (req.patientEmail || req.email || "").trim().toLowerCase();
-        const rOverride = userOverrides[rEmail] || userOverrides[req.patientEmail] || userOverrides[req.email];
         const fallbackReq = demoRequestsList.find(dr => (dr.patientEmail || "").toLowerCase() === rEmail) || DEMO_NEW_PATIENT_SAMIRA || {};
-        const resolved = rOverride?.clinicalAvatarUrl || req.clinicalAvatarUrl || fallbackReq.clinicalAvatarUrl || fallbackReq.avatar || req.avatar || null;
+        const resolved = resolvePatientAvatar(req, fallbackReq);
         return {
           ...fallbackReq,
           ...req,
@@ -676,10 +669,7 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
         const hDep = patient.hadDepressionScore ?? fallback.hadDepressionScore ?? 1;
         const depLevel = patient.dependenceLevel || fallback.dependenceLevel || "SEVRÉ (J+30)";
 
-        const patientOverride = userOverrides[pEmailClean] || (finalEmail ? userOverrides[finalEmail.toLowerCase()] : null) || userOverrides[patient.patientEmail] || userOverrides[patient.email];
-
-        // Strictly patient's clinical identity avatar (NOT community avatar)
-        const resolvedClinicalAvatar = patientOverride?.clinicalAvatarUrl || patient.clinicalAvatarUrl || fallback.clinicalAvatarUrl || fallback.avatar || patient.avatar || null;
+        const resolvedClinicalAvatar = resolvePatientAvatar(patient, fallback);
 
         return {
           ...fallback,
@@ -996,11 +986,13 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
     const depLevel = selectedPatientSummary?.dependenceLevel || dossier.profile?.dependenceLevel || "À évaluer";
     const depStyle = getDepBadgeStyle(depLevel);
     
+    const modalAvatar = resolvePatientAvatar(dossier, selectedPatientSummary) || dossier.clinicalAvatarUrl || dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl;
+
     return (
       <div className="dw-modal-header">
         <div className="d-flex align-items-center gap-3">
-          {dossier.clinicalAvatarUrl || dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl ? (
-            <div className="dw-patient-initials dw-modal-avatar" style={{ backgroundImage: `url(${dossier.clinicalAvatarUrl || dossier.patientClinicalAvatarUrl || dossier.profile?.clinicalAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', width: "3.5rem", height: "3.5rem", fontSize: "1.25rem", color: "transparent", border: '1px solid #e5e7eb' }} />
+          {modalAvatar ? (
+            <div className="dw-patient-initials dw-modal-avatar" style={{ backgroundImage: `url(${modalAvatar})`, backgroundSize: 'cover', backgroundPosition: 'center', width: "3.5rem", height: "3.5rem", fontSize: "1.25rem", color: "transparent", border: '1px solid #e5e7eb' }} />
           ) : (
             <div className="dw-patient-initials dw-modal-avatar" style={{ background: getInitialsGradient(dossier.patientName), width: "3.5rem", height: "3.5rem", fontSize: "1.25rem" }}>
               {getPatientInitials(dossier.patientName)}
@@ -1489,10 +1481,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
                   <span className="text-muted small">Aucune demande en attente pour le moment.</span>
                 </div>
               ) : (
-                <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-sm-table-cell">Matching</th><th className="d-none d-md-table-cell">Message</th><th className="d-none d-lg-table-cell">Demande</th><th className="text-end">Actions</th></tr></thead><tbody>{pendingRequests.map((request) => { const isBusy = decisionLoadingId === request.id; const mStyle = matchingColor[request.matchingMode] || matchingColor.SAME_CITY; return <tr key={request.id} className={selectedPatientId === request.patientProfileId ? "is-selected" : ""}><td>
+                <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-sm-table-cell">Matching</th><th className="d-none d-md-table-cell">Message</th><th className="d-none d-lg-table-cell">Demande</th><th className="text-end">Actions</th></tr></thead><tbody>{pendingRequests.map((request) => { const isBusy = decisionLoadingId === request.id; const mStyle = matchingColor[request.matchingMode] || matchingColor.SAME_CITY; const reqAvatar = resolvePatientAvatar(request); return <tr key={request.id} className={selectedPatientId === request.patientProfileId ? "is-selected" : ""}><td>
                   <div className="d-flex align-items-center gap-2.5">
-                    {request.clinicalAvatarUrl || request.avatar ? (
-                      <div className="dw-patient-initials" style={{ backgroundImage: `url(${request.clinicalAvatarUrl || request.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
+                    {reqAvatar ? (
+                      <div className="dw-patient-initials" style={{ backgroundImage: `url(${reqAvatar})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
                     ) : (
                       <div className="dw-patient-initials" style={{ background: getInitialsGradient(request.patientName) }}>{getPatientInitials(request.patientName)}</div>
                     )}
@@ -1516,10 +1508,10 @@ const DoctorWorkspace = ({ mode = "workspace" }) => {
                   </div>
                 </div>
               </div>
-              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.email; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; const depStyle = getDepBadgeStyle(depLevel); const rassVal = calculateRassScore(fScore, hAnx, hDep); return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td>
+              {patients.length === 0 ? <p className="muted-text mb-0 mt-3">Aucun patient associé pour le moment.</p> : <div className="doctor-table-shell mt-3"><table className="table table-borderless align-middle doctor-table"><thead><tr><th>Patient</th><th className="d-none d-lg-table-cell">Naissance</th><th className="d-none d-md-table-cell">Ville</th><th className="d-none d-lg-table-cell">Progression</th><th className="d-none d-xl-table-cell">Scores</th><th className="d-none d-md-table-cell">Dépendance</th><th className="text-end">Actions</th></tr></thead><tbody>{patients.map((patient, index) => { const fallbackPatient = DEMO_DOCTOR_PATIENTS[index % DEMO_DOCTOR_PATIENTS.length] || DEMO_DOCTOR_PATIENTS[0]; const pid = patient.patientProfileId || patient.id || fallbackPatient.patientProfileId; const pName = (patient.patientName && patient.patientName !== "-" && patient.patientName !== "Non renseigne") ? patient.patientName : (patient.name && patient.name !== "-") ? patient.name : fallbackPatient.patientName; const pEmail = (patient.patientEmail && patient.patientEmail !== "-" && patient.patientEmail !== "Non renseigne") ? patient.patientEmail : (patient.email && patient.email !== "-") ? patient.email : fallbackPatient.email; const pDob = patient.dateOfBirth || fallbackPatient.dateOfBirth; const pCity = (patient.city && patient.city !== "-" && patient.city !== "Non renseigne") ? patient.city : fallbackPatient.city; const pOccupation = (patient.occupation && patient.occupation !== "-" && patient.occupation !== "Non renseigne") ? patient.occupation : fallbackPatient.occupation; const fScore = patient.fagerstromScore ?? fallbackPatient.fagerstromScore ?? 0; const hAnx = patient.hadAnxietyScore ?? fallbackPatient.hadAnxietyScore ?? 2; const hDep = patient.hadDepressionScore ?? fallbackPatient.hadDepressionScore ?? 1; const depLevel = patient.dependenceLevel || fallbackPatient.dependenceLevel || "SEVRÉ (J+30)"; const depStyle = getDepBadgeStyle(depLevel); const rassVal = calculateRassScore(fScore, hAnx, hDep); const pAvatar = resolvePatientAvatar(patient, fallbackPatient); return <tr key={pid} className={selectedPatientId === pid ? "is-selected" : ""}><td>
                 <div className="d-flex align-items-center gap-2.5">
-                  {patient.clinicalAvatarUrl || fallbackPatient.clinicalAvatarUrl || fallbackPatient.avatar ? (
-                    <div className="dw-patient-initials" style={{ backgroundImage: `url(${patient.clinicalAvatarUrl || fallbackPatient.clinicalAvatarUrl || fallbackPatient.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
+                  {pAvatar ? (
+                    <div className="dw-patient-initials" style={{ backgroundImage: `url(${pAvatar})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent', border: '1px solid #e5e7eb' }} />
                   ) : (
                     <div className="dw-patient-initials" style={{ background: getInitialsGradient(pName) }}>{getPatientInitials(pName)}</div>
                   )}
