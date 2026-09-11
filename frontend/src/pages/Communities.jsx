@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { getDemoCommunityData } from "../services/demoMockService";
+import { getDemoCommunityData, PATIENT_YOUSSEF_AVATAR } from "../services/demoMockService";
 import { isDoctor } from "../utils/roles";
 
 // Fallback initial subreddits
@@ -134,7 +134,7 @@ export default function Communities() {
     if (myProfile) {
       return {
         ...myProfile,
-        profilePhotoUrl: avatar || myProfile.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+        profilePhotoUrl: avatar || myProfile.profilePhotoUrl || PATIENT_YOUSSEF_AVATAR
       };
     }
     if (authUser) {
@@ -144,7 +144,7 @@ export default function Communities() {
         username: authUser.username || (authUser.email ? authUser.email.split("@")[0] : "membre_actif"),
         role: "Patient en Sevrage",
         isDoctor: false,
-        profilePhotoUrl: avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        profilePhotoUrl: avatar || PATIENT_YOUSSEF_AVATAR,
         smokeFreeStatus: "Suivi actif"
       };
     }

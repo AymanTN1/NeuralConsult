@@ -182,9 +182,51 @@ const Profile = () => {
           }
 
           // Update via API
-          await api.put("/api/me/clinical-avatar", { 
-            clinicalAvatarUrl: dataUrl
-          });
+          try {
+            await api.put("/api/me/clinical-avatar", { 
+              clinicalAvatarUrl: dataUrl
+            });
+          } catch (_) {}
+
+          // Immediate local storage & cross-tab synchronization
+          if (typeof window !== "undefined") {
+            try {
+              const uEmail = (user?.email || "tantaniayman0@gmail.com").trim().toLowerCase();
+              const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+              overrides[uEmail] = {
+                ...(overrides[uEmail] || {}),
+                clinicalAvatarUrl: dataUrl,
+                profilePhotoUrl: dataUrl,
+                avatar: dataUrl,
+                communityAvatarUrl: dataUrl
+              };
+              localStorage.setItem("nc_demo_users_override", JSON.stringify(overrides));
+
+              const currentUser = JSON.parse(localStorage.getItem("nc_user") || "{}");
+              currentUser.clinicalAvatarUrl = dataUrl;
+              currentUser.profilePhotoUrl = dataUrl;
+              currentUser.avatar = dataUrl;
+              currentUser.communityAvatarUrl = dataUrl;
+              localStorage.setItem("nc_user", JSON.stringify(currentUser));
+
+              const docPatients = JSON.parse(localStorage.getItem("nc_demo_doctor_patients") || "[]");
+              if (Array.isArray(docPatients) && docPatients.length > 0) {
+                const updatedPatients = docPatients.map(p => {
+                  if ((p.patientEmail || p.email || "").toLowerCase().includes(uEmail) || (p.patientName || "").toLowerCase().includes("youssef")) {
+                    return { ...p, clinicalAvatarUrl: dataUrl, avatar: dataUrl };
+                  }
+                  return p;
+                });
+                localStorage.setItem("nc_demo_doctor_patients", JSON.stringify(updatedPatients));
+              }
+
+              if (window.BroadcastChannel) {
+                const bc = new BroadcastChannel("nc_avatar_sync");
+                bc.postMessage({ email: uEmail, avatar: dataUrl });
+                bc.close();
+              }
+            } catch (_) {}
+          }
           
           await refetch();
           setShowProfileMenu(false);
@@ -274,9 +316,29 @@ const Profile = () => {
                 </label>
                 <hr className="my-1" />
                 <button type="button" className="profile-option-item text-danger" onClick={async () => {
-                  await api.put("/api/me/clinical-avatar", { 
-                    clinicalAvatarUrl: ""
-                  });
+                  try {
+                    await api.put("/api/me/clinical-avatar", { 
+                      clinicalAvatarUrl: ""
+                    });
+                  } catch (_) {}
+                  if (typeof window !== "undefined") {
+                    try {
+                      const uEmail = (user?.email || "tantaniayman0@gmail.com").trim().toLowerCase();
+                      const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
+                      if (overrides[uEmail]) {
+                        delete overrides[uEmail].clinicalAvatarUrl;
+                        delete overrides[uEmail].profilePhotoUrl;
+                        delete overrides[uEmail].avatar;
+                        delete overrides[uEmail].communityAvatarUrl;
+                      }
+                      localStorage.setItem("nc_demo_users_override", JSON.stringify(overrides));
+                      if (window.BroadcastChannel) {
+                        const bc = new BroadcastChannel("nc_avatar_sync");
+                        bc.postMessage({ email: uEmail, avatar: null });
+                        bc.close();
+                      }
+                    } catch (_) {}
+                  }
                   await refetch();
                   setShowProfileMenu(false);
                 }}>

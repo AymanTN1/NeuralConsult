@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { isDoctor } from "../utils/roles";
-import { createDemoDossier, DEMO_DOCTOR_PATIENTS } from "../services/demoMockService";
+import { createDemoDossier, DEMO_DOCTOR_PATIENTS, resolvePatientAvatar } from "../services/demoMockService";
 
 const riskCopy = {
   LOW: "Faible",
@@ -185,21 +185,27 @@ const Support = () => {
 
       // Enrich patients with realistic demo profiles if missing or sparse
       if (!nextPatients || nextPatients.length === 0) {
-        nextPatients = DEMO_DOCTOR_PATIENTS.map((dp) => ({
-          patientProfileId: dp.id,
-          patientName: dp.patientName,
-          city: dp.city,
-          status: dp.status || "Suivi actif",
-          patientEmail: dp.email,
-          fagerstromScore: dp.fagerstromScore || 8,
-          hadAnxietyScore: dp.hadAnxietyScore || 14
-        }));
+        nextPatients = DEMO_DOCTOR_PATIENTS.map((dp) => {
+          const av = resolvePatientAvatar(dp);
+          return {
+            patientProfileId: dp.id,
+            patientName: dp.patientName,
+            city: dp.city,
+            status: dp.status || "Suivi actif",
+            patientEmail: dp.email,
+            fagerstromScore: dp.fagerstromScore || 8,
+            hadAnxietyScore: dp.hadAnxietyScore || 14,
+            clinicalAvatarUrl: av,
+            avatar: av
+          };
+        });
       } else {
         nextPatients = nextPatients.map((p, idx) => {
           const demoMatch = DEMO_DOCTOR_PATIENTS.find(
             (dp) => dp.email && p.patientEmail && dp.email.toLowerCase() === p.patientEmail.toLowerCase()
           ) || DEMO_DOCTOR_PATIENTS[idx % DEMO_DOCTOR_PATIENTS.length];
           const hasName = p.patientName && p.patientName.trim() !== "" && p.patientName !== "-";
+          const av = resolvePatientAvatar(p, demoMatch);
           return {
             ...p,
             patientName: hasName ? p.patientName : demoMatch.patientName,
@@ -207,7 +213,9 @@ const Support = () => {
             status: p.status || demoMatch.status || "Suivi actif",
             patientEmail: p.patientEmail || demoMatch.email,
             fagerstromScore: p.fagerstromScore || demoMatch.fagerstromScore || 8,
-            hadAnxietyScore: p.hadAnxietyScore || demoMatch.hadAnxietyScore || 14
+            hadAnxietyScore: p.hadAnxietyScore || demoMatch.hadAnxietyScore || 14,
+            clinicalAvatarUrl: av,
+            avatar: av
           };
         });
       }

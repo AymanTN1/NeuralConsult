@@ -1,6 +1,69 @@
-// ─── High-Fidelity Demo Mock Service for NeuralConsult ──────────
-// Ensures 100% seamless, instant portfolio demonstration on Vercel & remote deployments
-// even if the Spring Boot backend container is asleep or unreachable.
+export const PATIENT_YOUSSEF_AVATAR = "/avatars/patient_youssef.jpg";
+
+// Real-time cross-tab synchronization for profile avatar changes
+let avatarSyncChannel = null;
+if (typeof window !== "undefined" && window.BroadcastChannel) {
+  try {
+    avatarSyncChannel = new BroadcastChannel("nc_avatar_sync");
+    avatarSyncChannel.onmessage = (event) => {
+      const { email, avatar } = event.data || {};
+      if (avatar && (email?.toLowerCase() === "tantaniayman0@gmail.com" || !email)) {
+        if (DEMO_DOCTOR_PATIENTS?.[0]) {
+          DEMO_DOCTOR_PATIENTS[0].clinicalAvatarUrl = avatar;
+          DEMO_DOCTOR_PATIENTS[0].avatar = avatar;
+        }
+        if (DEMO_USERS?.patient1) {
+          DEMO_USERS.patient1.clinicalAvatarUrl = avatar;
+          DEMO_USERS.patient1.profilePhotoUrl = avatar;
+          DEMO_USERS.patient1.avatar = avatar;
+        }
+      }
+    };
+  } catch (_) {}
+}
+
+// Automatic sanitization: purge any stale stock photos (photo-1506794778202 / photo-1535713875002) from browser cache
+if (typeof window !== "undefined") {
+  try {
+    const rawDocPatients = localStorage.getItem("nc_demo_doctor_patients");
+    if (rawDocPatients && (rawDocPatients.includes("photo-1506794778202-cad84cf45f1d") || rawDocPatients.includes("photo-1535713875002-d1d0cf377fde"))) {
+      const parsed = JSON.parse(rawDocPatients);
+      if (Array.isArray(parsed)) {
+        const cleaned = parsed.map(p => {
+          if ((p.patientEmail || p.email || "").toLowerCase().includes("tantaniayman0") || (p.patientName || "").toLowerCase().includes("youssef")) {
+            return { ...p, clinicalAvatarUrl: PATIENT_YOUSSEF_AVATAR, avatar: PATIENT_YOUSSEF_AVATAR };
+          }
+          return p;
+        });
+        localStorage.setItem("nc_demo_doctor_patients", JSON.stringify(cleaned));
+      }
+    }
+    const rawOverrides = localStorage.getItem("nc_demo_users_override");
+    if (rawOverrides && (rawOverrides.includes("photo-1506794778202-cad84cf45f1d") || rawOverrides.includes("photo-1535713875002-d1d0cf377fde"))) {
+      const overrides = JSON.parse(rawOverrides);
+      Object.keys(overrides).forEach(k => {
+        if (k.toLowerCase().includes("tantaniayman0") || k.toLowerCase().includes("fassi") || k.toLowerCase().includes("youssef")) {
+          if (overrides[k]?.clinicalAvatarUrl?.includes("photo-")) overrides[k].clinicalAvatarUrl = PATIENT_YOUSSEF_AVATAR;
+          if (overrides[k]?.profilePhotoUrl?.includes("photo-")) overrides[k].profilePhotoUrl = PATIENT_YOUSSEF_AVATAR;
+          if (overrides[k]?.avatar?.includes("photo-")) overrides[k].avatar = PATIENT_YOUSSEF_AVATAR;
+          if (overrides[k]?.communityAvatarUrl?.includes("photo-")) overrides[k].communityAvatarUrl = PATIENT_YOUSSEF_AVATAR;
+        }
+      });
+      localStorage.setItem("nc_demo_users_override", JSON.stringify(overrides));
+    }
+    const rawNcUser = localStorage.getItem("nc_user");
+    if (rawNcUser && (rawNcUser.includes("photo-1506794778202-cad84cf45f1d") || rawNcUser.includes("photo-1535713875002-d1d0cf377fde"))) {
+      const parsedUser = JSON.parse(rawNcUser);
+      if ((parsedUser.email || "").toLowerCase().includes("tantaniayman0") || (parsedUser.fullName || "").toLowerCase().includes("youssef")) {
+        parsedUser.clinicalAvatarUrl = PATIENT_YOUSSEF_AVATAR;
+        parsedUser.profilePhotoUrl = PATIENT_YOUSSEF_AVATAR;
+        parsedUser.avatar = PATIENT_YOUSSEF_AVATAR;
+        parsedUser.communityAvatarUrl = PATIENT_YOUSSEF_AVATAR;
+        localStorage.setItem("nc_user", JSON.stringify(parsedUser));
+      }
+    }
+  } catch (_) {}
+}
 
 export const DEMO_USERS = {
   doctor: {
@@ -47,9 +110,9 @@ export const DEMO_USERS = {
     fullName: "Youssef El Fassi",
     firstName: "Youssef",
     lastName: "El Fassi",
-    profilePhotoUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
-    clinicalAvatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    profilePhotoUrl: PATIENT_YOUSSEF_AVATAR,
+    avatar: PATIENT_YOUSSEF_AVATAR,
+    clinicalAvatarUrl: PATIENT_YOUSSEF_AVATAR,
     dateOfBirth: "1994-08-22",
     identityVerified: true,
     active: true,
@@ -354,6 +417,31 @@ export const resolvePatientAvatar = (patientOrEmail, fallbackObj = null) => {
     : patientOrEmail?.patientEmail || patientOrEmail?.email || ""
   ).trim().toLowerCase();
 
+  const isYoussef = email.includes("tantaniayman0") ||
+    email.includes("samy_zen") ||
+    (typeof patientOrEmail === "object" && (
+      patientOrEmail?.patientName?.toLowerCase().includes("youssef") ||
+      patientOrEmail?.name?.toLowerCase().includes("youssef") ||
+      patientOrEmail?.fullName?.toLowerCase().includes("youssef") ||
+      patientOrEmail?.patientEmail?.toLowerCase().includes("tantaniayman0") ||
+      patientOrEmail?.email?.toLowerCase().includes("tantaniayman0")
+    )) ||
+    (typeof fallbackObj === "object" && (
+      fallbackObj?.patientName?.toLowerCase().includes("youssef") ||
+      fallbackObj?.name?.toLowerCase().includes("youssef") ||
+      fallbackObj?.fullName?.toLowerCase().includes("youssef") ||
+      fallbackObj?.patientEmail?.toLowerCase().includes("tantaniayman0") ||
+      fallbackObj?.email?.toLowerCase().includes("tantaniayman0")
+    ));
+
+  const cleanAvatar = (url) => {
+    if (!url || typeof url !== "string") return null;
+    if (url.includes("photo-1506794778202-cad84cf45f1d") || url.includes("photo-1535713875002-d1d0cf377fde")) {
+      return isYoussef ? PATIENT_YOUSSEF_AVATAR : null;
+    }
+    return url;
+  };
+
   // 1. Check user overrides in localStorage (nc_demo_users_override)
   if (typeof window !== "undefined" && email) {
     try {
@@ -361,7 +449,7 @@ export const resolvePatientAvatar = (patientOrEmail, fallbackObj = null) => {
       const matchedKey = Object.keys(overrides).find(k => k.trim().toLowerCase() === email);
       const override = matchedKey ? overrides[matchedKey] : (overrides[email] || null);
       if (override) {
-        const custom = override.clinicalAvatarUrl || override.profilePhotoUrl || override.avatar || override.communityAvatarUrl;
+        const custom = cleanAvatar(override.clinicalAvatarUrl || override.profilePhotoUrl || override.avatar || override.communityAvatarUrl);
         if (custom) return custom;
       }
     } catch (_) {}
@@ -372,17 +460,18 @@ export const resolvePatientAvatar = (patientOrEmail, fallbackObj = null) => {
     try {
       const ncUser = JSON.parse(localStorage.getItem("nc_user") || "null");
       if (ncUser && (ncUser.email || "").trim().toLowerCase() === email) {
-        const custom = ncUser.clinicalAvatarUrl || ncUser.profilePhotoUrl || ncUser.avatar || ncUser.communityAvatarUrl;
+        const custom = cleanAvatar(ncUser.clinicalAvatarUrl || ncUser.profilePhotoUrl || ncUser.avatar || ncUser.communityAvatarUrl);
         if (custom) return custom;
       }
     } catch (_) {}
   }
 
-  // 3. Check if patient object already has a custom data URL or blob
+  // 3. Check if patient object already has a custom data URL, blob, or valid perfume avatar
   const pObj = typeof patientOrEmail === "object" ? patientOrEmail : null;
   if (pObj) {
     const custom = [pObj.clinicalAvatarUrl, pObj.patientClinicalAvatarUrl, pObj.avatar, pObj.profilePhotoUrl]
-      .find(u => u && typeof u === "string" && (u.startsWith("data:") || u.startsWith("blob:")));
+      .map(cleanAvatar)
+      .find(u => u && typeof u === "string" && (u.startsWith("data:") || u.startsWith("blob:") || u.includes("patient_youssef")));
     if (custom) return custom;
   }
 
@@ -392,20 +481,26 @@ export const resolvePatientAvatar = (patientOrEmail, fallbackObj = null) => {
       const demoU = getDemoUserByEmail(email);
       if (demoU) {
         const custom = [demoU.clinicalAvatarUrl, demoU.profilePhotoUrl, demoU.avatar, demoU.communityAvatarUrl]
-          .find(u => u && typeof u === "string" && (u.startsWith("data:") || u.startsWith("blob:")));
+          .map(cleanAvatar)
+          .find(u => u && typeof u === "string" && (u.startsWith("data:") || u.startsWith("blob:") || u.includes("patient_youssef")));
         if (custom) return custom;
       }
     } catch (_) {}
   }
 
-  // 5. Fallbacks: patient clinicalAvatar, fallback clinicalAvatar, fallback avatar
-  return pObj?.clinicalAvatarUrl ||
-         pObj?.patientClinicalAvatarUrl ||
-         pObj?.avatar ||
-         pObj?.profilePhotoUrl ||
-         fallbackObj?.clinicalAvatarUrl ||
-         fallbackObj?.avatar ||
-         fallbackObj?.profilePhotoUrl ||
+  // For Youssef El Fassi, default directly to his authentic perfume avatar
+  if (isYoussef) {
+    return PATIENT_YOUSSEF_AVATAR;
+  }
+
+  // 5. Fallbacks for other demo patients
+  return cleanAvatar(pObj?.clinicalAvatarUrl) ||
+         cleanAvatar(pObj?.patientClinicalAvatarUrl) ||
+         cleanAvatar(pObj?.avatar) ||
+         cleanAvatar(pObj?.profilePhotoUrl) ||
+         cleanAvatar(fallbackObj?.clinicalAvatarUrl) ||
+         cleanAvatar(fallbackObj?.avatar) ||
+         cleanAvatar(fallbackObj?.profilePhotoUrl) ||
          null;
 };
 
@@ -428,7 +523,9 @@ export const getDemoUserByEmail = (email) => {
   }
   
   if (baseUser && typeof window !== "undefined") {
-    const originalProfilePhotoUrl = baseUser.profilePhotoUrl;
+    const originalProfilePhotoUrl = (clean === "tantaniayman0@gmail.com" || clean.includes("samy_zen"))
+      ? PATIENT_YOUSSEF_AVATAR
+      : baseUser.profilePhotoUrl;
     
     try {
       const overrides = JSON.parse(localStorage.getItem("nc_demo_users_override") || "{}");
@@ -438,7 +535,7 @@ export const getDemoUserByEmail = (email) => {
       if (userOverride) {
         baseUser = { ...baseUser, ...userOverride };
         const customAvatar = userOverride.clinicalAvatarUrl || userOverride.profilePhotoUrl || userOverride.avatar || userOverride.communityAvatarUrl;
-        if (customAvatar) {
+        if (customAvatar && !customAvatar.includes("photo-1506794778202-cad84cf45f1d")) {
           baseUser.clinicalAvatarUrl = customAvatar;
           baseUser.profilePhotoUrl = customAvatar;
           baseUser.avatar = customAvatar;
@@ -448,15 +545,21 @@ export const getDemoUserByEmail = (email) => {
     } catch (e) {}
     
     // Provide fallback avatars so they are always present
-    if (!baseUser.clinicalAvatarUrl && originalProfilePhotoUrl) {
+    if (!baseUser.clinicalAvatarUrl || baseUser.clinicalAvatarUrl.includes("photo-1506794778202-cad84cf45f1d")) {
       baseUser.clinicalAvatarUrl = originalProfilePhotoUrl;
     }
-    if (!baseUser.communityAvatarUrl && originalProfilePhotoUrl) {
+    if (!baseUser.profilePhotoUrl || baseUser.profilePhotoUrl.includes("photo-1506794778202-cad84cf45f1d")) {
+      baseUser.profilePhotoUrl = originalProfilePhotoUrl;
+    }
+    if (!baseUser.avatar || baseUser.avatar.includes("photo-1506794778202-cad84cf45f1d")) {
+      baseUser.avatar = originalProfilePhotoUrl;
+    }
+    if (!baseUser.communityAvatarUrl || baseUser.communityAvatarUrl.includes("photo-1506794778202-cad84cf45f1d")) {
       baseUser.communityAvatarUrl = originalProfilePhotoUrl;
     }
     return baseUser;
   }
-  return null;
+  return baseUser;
 };
 
 // Generate 35 days of realistic daily journal data
@@ -547,8 +650,8 @@ export const DEMO_DOCTOR_PATIENTS = [
     fullName: "Youssef El Fassi",
     patientEmail: "tantaniayman0@gmail.com",
     email: "tantaniayman0@gmail.com",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
-    clinicalAvatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    avatar: PATIENT_YOUSSEF_AVATAR,
+    clinicalAvatarUrl: PATIENT_YOUSSEF_AVATAR,
     dateOfBirth: "1994-08-22",
     age: 32,
     city: "Rabat",
@@ -1397,7 +1500,7 @@ export const DEMO_COMMUNITY_PEOPLE = [
     "name": "Youssef El Fassi",
     "username": "youssef_fassi",
     "email": "tantaniayman0@gmail.com",
-    "profilePhotoUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    "profilePhotoUrl": PATIENT_YOUSSEF_AVATAR,
     "role": "Patient Sevré J+30",
     "isDoctor": false,
     "city": "Rabat",
@@ -1503,7 +1606,7 @@ export const DEMO_COMMUNITY_PEOPLE = [
     "id": "user-kabbaj",
     "name": "Amine Kabbaj",
     "username": "amine_runner",
-    "profilePhotoUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+    "profilePhotoUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     "role": "Patient Sevré & Runner (J+45)",
     "isDoctor": false,
     "city": "Casablanca",
@@ -1576,7 +1679,7 @@ export const DEMO_COMMUNITY_POSTS = [
       "id": "user-fassi",
       "name": "Youssef El Fassi",
       "username": "youssef_fassi",
-      "profilePhotoUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "profilePhotoUrl": PATIENT_YOUSSEF_AVATAR,
       "role": "Patient Sevré J+30",
       "isDoctor": false,
       "smokeFreeStatus": "30 jours sans tabac",
@@ -1786,7 +1889,7 @@ export const DEMO_COMMUNITY_POSTS = [
       "id": "user-kabbaj",
       "name": "Amine Kabbaj",
       "username": "amine_runner",
-      "profilePhotoUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+      "profilePhotoUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
       "role": "Runner Sevré",
       "isDoctor": false,
       "smokeFreeStatus": "45 jours sans tabac",
@@ -2103,7 +2206,7 @@ export const getDemoCommunityData = () => {
   const demoUser = activeDemoEmail ? getDemoUserByEmail(activeDemoEmail) : null;
   const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
 
-  const activeAvatar = demoUser?.communityAvatarUrl || demoUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || demoUser?.clinicalAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
+  const activeAvatar = demoUser?.communityAvatarUrl || demoUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || demoUser?.clinicalAvatarUrl || PATIENT_YOUSSEF_AVATAR;
 
   const viewer = isDoctor ? {
     id: "user-tantani",
@@ -2194,7 +2297,7 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
       const commPerson = DEMO_COMMUNITY_PEOPLE.find(p => p.email === activeDemoEmail) || (isDoctor ? DEMO_COMMUNITY_PEOPLE[0] : null);
 
-      const authorAvatar = activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
+      const authorAvatar = activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || activeUser.avatar || PATIENT_YOUSSEF_AVATAR;
       const postAuthor = payload?.author || (isDoctor ? {
         id: "user-tantani",
         name: "Dr. Ayman Tantani",
@@ -2336,7 +2439,7 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
       let target = data.posts.find(p => p.id === postId) || DEMO_COMMUNITY_POSTS[0];
       const updated = { ...target };
 
-      const commAuthorAvatar = activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || activeUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80";
+      const commAuthorAvatar = activeUser?.communityAvatarUrl || activeUser?.profilePhotoUrl || commPerson?.profilePhotoUrl || activeUser.avatar || PATIENT_YOUSSEF_AVATAR;
       const commentAuthor = isDoctor ? {
         id: "user-tantani",
         name: "Dr. Ayman Tantani",
