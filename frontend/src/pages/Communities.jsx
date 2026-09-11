@@ -1830,11 +1830,30 @@ export default function Communities() {
             const reader = new FileReader();
             reader.onload = async () => {
               try {
-                const dataUrl = String(reader.result || "");
-                if (dataUrl.length > 10_000_000) {
+                const rawDataUrl = String(reader.result || "");
+                if (rawDataUrl.length > 10_000_000) {
                   showToast("L'image est trop lourde (max ~7 Mo).", "error");
                   return;
                 }
+                // Compress image via canvas to avoid localStorage quota issues
+                const dataUrl = await new Promise((resolve) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    const MAX = 256;
+                    let w = img.width, h = img.height;
+                    if (w > MAX || h > MAX) {
+                      const r = Math.min(MAX / w, MAX / h);
+                      w = Math.round(w * r);
+                      h = Math.round(h * r);
+                    }
+                    const c = document.createElement("canvas");
+                    c.width = w; c.height = h;
+                    c.getContext("2d").drawImage(img, 0, 0, w, h);
+                    resolve(c.toDataURL("image/jpeg", 0.7));
+                  };
+                  img.onerror = () => resolve(rawDataUrl);
+                  img.src = rawDataUrl;
+                });
                 await api.put("/api/communities/social/profile", { 
                   username: resolvedProfile?.username || "membre_actif",
                   bio: resolvedProfile?.bio || "",
