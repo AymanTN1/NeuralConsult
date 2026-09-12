@@ -6983,35 +6983,206 @@ body.dark-theme .timeline-card-status-badge.is-current {
   }
 }
 
-/* Responsive Breakpoints */
+/* Timeline Mobile Header elements inside card */
+.timeline-card-header-badge-group {
+  display: none;
+}
+.timeline-card-mobile-phase,
+.timeline-card-mobile-range,
+.timeline-card-mobile-title {
+  display: none;
+}
+
+/* Responsive Breakpoints for Evaluation Timeline */
 @media (max-width: 991px) {
   .evaluation-journey-head {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    text-align: center;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 1.25rem 1rem !important;
+    text-align: left !important;
   }
   .evaluation-journey-copy {
-    text-align: center;
+    text-align: left !important;
+  }
+  .timeline-main-title {
+    font-size: 1.25rem !important;
+    line-height: 1.25 !important;
   }
   .liquid-flow-capacitor {
-    margin-inline: auto;
+    margin-inline: 0 !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+    padding: 0.6rem 1rem !important;
+    box-sizing: border-box !important;
   }
-  .evaluation-timeline-row {
-    grid-template-columns: 3.5rem 1fr;
-    gap: 1.5rem;
+  .capacitor-tube-outer {
+    height: 5rem !important;
+    width: 1.35rem !important;
   }
-  .timeline-row-aside-left {
-    display: none;
+  .capacitor-ticks {
+    height: 5rem !important;
   }
+
+  /* Centered timeline container on mobile */
+  .evaluation-timeline-centered {
+    position: relative !important;
+    padding: 1.5rem 0.5rem 3.5rem !important;
+    gap: 1.75rem !important;
+    width: 100% !important;
+  }
+
+  /* Glass conduit rail on the left */
   .timeline-glass-conduit {
-    left: 1.75rem;
-    transform: none;
+    left: 1.35rem !important;
+    transform: none !important;
+    width: 8px !important;
+    top: 1.5rem !important;
+    bottom: 2rem !important;
+    border-radius: 999px !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.35) !important;
   }
+
+  /* Row becomes a flex row: [Node on Left Rail] + [Card on Right] */
+  .evaluation-timeline-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 0.85rem !important;
+    width: 100% !important;
+    cursor: pointer;
+  }
+
+  .timeline-row-aside-left {
+    display: none !important;
+  }
+
   .timeline-row-node-wrapper {
-    justify-content: flex-start;
+    width: 2.7rem !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: 0.4rem !important;
+    position: relative !important;
+    z-index: 5 !important;
   }
+
+  .timeline-phase-node {
+    width: 2.7rem !important;
+    height: 2.7rem !important;
+    border-width: 2.5px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+    transition: transform 0.2s ease !important;
+  }
+
+  .timeline-node-index {
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+  }
+
   .timeline-row-card {
-    padding-left: 0;
+    flex: 1 !important;
+    min-width: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .timeline-card-glass {
+    padding: 1.15rem 1rem !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  }
+
+  .evaluation-timeline-row:active .timeline-card-glass {
+    transform: scale(0.985);
+  }
+
+  /* Card Header on Mobile */
+  .timeline-card-header {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  .timeline-card-header-badge-group {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .timeline-card-mobile-phase {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    padding: 0.2rem 0.6rem !important;
+    border-radius: 999px !important;
+    background: rgba(37, 99, 235, 0.1) !important;
+    color: #2563eb !important;
+    border: 1px solid rgba(37, 99, 235, 0.2) !important;
+  }
+
+  body.dark-theme .timeline-card-mobile-phase {
+    background: rgba(56, 189, 248, 0.15) !important;
+    color: #38bdf8 !important;
+    border-color: rgba(56, 189, 248, 0.3) !important;
+  }
+
+  .timeline-card-mobile-range {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    color: var(--nc-copy-soft, #64748b) !important;
+  }
+
+  .timeline-card-mobile-title {
+    display: block !important;
+    font-family: "Sora", sans-serif !important;
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: var(--nc-copy, #0f172a) !important;
+    margin: 0.4rem 0 0.35rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .timeline-card-desc {
+    font-size: 0.88rem !important;
+    line-height: 1.5 !important;
+    margin-bottom: 0.65rem !important;
+  }
+
+  .timeline-card-goals {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .timeline-goal-pill {
+    font-size: 0.76rem !important;
+    padding: 0.35rem 0.65rem !important;
+    line-height: 1.35 !important;
+    border-radius: 0.65rem !important;
+    white-space: normal !important;
+  }
+
+  .timeline-card-action {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.7rem 1rem !important;
+    border-radius: 0.85rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    min-height: 44px !important;
   }
 }
 
@@ -7215,8 +7386,7 @@ body.dark-theme .timeline-card-status-badge.is-current {
     transform: none;
   }
 
-  .landing-roadmap-row,
-  .evaluation-timeline-row {
+  .landing-roadmap-row {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
@@ -13437,6 +13607,197 @@ body.sidebar-collapsed .clinical-workstation {
   font-size: 0.72rem;
   font-weight: 700;
   opacity: 0.86;
+}
+
+/* Mobile Optimization for SOS Button & Bottom Navigation */
+@media (max-width: 1024px) {
+  .patient-sos-button {
+    bottom: 5.25rem !important; /* Positioned safely above the mobile bottom nav */
+    right: 0.85rem !important;
+    min-height: 3rem !important;
+    padding: 0.4rem 0.85rem 0.4rem 0.55rem !important;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35) !important;
+  }
+  .patient-sos-button-icon {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    font-size: 1.1rem !important;
+  }
+  .patient-sos-button-copy strong {
+    font-size: 0.85rem !important;
+  }
+  .patient-sos-button-copy small {
+    font-size: 0.65rem !important;
+  }
+}
+
+/* Mobile Bottom Actions Bar on Evaluation & Tests */
+.evaluation-bottom-nav-bar {
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .evaluation-bottom-nav-bar {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+  }
+  .evaluation-bottom-nav-bar .btn {
+    width: 100% !important;
+    padding: 0.8rem 1.25rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 999px !important;
+  }
+
+  /* Modal bottom-sheet on mobile */
+  .evaluation-phase-modal {
+    padding: 0 !important;
+    align-items: flex-end !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  .evaluation-phase-modal-dialog {
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .evaluation-main-panel-modal {
+    padding: 1.25rem 1rem 3.5rem !important;
+    border-radius: 24px 24px 0 0 !important;
+  }
+
+  .evaluation-phase-close {
+    width: 2.4rem !important;
+    height: 2.4rem !important;
+    top: 0.75rem !important;
+    right: 0.75rem !important;
+  }
+
+  .evaluation-footer-actions {
+    position: sticky !important;
+    bottom: -3.5rem !important;
+    background: var(--nc-panel, #ffffff) !important;
+    backdrop-filter: blur(16px) !important;
+    padding: 0.85rem 0.5rem 1.25rem !important;
+    margin: 1.5rem -1rem -3.5rem !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+    z-index: 30 !important;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08) !important;
+    display: flex !important;
+    gap: 0.65rem !important;
+  }
+
+  .evaluation-footer-actions .btn {
+    flex: 1 !important;
+    min-height: 48px !important;
+    padding: 0.75rem !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+    border-radius: 0.85rem !important;
+  }
+
+  /* Clinical Topbar Mobile Refinements */
+  .clinical-topbar {
+    padding: 0.75rem 1rem !important;
+    gap: 0.65rem !important;
+    border-radius: 0 0 1rem 1rem !important;
+  }
+  .topbar-title {
+    font-size: 1.1rem !important;
+    line-height: 1.25 !important;
+  }
+  .topbar-eyebrow {
+    font-size: 0.68rem !important;
+  }
+  .topbar-actions {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+  }
+  .topbar-doctor-card {
+    flex: 1 !important;
+    min-width: 0 !important;
+    padding: 0.35rem 0.6rem !important;
+  }
+  .topbar-user-name {
+    font-size: 0.85rem !important;
+    max-width: 110px !important;
+  }
+  .topbar-user-sub {
+    font-size: 0.68rem !important;
+  }
+  .topbar-notifications-btn,
+  .theme-toggle-btn,
+  .topbar-logout-btn {
+    width: 2.35rem !important;
+    height: 2.35rem !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Prevent auto-zoom on mobile inputs */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Touch ergonomics for form checks and switches */
+  .form-check {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+  }
+  .form-check-input {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+  }
+  .form-check-label {
+    font-size: 0.9rem !important;
+    line-height: 1.35 !important;
+    cursor: pointer !important;
+  }
+
+  /* Trophies filter horizontal swipe */
+  .trophy-filters {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 0.4rem !important;
+  }
+  .trophy-filters::-webkit-scrollbar {
+    display: none;
+  }
+  .trophy-filters .btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
 }
 
 /* =====================================================================

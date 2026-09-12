@@ -27,10 +27,10 @@ const MobileBottomNav = () => {
     // Patient Nav Items
     return [
       { to: "/dashboard", icon: "bi bi-house-heart", label: "Accueil" },
-      { to: "/tests", icon: "bi bi-clipboard-data", label: "Tests" },
-      { to: "/support", icon: "bi bi-chat-heart", label: "IA 24/7" },
-      { to: "/communities", icon: "bi bi-people-fill", label: "Groupes" },
-      { to: "/profile", icon: "bi bi-person-vcard", label: "Profil" }
+      { to: "/evaluation", icon: "bi bi-diagram-3-fill", label: "Parcours" },
+      { to: "/tests", icon: "bi bi-clipboard2-pulse", label: "Tests" },
+      { to: "/support", icon: "bi bi-chat-heart-fill", label: "IA 24/7" },
+      { to: "/communities", icon: "bi bi-people-fill", label: "Groupes" }
     ];
   }, [adminMode, doctorMode]);
 

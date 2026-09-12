@@ -809,6 +809,12 @@ const Onboarding = () => {
                 <div className="timeline-row-card">
                   <div className="timeline-card-glass">
                     <div className="timeline-card-header">
+                      <div className="timeline-card-header-badge-group">
+                        <span className="timeline-card-mobile-phase">{phase.label}</span>
+                        <span className="timeline-card-mobile-range">
+                          <i className="bi bi-ui-checks-grid" /> {phase.questionRange}
+                        </span>
+                      </div>
                       <span
                         className={`timeline-card-status-badge ${
                           isVisited
@@ -836,6 +842,8 @@ const Onboarding = () => {
                         </span>
                       </span>
                     </div>
+
+                    <h4 className="timeline-card-mobile-title">{phase.title}</h4>
 
                     <p className="timeline-card-desc">{phase.summary}</p>
 
@@ -1638,7 +1646,7 @@ const Onboarding = () => {
         </div>
       )}
 
-      <div className="mt-4 d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 rounded-4 bg-light">
+      <div className="evaluation-bottom-nav-bar mt-4 d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 rounded-4 bg-light">
         <button className="btn btn-outline-secondary rounded-pill px-4" onClick={() => navigate("/dashboard")}>
           <i className="bi bi-arrow-left me-1" />
           Aller au Tableau de bord
