@@ -269,7 +269,69 @@ const Onboarding = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    const nextVal = type === "checkbox" ? checked : value;
+
+    setForm((prev) => {
+      const updated = { ...prev, [name]: nextVal };
+
+      // Medical & Clinical branching reset logic:
+      // 1. Gender / Pregnancy / Contraception branching
+      if (name === "sex" && value !== "FEMALE") {
+        updated.pregnant = false;
+        updated.pregnancyTrimester = null;
+        updated.usesBirthControlPill = false;
+      }
+      if (name === "pregnant" && !checked) {
+        updated.pregnancyTrimester = null;
+      }
+
+      // 2. Alcohol AUDIT-C & CAGE branching: if Jamais (0), reset alcohol quantity, binge, and CAGE
+      if (name === "alcoholFrequency" && (value === "0" || value === 0)) {
+        updated.alcoholQuantity = 0;
+        updated.alcoholBinge = 0;
+        updated.cageCutDown = false;
+        updated.cageAnnoyed = false;
+        updated.cageGuilty = false;
+        updated.cageEyeOpener = false;
+      }
+
+      // 3. Cannabis branching
+      if (name === "cannabisLast12Months" && !checked) {
+        updated.cannabisFrequency = "NONE";
+        updated.cannabisStartAge = null;
+      }
+
+      // 4. E-cigarette (vaping) branching
+      if (name === "usesECigarette" && !checked) {
+        updated.ecigWeeklyLiquid = "";
+        updated.usesNicotineCartridges = false;
+        updated.nicotineCartridgeDosage = "";
+      }
+      if (name === "usesNicotineCartridges" && !checked) {
+        updated.nicotineCartridgeDosage = "";
+      }
+
+      // 5. Cancer details branching
+      if (name === "cancerOther" && !checked) {
+        updated.cancerOtherDetails = "";
+      }
+
+      // 6. Current smoking vs cessation history branching
+      if (name === "currentlySmoking") {
+        if (checked) {
+          updated.quitDays = null;
+          updated.quitMonths = null;
+          updated.cigarettesPerDayBeforeQuit = null;
+        } else {
+          updated.smokesDaily = false;
+          updated.manufacturedCigarettesPerDay = null;
+          updated.rolledCigarettesPerDay = null;
+          updated.cigarillosPerDay = null;
+        }
+      }
+
+      return updated;
+    });
   };
 
   const openAssistantForField = (fieldName) => {
@@ -333,50 +395,72 @@ const Onboarding = () => {
     setAssistantOpen(false);
   };
 
-  const toNumber = (value) => (value === "" || value === null ? null : Number(value));
-  const toEnum = (value) => (value === "" || value === null ? null : value);
+  const toNumber = (value) => (value === "" || value === null || value === undefined ? null : Number(value));
+  const toEnum = (value) => (value === "" || value === null || value === undefined ? null : value);
 
-  const payload = useMemo(() => ({
-    ...form,
-    appointmentLeadDays: toNumber(form.appointmentLeadDays),
-    heightCm: toNumber(form.heightCm),
-    weightKg: toNumber(form.weightKg),
-    pregnancyTrimester: toNumber(form.pregnancyTrimester),
-    consultationObjective: toEnum(form.consultationObjective),
-    professionalStatus: toEnum(form.professionalStatus),
-    educationLevel: toEnum(form.educationLevel),
-    referralSource: toEnum(form.referralSource),
-    cigarettesPerDay: toNumber(form.cigarettesPerDay),
-    smokingStartAge: toNumber(form.smokingStartAge),
-    quitDays: toNumber(form.quitDays),
-    quitMonths: toNumber(form.quitMonths),
-    cigarettesPerDayBeforeQuit: toNumber(form.cigarettesPerDayBeforeQuit),
-    manufacturedCigarettesPerDay: toNumber(form.manufacturedCigarettesPerDay),
-    rolledCigarettesPerDay: toNumber(form.rolledCigarettesPerDay),
-    cigarillosPerDay: toNumber(form.cigarillosPerDay),
-    weeklyTobaccoSpend: toNumber(form.weeklyTobaccoSpend),
-    incomeBracket: toEnum(form.incomeBracket),
-    quitAttempts: toNumber(form.quitAttempts),
-    longestQuitDays: toNumber(form.longestQuitDays),
-    motivationStage: toNumber(form.motivationStage),
-    motivationScore: toNumber(form.motivationScore),
-    confidenceScore: toNumber(form.confidenceScore),
-    smokingReasonAutomatic: toNumber(form.smokingReasonAutomatic),
-    smokingReasonConviviality: toNumber(form.smokingReasonConviviality),
-    smokingReasonPleasure: toNumber(form.smokingReasonPleasure),
-    smokingReasonStress: toNumber(form.smokingReasonStress),
-    smokingReasonConcentration: toNumber(form.smokingReasonConcentration),
-    smokingReasonSupportMoral: toNumber(form.smokingReasonSupportMoral),
-    smokingReasonWeight: toNumber(form.smokingReasonWeight),
-    alcoholFrequency: toNumber(form.alcoholFrequency),
-    alcoholQuantity: toNumber(form.alcoholQuantity),
-    alcoholBinge: toNumber(form.alcoholBinge),
-    cannabisFrequency: toEnum(form.cannabisFrequency),
-    cannabisStartAge: toNumber(form.cannabisStartAge),
-    weightConcernScore: toNumber(form.weightConcernScore),
-    weightConfidenceScore: toNumber(form.weightConfidenceScore),
-    physicalActivityLevel: toEnum(form.physicalActivityLevel)
-  }), [form]);
+  const payload = useMemo(() => {
+    const isFemale = form.sex === "FEMALE";
+    const isPregnant = isFemale && !!form.pregnant;
+    const consumesAlcohol = form.alcoholFrequency && form.alcoholFrequency !== "0" && form.alcoholFrequency !== 0;
+    const hasCannabis = !!form.cannabisLast12Months;
+    const isSmoker = !!form.currentlySmoking;
+    const usesVape = !!form.usesECigarette;
+
+    return {
+      ...form,
+      appointmentLeadDays: toNumber(form.appointmentLeadDays),
+      heightCm: toNumber(form.heightCm),
+      weightKg: toNumber(form.weightKg),
+      pregnant: isPregnant,
+      pregnancyTrimester: isPregnant ? toNumber(form.pregnancyTrimester) : null,
+      usesBirthControlPill: isFemale ? !!form.usesBirthControlPill : false,
+      consultationObjective: toEnum(form.consultationObjective),
+      professionalStatus: toEnum(form.professionalStatus),
+      educationLevel: toEnum(form.educationLevel),
+      referralSource: toEnum(form.referralSource),
+      cigarettesPerDay: toNumber(form.cigarettesPerDay),
+      smokingStartAge: toNumber(form.smokingStartAge),
+      quitDays: !isSmoker ? toNumber(form.quitDays) : null,
+      quitMonths: !isSmoker ? toNumber(form.quitMonths) : null,
+      cigarettesPerDayBeforeQuit: !isSmoker ? toNumber(form.cigarettesPerDayBeforeQuit) : null,
+      smokesDaily: isSmoker ? !!form.smokesDaily : false,
+      manufacturedCigarettesPerDay: isSmoker ? toNumber(form.manufacturedCigarettesPerDay) : null,
+      rolledCigarettesPerDay: isSmoker ? toNumber(form.rolledCigarettesPerDay) : null,
+      cigarillosPerDay: isSmoker ? toNumber(form.cigarillosPerDay) : null,
+      usesECigarette: usesVape,
+      ecigWeeklyLiquid: usesVape ? (form.ecigWeeklyLiquid || "") : "",
+      usesNicotineCartridges: usesVape ? !!form.usesNicotineCartridges : false,
+      nicotineCartridgeDosage: usesVape && form.usesNicotineCartridges ? (form.nicotineCartridgeDosage || "") : "",
+      weeklyTobaccoSpend: toNumber(form.weeklyTobaccoSpend),
+      incomeBracket: toEnum(form.incomeBracket),
+      quitAttempts: toNumber(form.quitAttempts),
+      longestQuitDays: toNumber(form.longestQuitDays),
+      motivationStage: toNumber(form.motivationStage),
+      motivationScore: toNumber(form.motivationScore),
+      confidenceScore: toNumber(form.confidenceScore),
+      smokingReasonAutomatic: toNumber(form.smokingReasonAutomatic),
+      smokingReasonConviviality: toNumber(form.smokingReasonConviviality),
+      smokingReasonPleasure: toNumber(form.smokingReasonPleasure),
+      smokingReasonStress: toNumber(form.smokingReasonStress),
+      smokingReasonConcentration: toNumber(form.smokingReasonConcentration),
+      smokingReasonSupportMoral: toNumber(form.smokingReasonSupportMoral),
+      smokingReasonWeight: toNumber(form.smokingReasonWeight),
+      alcoholFrequency: toNumber(form.alcoholFrequency),
+      alcoholQuantity: consumesAlcohol ? toNumber(form.alcoholQuantity) : 0,
+      alcoholBinge: consumesAlcohol ? toNumber(form.alcoholBinge) : 0,
+      cageCutDown: consumesAlcohol ? !!form.cageCutDown : false,
+      cageAnnoyed: consumesAlcohol ? !!form.cageAnnoyed : false,
+      cageGuilty: consumesAlcohol ? !!form.cageGuilty : false,
+      cageEyeOpener: consumesAlcohol ? !!form.cageEyeOpener : false,
+      cannabisLast12Months: hasCannabis,
+      cannabisFrequency: hasCannabis ? toEnum(form.cannabisFrequency) : "NONE",
+      cannabisStartAge: hasCannabis ? toNumber(form.cannabisStartAge) : null,
+      cancerOtherDetails: form.cancerOther ? (form.cancerOtherDetails || "") : "",
+      weightConcernScore: toNumber(form.weightConcernScore),
+      weightConfidenceScore: toNumber(form.weightConfidenceScore),
+      physicalActivityLevel: toEnum(form.physicalActivityLevel)
+    };
+  }, [form]);
 
   const handleValidatePhase = async (nextPhaseId) => {
     // 1. Mark current phase as visited immediately
@@ -834,127 +918,142 @@ const Onboarding = () => {
               {step === 1 && (
                 <div className="row g-3">
                   <div className="col-12 col-md-4">
-                    <label className="form-label">Delai RDV (jours)</label>
-                    <input className="form-control" type="number" name="appointmentLeadDays" value={form.appointmentLeadDays || ""} onChange={handleChange} />
+                    <label className="form-label">Délai avant rendez-vous (en jours)</label>
+                    <input className="form-control" type="number" name="appointmentLeadDays" value={form.appointmentLeadDays || ""} onChange={handleChange} placeholder="ex: 7" />
+                    <span className="clinical-help-hint">Nombre de jours estimé avant votre prochaine consultation</span>
                   </div>
                   <div className="col-12 col-md-4">
                     <label className="form-label">Date de naissance</label>
                     <input className="form-control" type="date" name="dateOfBirth" value={form.dateOfBirth || ""} onChange={handleChange} />
                   </div>
                   <div className="col-12 col-md-4">
-                    <label className="form-label">Sexe</label>
+                    <label className="form-label">Sexe biologique</label>
                     <select className="form-select" name="sex" value={form.sex || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
+                      <option value="">Sélectionner</option>
                       <option value="FEMALE">Femme</option>
                       <option value="MALE">Homme</option>
                       <option value="OTHER">Autre</option>
                     </select>
                   </div>
                   <div className="col-6">
-                    <label className="form-label">Taille (cm)</label>
-                    <input className="form-control" type="number" name="heightCm" value={form.heightCm || ""} onChange={handleChange} />
+                    <label className="form-label">Taille (en cm)</label>
+                    <input className="form-control" type="number" name="heightCm" value={form.heightCm || ""} onChange={handleChange} placeholder="ex: 175" />
                   </div>
                   <div className="col-6">
-                    <label className="form-label">Poids (kg)</label>
-                    <input className="form-control" type="number" name="weightKg" value={form.weightKg || ""} onChange={handleChange} />
+                    <label className="form-label">Poids (en kg)</label>
+                    <input className="form-control" type="number" name="weightKg" value={form.weightKg || ""} onChange={handleChange} placeholder="ex: 70" />
                   </div>
+
+                  {/* Santé gynécologique & obstétricale : réservé aux femmes */}
                   {form.sex === "FEMALE" && (
-                    <>
-                      <div className="col-12 col-md-4 form-check">
-                        <input className="form-check-input" type="checkbox" name="pregnant" checked={!!form.pregnant} onChange={handleChange} />
-                        <label className="form-check-label">Enceinte</label>
+                    <div className="col-12">
+                      <div className="clinical-conditional-card">
+                        <div className="clinical-subgroup-title">
+                          <i className="bi bi-gender-female"></i> Santé gynécologique et obstétricale
+                        </div>
+                        <div className="row g-3">
+                          <div className="col-12 col-md-6 form-check">
+                            <input className="form-check-input" type="checkbox" id="field-pregnant" name="pregnant" checked={!!form.pregnant} onChange={handleChange} />
+                            <label className="form-check-label" htmlFor="field-pregnant">Êtes-vous actuellement enceinte ?</label>
+                          </div>
+                          <div className="col-12 col-md-6 form-check">
+                            <input className="form-check-input" type="checkbox" id="field-birthcontrol" name="usesBirthControlPill" checked={!!form.usesBirthControlPill} onChange={handleChange} />
+                            <label className="form-check-label" htmlFor="field-birthcontrol">Prenez-vous une contraception hormonale (pilule, implant...) ?</label>
+                          </div>
+                          {form.pregnant && (
+                            <div className="col-12 col-md-6">
+                              <label className="form-label">À quel trimestre de grossesse êtes-vous ?</label>
+                              <select className="form-select" name="pregnancyTrimester" value={form.pregnancyTrimester || ""} onChange={handleChange}>
+                                <option value="">Sélectionner le trimestre</option>
+                                <option value="1">1er trimestre (Semaines 1 à 13)</option>
+                                <option value="2">2ème trimestre (Semaines 14 à 27)</option>
+                                <option value="3">3ème trimestre (Semaines 28 et plus)</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="col-12 col-md-4">
-                        <label className="form-label">Trimestre</label>
-                        <select className="form-select" name="pregnancyTrimester" value={form.pregnancyTrimester || ""} onChange={handleChange} disabled={!form.pregnant}>
-                          <option value="">Selectionner</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>
-                        </select>
-                      </div>
-                      <div className="col-12 col-md-4 form-check">
-                        <input className="form-check-input" type="checkbox" name="usesBirthControlPill" checked={!!form.usesBirthControlPill} onChange={handleChange} />
-                        <label className="form-check-label">Pilule</label>
-                      </div>
-                    </>
+                    </div>
                   )}
+
                   <div className="col-12">
-                    <label className="form-label">Objectif de consultation</label>
+                    <label className="form-label">Objectif principal de la démarche</label>
                     <select className="form-select" name="consultationObjective" value={form.consultationObjective || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="STOP_COMPLETELY">Arreter completement</option>
-                      <option value="REDUCE">Reduire la consommation</option>
-                      <option value="INFO">Renseignements sevrage</option>
-                      <option value="MAINTAIN_QUIT">Maintenir l'arret</option>
+                      <option value="">Sélectionner votre objectif</option>
+                      <option value="STOP_COMPLETELY">Arrêter complètement le tabac</option>
+                      <option value="REDUCE">Réduire progressivement ma consommation</option>
+                      <option value="INFO">Obtenir des renseignements et conseils</option>
+                      <option value="MAINTAIN_QUIT">Maintenir mon arrêt et consolider le sevrage</option>
                     </select>
                   </div>
                   <div className="col-12 col-md-6">
-                    <label className="form-label">Situation professionnelle</label>
+                    <label className="form-label">Situation socio-professionnelle</label>
                     <select className="form-select" name="professionalStatus" value={form.professionalStatus || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="ACTIVE">Actif</option>
-                      <option value="UNEMPLOYED_RSA">Au chomage / RSA</option>
-                      <option value="STUDENT">Etudiant / formation</option>
-                      <option value="RETIRED">Retraite</option>
-                      <option value="HOMEMAKER">Homme ou femme au foyer</option>
-                      <option value="DISABILITY">Invalidite / AAH</option>
+                      <option value="">Sélectionner votre situation</option>
+                      <option value="ACTIVE">En activité professionnelle</option>
+                      <option value="UNEMPLOYED_RSA">Demandeur d'emploi / RSA</option>
+                      <option value="STUDENT">Étudiant(e) / en formation</option>
+                      <option value="RETIRED">Retraité(e)</option>
+                      <option value="HOMEMAKER">Au foyer</option>
+                      <option value="DISABILITY">Invalidité / AAH</option>
                     </select>
                   </div>
                   <div className="col-12 col-md-6">
-                    <label className="form-label">Niveau d'etudes</label>
+                    <label className="form-label">Niveau d'études</label>
                     <select className="form-select" name="educationLevel" value={form.educationLevel || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="NO_DIPLOMA">Sans diplome</option>
-                      <option value="SECONDARY">Niveau secondaire</option>
-                      <option value="CAP_BEP">CAP / BEP</option>
-                      <option value="BAC">Baccalaureat</option>
-                      <option value="BAC_PLUS_2">Bac +2</option>
-                      <option value="ABOVE_BAC_PLUS_2">Au-dela de Bac +2</option>
+                      <option value="">Sélectionner votre niveau</option>
+                      <option value="NO_DIPLOMA">Sans diplôme</option>
+                      <option value="SECONDARY">Enseignement secondaire (collège / lycée)</option>
+                      <option value="CAP_BEP">CAP / BEP / Brevet</option>
+                      <option value="BAC">Baccalauréat</option>
+                      <option value="BAC_PLUS_2">Bac +2 (BTS, DUT...)</option>
+                      <option value="ABOVE_BAC_PLUS_2">Enseignement supérieur (> Bac +2)</option>
                     </select>
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Qui vous a conseille ?</label>
+                    <label className="form-label">Qui vous a conseillé ou orienté vers cette consultation ?</label>
                     <select className="form-select" name="referralSource" value={form.referralSource || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="HOSPITALIZATION">Hospitalisation</option>
-                      <option value="ENTOURAGE">Entourage</option>
-                      <option value="GP">Medecin traitant</option>
-                      <option value="SPECIALIST">Medecin specialiste</option>
-                      <option value="OCCUPATIONAL_DOCTOR">Medecin du travail</option>
+                      <option value="">Sélectionner l'origine de la démarche</option>
+                      <option value="PERSONAL_DECISION">Démarche et initiative personnelle</option>
+                      <option value="GP">Médecin traitant</option>
+                      <option value="SPECIALIST">Médecin spécialiste (cardiologue, pneumologue...)</option>
+                      <option value="OCCUPATIONAL_DOCTOR">Médecin du travail</option>
                       <option value="PHARMACIST">Pharmacien</option>
+                      <option value="HOSPITALIZATION">Suite à une hospitalisation</option>
+                      <option value="ENTOURAGE">Famille ou entourage</option>
                       <option value="TABAC_INFO_SERVICE">Tabac Info Service</option>
-                      <option value="PERSONAL_DECISION">Demarche personnelle</option>
                     </select>
                   </div>
                   <div className="col-12 col-md-6">
-                    <label className="form-label">Ville</label>
-                    <input className="form-control" type="text" name="city" value={form.city || ""} onChange={handleChange} />
+                    <label className="form-label">Ville de résidence</label>
+                    <input className="form-control" type="text" name="city" value={form.city || ""} onChange={handleChange} placeholder="ex: Paris, Lyon..." />
                   </div>
                   <div className="col-12 col-md-6">
                     <label className="form-label">Pays</label>
-                    <input className="form-control" type="text" name="countryCode" value={form.countryCode || ""} onChange={handleChange} />
+                    <input className="form-control" type="text" name="countryCode" value={form.countryCode || ""} onChange={handleChange} placeholder="ex: France" />
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Profession</label>
-                    <input className="form-control" type="text" name="occupation" value={form.occupation || ""} onChange={handleChange} />
+                    <label className="form-label">Profession ou activité principale</label>
+                    <input className="form-control" type="text" name="occupation" value={form.occupation || ""} onChange={handleChange} placeholder="ex: Ingénieur, Enseignant, Artisan..." />
                   </div>
                   <div className="col-6">
-                    <label className="form-label">Cigarettes/jour</label>
-                    <input className="form-control" type="number" name="cigarettesPerDay" value={form.cigarettesPerDay || ""} onChange={handleChange} />
+                    <label className="form-label">Consommation habituelle (cigarettes/jour)</label>
+                    <input className="form-control" type="number" name="cigarettesPerDay" value={form.cigarettesPerDay || ""} onChange={handleChange} placeholder="ex: 15" />
+                    <span className="clinical-help-hint">Nombre moyen habituel par jour</span>
                   </div>
                   <div className="col-6">
-                    <label className="form-label">Age debut tabac</label>
-                    <input className="form-control" type="number" name="smokingStartAge" value={form.smokingStartAge || ""} onChange={handleChange} />
+                    <label className="form-label">Âge de début du tabagisme</label>
+                    <input className="form-control" type="number" name="smokingStartAge" value={form.smokingStartAge || ""} onChange={handleChange} placeholder="ex: 18" />
+                    <span className="clinical-help-hint">Âge où vous avez commencé à fumer quotidiennement</span>
                   </div>
-                  <div className="col-12 d-flex gap-3 flex-wrap">
+                  <div className="col-12 d-flex gap-3 flex-wrap mt-2">
                     <div className="form-check">
-                      <input className="form-check-input" type="checkbox" name="smokesAtHome" checked={!!form.smokesAtHome} onChange={handleChange} />
-                      <label className="form-check-label">Fume a l'interieur du domicile</label>
+                      <input className="form-check-input" type="checkbox" id="field-smokesAtHome" name="smokesAtHome" checked={!!form.smokesAtHome} onChange={handleChange} />
+                      <label className="form-check-label" htmlFor="field-smokesAtHome">Fumez-vous à l'intérieur de votre domicile ?</label>
                     </div>
                     <div className="form-check">
-                      <input className="form-check-input" type="checkbox" name="otherSmokersAtHome" checked={!!form.otherSmokersAtHome} onChange={handleChange} />
-                      <label className="form-check-label">Autres fumeurs dans le foyer</label>
+                      <input className="form-check-input" type="checkbox" id="field-otherSmokersAtHome" name="otherSmokersAtHome" checked={!!form.otherSmokersAtHome} onChange={handleChange} />
+                      <label className="form-check-label" htmlFor="field-otherSmokersAtHome">Y a-t-il d'autres fumeurs dans votre foyer ?</label>
                     </div>
                   </div>
                 </div>
@@ -962,207 +1061,250 @@ const Onboarding = () => {
               {step === 2 && (
                 <div className="row g-3">
                   <div className="col-12">
-                    <h5 className="fw-semibold">Facteurs de risque</h5>
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-heart-pulse text-danger"></i> Facteurs de risque métabolique & cardiovasculaire
+                    </h5>
                   </div>
                   {[
-                    { key: "riskHypertension", label: "Hypertension arterielle" },
-                    { key: "riskDiabetes", label: "Diabete" },
-                    { key: "riskHypercholesterolemia", label: "Exces de cholesterol" }
+                    { key: "riskHypertension", label: "Hypertension artérielle (HTA)" },
+                    { key: "riskDiabetes", label: "Diabète (type 1 ou type 2)" },
+                    { key: "riskHypercholesterolemia", label: "Excès de cholestérol (Hypercholestérolémie)" }
                   ].map((item) => (
                     <div className="col-12 col-md-4" key={item.key}>
                       <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                        <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                        <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
                       </div>
                     </div>
                   ))}
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Maladies cardiovasculaires</h5>
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-activity text-primary"></i> Pathologies cardiovasculaires
+                    </h5>
                   </div>
                   {[
-                    { key: "cardiovascularMyocardialInfarction", label: "Infarctus du myocarde" },
-                    { key: "cardiovascularAngina", label: "Angine de poitrine" },
-                    { key: "cardiovascularStroke", label: "Accident vasculaire cerebral" },
-                    { key: "cardiovascularPeripheralArteryDisease", label: "Arteriopathie des membres inferieurs" }
+                    { key: "cardiovascularMyocardialInfarction", label: "Infarctus du myocarde (Crise cardiaque)" },
+                    { key: "cardiovascularAngina", label: "Angine de poitrine (Angor)" },
+                    { key: "cardiovascularStroke", label: "Accident vasculaire cérébral (AVC ou AIT)" },
+                    { key: "cardiovascularPeripheralArteryDisease", label: "Artériopathie oblitérante des membres inférieurs (AOMI)" }
                   ].map((item) => (
                     <div className="col-12 col-md-6" key={item.key}>
                       <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                        <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                        <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
                       </div>
                     </div>
                   ))}
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Maladies respiratoires</h5>
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-lungs text-info"></i> Maladies respiratoires
+                    </h5>
                   </div>
                   {[
                     { key: "respiratoryChronicBronchitis", label: "Bronchite chronique" },
-                    { key: "respiratoryCopd", label: "BPCO" },
+                    { key: "respiratoryCopd", label: "BPCO (Broncho-Pneumopathie Chronique Obstructive)" },
                     { key: "respiratoryAsthma", label: "Asthme" }
                   ].map((item) => (
                     <div className="col-12 col-md-4" key={item.key}>
                       <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                        <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                        <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
                       </div>
                     </div>
                   ))}
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Cancers</h5>
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-bandaid text-warning"></i> Antécédents de cancers
+                    </h5>
                   </div>
                   {[
-                    { key: "cancerLung", label: "Poumon" },
-                    { key: "cancerThroat", label: "Gorge (ORL)" },
-                    { key: "cancerBladder", label: "Vessie" },
-                    { key: "cancerOther", label: "Autre" }
+                    { key: "cancerLung", label: "Cancer du poumon" },
+                    { key: "cancerThroat", label: "Cancer de la gorge ou ORL" },
+                    { key: "cancerBladder", label: "Cancer de la vessie" },
+                    { key: "cancerOther", label: "Autre type de cancer" }
                   ].map((item) => (
                     <div className="col-12 col-md-3" key={item.key}>
                       <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                        <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                        <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
                       </div>
                     </div>
                   ))}
                   {form.cancerOther && (
                     <div className="col-12">
-                      <label className="form-label">Precisez l'autre cancer</label>
-                      <input className="form-control" type="text" name="cancerOtherDetails" value={form.cancerOtherDetails || ""} onChange={handleChange} />
+                      <div className="clinical-conditional-card">
+                        <label className="form-label fw-semibold text-primary">Précisez la localisation de l'autre cancer :</label>
+                        <input className="form-control" type="text" name="cancerOtherDetails" value={form.cancerOtherDetails || ""} onChange={handleChange} placeholder="ex: Côlon, sein, rein..." />
+                      </div>
                     </div>
                   )}
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Traitements reguliers</h5>
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-capsule text-success"></i> Traitements réguliers & Psychotropes
+                    </h5>
                   </div>
                   {[
-                    { key: "medicationTranquilizers", label: "Tranquillisants" },
-                    { key: "medicationSleepingPills", label: "Somniferes" },
-                    { key: "medicationAntidepressants", label: "Antidepresseurs" },
-                    { key: "medicationNeuroleptics", label: "Neuroleptiques" },
-                    { key: "medicationMoodRegulators", label: "Regulateurs de l'humeur" },
-                    { key: "medicationSubstitutionTreatment", label: "Substitution (subutex / methadone)" }
+                    { key: "medicationTranquilizers", label: "Tranquillisants / Anxiolytiques (ex: Lexomil, Xanax...)" },
+                    { key: "medicationSleepingPills", label: "Somnifères / Hypnotiques" },
+                    { key: "medicationAntidepressants", label: "Antidépresseurs" },
+                    { key: "medicationNeuroleptics", label: "Neuroleptiques / Antipsychotiques" },
+                    { key: "medicationMoodRegulators", label: "Régulateurs de l'humeur (Thymorégulateurs)" },
+                    { key: "medicationSubstitutionTreatment", label: "Substitution aux opiacés (Subutex, Méthadone)" }
                   ].map((item) => (
                     <div className="col-12 col-md-4" key={item.key}>
                       <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                        <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                        <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
                       </div>
                     </div>
                   ))}
 
-                  <div className="col-12 col-md-6 mt-2 form-check">
-                    <input className="form-check-input" type="checkbox" name="depressionHistory" checked={!!form.depressionHistory} onChange={handleChange} />
-                    <label className="form-check-label">Antecedents de depression</label>
+                  <div className="col-12 col-md-6 mt-3 form-check">
+                    <input className="form-check-input" type="checkbox" id="field-depressionHistory" name="depressionHistory" checked={!!form.depressionHistory} onChange={handleChange} />
+                    <label className="form-check-label fw-semibold" htmlFor="field-depressionHistory">Antécédents d'épisode dépressif ou de suivi psychologique</label>
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Autres problemes de sante</label>
-                    <textarea className="form-control" rows="2" name="otherHealthIssues" value={form.otherHealthIssues || ""} onChange={handleChange} />
+                    <label className="form-label">Autres pathologies ou problèmes de santé :</label>
+                    <textarea className="form-control" rows="2" name="otherHealthIssues" value={form.otherHealthIssues || ""} onChange={handleChange} placeholder="Allergies, interventions chirurgicales récentes, problèmes rénaux ou hépatiques..." />
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Notes medicales</label>
-                    <textarea className="form-control" rows="3" name="medicalHistoryNotes" value={form.medicalHistoryNotes || ""} onChange={handleChange} />
+                    <label className="form-label">Notes médicales ou précisions complémentaires :</label>
+                    <textarea className="form-control" rows="2" name="medicalHistoryNotes" value={form.medicalHistoryNotes || ""} onChange={handleChange} placeholder="Toute information utile pour votre prise en charge..." />
                   </div>
                 </div>
               )}
               {step === 3 && (
                 <div className="row g-3">
                   <div className="col-12">
-                    <h5 className="fw-semibold">Situation actuelle</h5>
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-clock-history text-primary"></i> Situation tabagique actuelle
+                    </h5>
                   </div>
                   <div className="col-12 col-md-6 form-check">
-                    <input className="form-check-input" type="checkbox" name="reducedConsumptionLastMonth" checked={!!form.reducedConsumptionLastMonth} onChange={handleChange} />
-                    <label className="form-check-label">Reduction de consommation le mois precedent</label>
+                    <input className="form-check-input" type="checkbox" id="field-reducedConsumptionLastMonth" name="reducedConsumptionLastMonth" checked={!!form.reducedConsumptionLastMonth} onChange={handleChange} />
+                    <label className="form-check-label" htmlFor="field-reducedConsumptionLastMonth">Avez-vous réduit votre consommation le mois précédent ?</label>
                   </div>
                   <div className="col-12 col-md-6 form-check">
-                    <input className="form-check-input" type="checkbox" name="currentlySmoking" checked={!!form.currentlySmoking} onChange={handleChange} />
-                    <label className="form-check-label">Fume actuellement</label>
+                    <input className="form-check-input" type="checkbox" id="field-currentlySmoking" name="currentlySmoking" checked={!!form.currentlySmoking} onChange={handleChange} />
+                    <label className="form-check-label fw-semibold" htmlFor="field-currentlySmoking">Fumez-vous encore actuellement du tabac ?</label>
                   </div>
 
+                  {/* If patient is NOT currently smoking: ask cessation history */}
                   {!form.currentlySmoking && (
-                    <>
-                      <div className="col-6">
-                        <label className="form-label">Depuis combien de jours arretes</label>
-                        <input className="form-control" type="number" name="quitDays" value={form.quitDays || ""} onChange={handleChange} />
+                    <div className="col-12">
+                      <div className="clinical-conditional-card">
+                        <div className="clinical-subgroup-title text-success">
+                          <i className="bi bi-check-circle-fill"></i> Sevrage en cours : Durée de l'arrêt
+                        </div>
+                        <div className="row g-3">
+                          <div className="col-12 col-md-6">
+                            <label className="form-label">Depuis combien de jours avez-vous arrêté de fumer ?</label>
+                            <input className="form-control" type="number" name="quitDays" value={form.quitDays || ""} onChange={handleChange} placeholder="ex: 14" />
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label">Ou depuis combien de mois (si arrêt supérieur à 30 jours) ?</label>
+                            <input className="form-control" type="number" name="quitMonths" value={form.quitMonths || ""} onChange={handleChange} placeholder="ex: 2" />
+                          </div>
+                          <div className="col-12">
+                            <label className="form-label">Combien de cigarettes fumiez-vous par jour avant votre arrêt ?</label>
+                            <input className="form-control" type="number" name="cigarettesPerDayBeforeQuit" value={form.cigarettesPerDayBeforeQuit || ""} onChange={handleChange} placeholder="ex: 20" />
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-6">
-                        <label className="form-label">Depuis combien de mois arretes</label>
-                        <input className="form-control" type="number" name="quitMonths" value={form.quitMonths || ""} onChange={handleChange} />
-                      </div>
-                      <div className="col-12">
-                        <label className="form-label">Cigarettes/jour avant l'arret</label>
-                        <input className="form-control" type="number" name="cigarettesPerDayBeforeQuit" value={form.cigarettesPerDayBeforeQuit || ""} onChange={handleChange} />
-                      </div>
-                    </>
+                    </div>
                   )}
 
+                  {/* If patient IS currently smoking: ask daily breakdown */}
                   {form.currentlySmoking && (
-                    <>
-                      <div className="col-12 form-check">
-                        <input className="form-check-input" type="checkbox" name="smokesDaily" checked={!!form.smokesDaily} onChange={handleChange} />
-                        <label className="form-check-label">Fume tous les jours</label>
+                    <div className="col-12">
+                      <div className="clinical-conditional-card">
+                        <div className="clinical-subgroup-title text-danger">
+                          <i className="bi bi-fire"></i> Consommation active quotidienne
+                        </div>
+                        <div className="row g-3">
+                          <div className="col-12 form-check">
+                            <input className="form-check-input" type="checkbox" id="field-smokesDaily" name="smokesDaily" checked={!!form.smokesDaily} onChange={handleChange} />
+                            <label className="form-check-label fw-semibold" htmlFor="field-smokesDaily">Fumez-vous quotidiennement (tous les jours sans exception) ?</label>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label">Cigarettes classiques (par jour)</label>
+                            <input className="form-control" type="number" name="manufacturedCigarettesPerDay" value={form.manufacturedCigarettesPerDay || ""} onChange={handleChange} placeholder="ex: 10" />
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label">Cigarettes roulées (par jour)</label>
+                            <input className="form-control" type="number" name="rolledCigarettesPerDay" value={form.rolledCigarettesPerDay || ""} onChange={handleChange} placeholder="ex: 5" />
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label">Cigarillos ou petits cigares (par jour)</label>
+                            <input className="form-control" type="number" name="cigarillosPerDay" value={form.cigarillosPerDay || ""} onChange={handleChange} placeholder="ex: 0" />
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-4">
-                        <label className="form-label">Cigarettes manufact.</label>
-                        <input className="form-control" type="number" name="manufacturedCigarettesPerDay" value={form.manufacturedCigarettesPerDay || ""} onChange={handleChange} />
-                      </div>
-                      <div className="col-4">
-                        <label className="form-label">Cigarettes roulees</label>
-                        <input className="form-control" type="number" name="rolledCigarettesPerDay" value={form.rolledCigarettesPerDay || ""} onChange={handleChange} />
-                      </div>
-                      <div className="col-4">
-                        <label className="form-label">Cigarillos</label>
-                        <input className="form-control" type="number" name="cigarillosPerDay" value={form.cigarillosPerDay || ""} onChange={handleChange} />
-                      </div>
-                    </>
+                    </div>
                   )}
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Autres produits</h5>
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-box-seam text-secondary"></i> Autres produits du tabac
+                    </h5>
                   </div>
                   {[
                     { key: "usesCigar", label: "Cigare" },
                     { key: "usesPipe", label: "Pipe" },
-                    { key: "usesChewingTobacco", label: "Tabac a macher" },
-                    { key: "usesSnus", label: "Snus" },
-                    { key: "usesHookah", label: "Narguile / chicha" },
-                    { key: "usesPloom", label: "Ploom" }
+                    { key: "usesChewingTobacco", label: "Tabac à mâcher / chique" },
+                    { key: "usesSnus", label: "Snus ou sachets nicotiniques" },
+                    { key: "usesHookah", label: "Narguilé / Chicha" },
+                    { key: "usesPloom", label: "Tabac chauffé (Ploom, IQOS...)" }
                   ].map((item) => (
                     <div className="col-12 col-md-4" key={item.key}>
                       <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                        <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                        <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
                       </div>
                     </div>
                   ))}
                   <div className="col-12">
-                    <label className="form-label">Autres produits, precisions</label>
-                    <input className="form-control" type="text" name="otherTobaccoDetails" value={form.otherTobaccoDetails || ""} onChange={handleChange} />
+                    <label className="form-label">Précisions sur d'autres produits du tabac :</label>
+                    <input className="form-control" type="text" name="otherTobaccoDetails" value={form.otherTobaccoDetails || ""} onChange={handleChange} placeholder="ex: Fréquence d'usage de chicha ou cigares..." />
                   </div>
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Cigarette electronique</h5>
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-plug text-primary"></i> Cigarette électronique (Vapotage)
+                    </h5>
                   </div>
                   <div className="col-12 form-check">
-                    <input className="form-check-input" type="checkbox" name="usesECigarette" checked={!!form.usesECigarette} onChange={handleChange} />
-                    <label className="form-check-label">Utilise une e-cigarette</label>
+                    <input className="form-check-input" type="checkbox" id="field-usesECigarette" name="usesECigarette" checked={!!form.usesECigarette} onChange={handleChange} />
+                    <label className="form-check-label fw-semibold" htmlFor="field-usesECigarette">Utilisez-vous une cigarette électronique (vape) ?</label>
                   </div>
                   {form.usesECigarette && (
-                    <>
-                      <div className="col-6">
-                        <label className="form-label">Volume liquide / semaine</label>
-                        <input className="form-control" type="text" name="ecigWeeklyLiquid" value={form.ecigWeeklyLiquid || ""} onChange={handleChange} />
+                    <div className="col-12">
+                      <div className="clinical-conditional-card">
+                        <div className="clinical-subgroup-title">
+                          <i className="bi bi-droplet-half"></i> Précisions sur votre vapotage
+                        </div>
+                        <div className="row g-3">
+                          <div className="col-12 col-md-6">
+                            <label className="form-label">Volume de e-liquide consommé par semaine (en ml ou flacons)</label>
+                            <input className="form-control" type="text" name="ecigWeeklyLiquid" value={form.ecigWeeklyLiquid || ""} onChange={handleChange} placeholder="ex: 10 ml ou 1 flacon" />
+                          </div>
+                          <div className="col-12 col-md-6 form-check d-flex align-items-center mt-md-4">
+                            <input className="form-check-input me-2" type="checkbox" id="field-usesNicotineCartridges" name="usesNicotineCartridges" checked={!!form.usesNicotineCartridges} onChange={handleChange} />
+                            <label className="form-check-label" htmlFor="field-usesNicotineCartridges">Votre e-liquide contient-il de la nicotine ?</label>
+                          </div>
+                          {form.usesNicotineCartridges && (
+                            <div className="col-12">
+                              <label className="form-label">Dosage en nicotine du liquide (en mg/ml)</label>
+                              <input className="form-control" type="text" name="nicotineCartridgeDosage" value={form.nicotineCartridgeDosage || ""} onChange={handleChange} placeholder="ex: 3 mg/ml, 6 mg/ml, 12 mg/ml, 20 mg/ml" />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="col-6 form-check mt-4">
-                        <input className="form-check-input" type="checkbox" name="usesNicotineCartridges" checked={!!form.usesNicotineCartridges} onChange={handleChange} />
-                        <label className="form-check-label">Cartouches nicotine</label>
-                      </div>
-                      <div className="col-12">
-                        <label className="form-label">Dosage cartouches</label>
-                        <input className="form-control" type="text" name="nicotineCartridgeDosage" value={form.nicotineCartridgeDosage || ""} onChange={handleChange} />
-                      </div>
-                    </>
+                    </div>
                   )}
                 </div>
               )}
@@ -1171,233 +1313,302 @@ const Onboarding = () => {
                   <div className="col-12">
                     <div className="evaluation-inline-note">
                       <div>
-                        <strong>Repere de dependance</strong>
+                        <strong>Repère clinique de motivation et de dépendance</strong>
                         <p className="mb-0">
-                          Cette phase prepare le score de dependance. Le calcul officiel detaille de Fagerstrom
-                          reste disponible dans l'espace <Link to="/tests">Tests</Link>.
+                          Cette phase évalue les composantes comportementales, le stade de préparation au changement et les freins psychologiques. Le test complet de Fagerström reste également consultable dans l'espace <Link to="/tests">Tests</Link>.
                         </p>
                       </div>
                     </div>
                   </div>
                   <div className="col-12">
-                    <h5 className="fw-semibold">Pourquoi fumez-vous ? (0-10)</h5>
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-question-circle text-primary"></i> Pourquoi fumez-vous ?
+                    </h5>
+                    <p className="small text-muted mb-2">Évaluez chaque facteur déclencheur de 0 (jamais / pas du tout) à 10 (systématiquement / absolument) :</p>
                   </div>
                   {[
-                    { key: "smokingReasonAutomatic", label: "Geste automatique" },
-                    { key: "smokingReasonConviviality", label: "Convivialite" },
-                    { key: "smokingReasonPleasure", label: "Plaisir" },
-                    { key: "smokingReasonStress", label: "Stress" },
-                    { key: "smokingReasonConcentration", label: "Me concentrer" },
-                    { key: "smokingReasonSupportMoral", label: "Soutien moral" },
-                    { key: "smokingReasonWeight", label: "Ne pas grossir" }
+                    { key: "smokingReasonAutomatic", label: "Geste automatique ou habitude réflexe" },
+                    { key: "smokingReasonConviviality", label: "Moment de convivialité ou partage social" },
+                    { key: "smokingReasonPleasure", label: "Recherche de plaisir ou moment de détente" },
+                    { key: "smokingReasonStress", label: "Gestion du stress, anxiété ou émotions vives" },
+                    { key: "smokingReasonConcentration", label: "Besoin de stimulation ou de concentration" },
+                    { key: "smokingReasonSupportMoral", label: "Soutien moral face à la solitude ou coup de blues" },
+                    { key: "smokingReasonWeight", label: "Régulation de l'appétit ou peur de grossir" }
                   ].map((item) => (
                     <div className="col-12 col-md-6" key={item.key}>
-                      <label className="form-label">{item.label}</label>
-                      <input className="form-control" type="number" min="0" max="10" name={item.key} value={form[item.key] || ""} onChange={handleChange} />
+                      <label className="form-label">{item.label} (0-10)</label>
+                      <input className="form-control" type="number" min="0" max="10" name={item.key} value={form[item.key] || ""} onChange={handleChange} placeholder="0 à 10" />
                     </div>
                   ))}
 
+                  <div className="col-12 mt-3">
+                    <h5 className="fw-semibold clinical-section-subhead">
+                      <i className="bi bi-compass text-success"></i> Stade de motivation au changement
+                    </h5>
+                  </div>
                   <div className="col-12">
-                    <label className="form-label">Motivation a arreter (etape)</label>
+                    <label className="form-label">À quelle étape de votre démarche d'arrêt vous situez-vous aujourd'hui ?</label>
                     <select className="form-select" name="motivationStage" value={form.motivationStage || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="1">Je ne veux pas arreter de fumer</option>
-                      <option value="2">Je pense que je devrais, mais je ne le souhaite pas vraiment</option>
-                      <option value="3">Je veux arreter, mais pas encore de plan</option>
-                      <option value="4">Je veux arreter mais je ne sais pas quand</option>
-                      <option value="5">Je veux arreter bientot</option>
-                      <option value="6">Je veux arreter dans le trimestre a venir</option>
-                      <option value="7">Je veux arreter dans le mois qui vient</option>
+                      <option value="">Sélectionner votre stade actuel</option>
+                      <option value="1">1 - Je n'envisage pas d'arrêter de fumer pour le moment</option>
+                      <option value="2">2 - Je pense que je devrais arrêter, mais je n'en ai pas vraiment le désir</option>
+                      <option value="3">3 - Je souhaite arrêter, mais je n'ai pas encore de plan d'action précis</option>
+                      <option value="4">4 - J'ai l'intention ferme d'arrêter, mais sans date fixée</option>
+                      <option value="5">5 - Je prépare activement mon arrêt pour les semaines à venir</option>
+                      <option value="6">6 - Je prévois d'arrêter au cours des 3 prochains mois</option>
+                      <option value="7">7 - Je veux impérativement arrêter dans le mois qui vient</option>
                     </select>
                   </div>
-                  <div className="col-6">
-                    <label className="form-label">Motivation (0-10)</label>
-                    <input className="form-control" type="number" min="0" max="10" name="motivationScore" value={form.motivationScore || ""} onChange={handleChange} />
+                  <div className="col-12 col-md-6">
+                    <label className="form-label">Niveau global de motivation pour arrêter (0 à 10)</label>
+                    <input className="form-control" type="number" min="0" max="10" name="motivationScore" value={form.motivationScore || ""} onChange={handleChange} placeholder="0 = nulle, 10 = maximale" />
                   </div>
-                  <div className="col-6">
-                    <label className="form-label">Confiance (0-10)</label>
-                    <input className="form-control" type="number" min="0" max="10" name="confidenceScore" value={form.confidenceScore || ""} onChange={handleChange} />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label">Pourquoi voulez-vous arreter ?</label>
-                    <textarea className="form-control" rows="2" name="quitReasons" value={form.quitReasons || ""} onChange={handleChange} />
+                  <div className="col-12 col-md-6">
+                    <label className="form-label">Confiance en votre capacité de réussir (0 à 10)</label>
+                    <input className="form-control" type="number" min="0" max="10" name="confidenceScore" value={form.confidenceScore || ""} onChange={handleChange} placeholder="0 = aucune, 10 = absolue" />
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Craintes en arretant</label>
-                    <textarea className="form-control" rows="2" name="quitFears" value={form.quitFears || ""} onChange={handleChange} />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label">Crainte prise de poids (0-10)</label>
-                    <input className="form-control" type="number" min="0" max="10" name="weightConcernScore" value={form.weightConcernScore || ""} onChange={handleChange} />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label">Confiance poids (0-10)</label>
-                    <input className="form-control" type="number" min="0" max="10" name="weightConfidenceScore" value={form.weightConfidenceScore || ""} onChange={handleChange} />
+                    <label className="form-label">Quelles sont vos motivations majeures pour arrêter ?</label>
+                    <textarea className="form-control" rows="2" name="quitReasons" value={form.quitReasons || ""} onChange={handleChange} placeholder="Santé, famille, enfants, économies financières, souffle, odeur..." />
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Activite physique</label>
+                    <label className="form-label">Quelles sont vos craintes ou inquiétudes face à l'arrêt ?</label>
+                    <textarea className="form-control" rows="2" name="quitFears" value={form.quitFears || ""} onChange={handleChange} placeholder="Sensations de manque, irritabilité, perturbation du sommeil, stress, échec..." />
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <label className="form-label">Crainte d'une prise de poids consécutive à l'arrêt (0 à 10)</label>
+                    <input className="form-control" type="number" min="0" max="10" name="weightConcernScore" value={form.weightConcernScore || ""} onChange={handleChange} placeholder="0 = pas inquiet, 10 = très inquiet" />
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <label className="form-label">Confiance dans votre capacité à gérer votre alimentation (0 à 10)</label>
+                    <input className="form-control" type="number" min="0" max="10" name="weightConfidenceScore" value={form.weightConfidenceScore || ""} onChange={handleChange} placeholder="0 = faible, 10 = très confiante" />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">Niveau d'activité physique ou sportive hebdomadaire :</label>
                     <select className="form-select" name="physicalActivityLevel" value={form.physicalActivityLevel || "NONE"} onChange={handleChange}>
-                      <option value="NONE">Aucune</option>
-                      <option value="LESS_THAN_30_MIN">Moins de 30 min</option>
-                      <option value="ONE_TO_TWO_HOURS">1 a 2 heures</option>
-                      <option value="TWO_TO_FOUR_HOURS">2 a 4 heures</option>
-                      <option value="MORE_THAN_FOUR_HOURS">Plus de 4 heures</option>
+                      <option value="NONE">Aucune activité sportive régulière</option>
+                      <option value="LESS_THAN_30_MIN">Moins de 30 minutes par semaine</option>
+                      <option value="ONE_TO_TWO_HOURS">1 à 2 heures par semaine</option>
+                      <option value="TWO_TO_FOUR_HOURS">2 à 4 heures par semaine</option>
+                      <option value="MORE_THAN_FOUR_HOURS">Plus de 4 heures par semaine</option>
                     </select>
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Declencheurs principaux</label>
-                    <input className="form-control" type="text" name="triggers" value={form.triggers || ""} onChange={handleChange} />
+                    <label className="form-label">Principales situations déclenchantes d'envies irrépressibles :</label>
+                    <input className="form-control" type="text" name="triggers" value={form.triggers || ""} onChange={handleChange} placeholder="ex: Café du matin, téléphone, fin de repas, apéritif, bouchons en voiture..." />
                   </div>
                 </div>
               )}
-              {step === 5 && (
-                <div className="row g-3">
-                  <div className="col-12">
-                    <h5 className="fw-semibold">Alcool (AUDIT-C)</h5>
-                  </div>
-                  <div className="col-12 col-md-4">
-                    <label className="form-label">Frequence</label>
-                    <select className="form-select" name="alcoholFrequency" value={form.alcoholFrequency || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="0">Jamais</option>
-                      <option value="1">1 fois / mois</option>
-                      <option value="2">2 a 4 fois / mois</option>
-                      <option value="3">2 a 3 fois / semaine</option>
-                      <option value="4">4 fois ou plus / semaine</option>
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-4">
-                    <label className="form-label">Verres par jour</label>
-                    <select className="form-select" name="alcoholQuantity" value={form.alcoholQuantity || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="0">1 ou 2</option>
-                      <option value="1">3 ou 4</option>
-                      <option value="2">5 ou 6</option>
-                      <option value="3">7 a 9</option>
-                      <option value="4">10 ou plus</option>
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-4">
-                    <label className="form-label">6 verres ou plus</label>
-                    <select className="form-select" name="alcoholBinge" value={form.alcoholBinge || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="0">Jamais</option>
-                      <option value="1">Moins d'1 fois / mois</option>
-                      <option value="2">1 fois / mois</option>
-                      <option value="3">1 fois / semaine</option>
-                      <option value="4">Chaque jour</option>
-                    </select>
-                  </div>
+              {step === 5 && (() => {
+                const consumesAlcohol = form.alcoholFrequency && form.alcoholFrequency !== "0" && form.alcoholFrequency !== 0;
+                return (
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <h5 className="fw-semibold clinical-section-subhead">
+                        <i className="bi bi-cup-straw text-primary"></i> Consommation d'alcool (AUDIT-C)
+                      </h5>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label">À quelle fréquence consommez-vous des boissons alcoolisées ?</label>
+                      <select className="form-select" name="alcoholFrequency" value={form.alcoholFrequency != null ? form.alcoholFrequency : ""} onChange={handleChange}>
+                        <option value="">Sélectionner votre fréquence</option>
+                        <option value="0">Jamais (Non-consommateur d'alcool)</option>
+                        <option value="1">1 fois par mois ou moins</option>
+                        <option value="2">2 à 4 fois par mois</option>
+                        <option value="3">2 à 3 fois par semaine</option>
+                        <option value="4">4 fois ou plus par semaine (Quotidien ou quasi-quotidien)</option>
+                      </select>
+                      <span className="clinical-help-hint">Bières, vins, spiritueux, apéritifs...</span>
+                    </div>
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">CAGE (alcool)</h5>
-                  </div>
-                  {[
-                    { key: "cageCutDown", label: "Besoin de diminuer ?" },
-                    { key: "cageAnnoyed", label: "Entourage vous a fait des remarques ?" },
-                    { key: "cageGuilty", label: "Impression de boire trop ?" },
-                    { key: "cageEyeOpener", label: "Besoin d'alcool le matin ?" }
-                  ].map((item) => (
-                    <div className="col-12" key={item.key}>
-                      <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                    {/* Non-consommateur : reassurance banner, pas de questions inutiles */}
+                    {(form.alcoholFrequency === "0" || form.alcoholFrequency === 0) && (
+                      <div className="col-12">
+                        <div className="clinical-banner-positive">
+                          <i className="bi bi-shield-check fs-5"></i>
+                          <span>
+                            Non-consommateur d'alcool : le questionnaire détaillé de dosage (AUDIT-C) et le test de dépendance (CAGE) sont désactivés pour votre profil.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Consommateur d'alcool : affichage des questions de dosage AUDIT-C et du CAGE */}
+                    {consumesAlcohol && (
+                      <div className="col-12">
+                        <div className="clinical-conditional-card">
+                          <div className="clinical-subgroup-title">
+                            <i className="bi bi-pie-chart-fill"></i> Détails de consommation d'alcool (AUDIT-C)
+                          </div>
+                          <div className="row g-3">
+                            <div className="col-12 col-md-6">
+                              <label className="form-label">Combien de verres consommez-vous un jour typique d'alcoolisation ?</label>
+                              <select className="form-select" name="alcoholQuantity" value={form.alcoholQuantity != null ? form.alcoholQuantity : ""} onChange={handleChange}>
+                                <option value="">Sélectionner le nombre de verres</option>
+                                <option value="0">1 ou 2 verres standard</option>
+                                <option value="1">3 ou 4 verres standard</option>
+                                <option value="2">5 ou 6 verres standard</option>
+                                <option value="3">7 à 9 verres standard</option>
+                                <option value="4">10 verres standard ou plus</option>
+                              </select>
+                              <span className="clinical-help-hint">1 verre standard = 1 ballon de vin (10cl), 1 demi de bière (25cl) ou 1 dose de spiritueux (3cl)</span>
+                            </div>
+                            <div className="col-12 col-md-6">
+                              <label className="form-label">À quelle fréquence buvez-vous 6 verres d'alcool ou plus en une seule occasion ?</label>
+                              <select className="form-select" name="alcoholBinge" value={form.alcoholBinge != null ? form.alcoholBinge : ""} onChange={handleChange}>
+                                <option value="">Sélectionner la fréquence</option>
+                                <option value="0">Jamais</option>
+                                <option value="1">Moins d'une fois par mois</option>
+                                <option value="2">Une fois par mois</option>
+                                <option value="3">Une fois par semaine</option>
+                                <option value="4">Tous les jours ou presque</option>
+                              </select>
+                              <span className="clinical-help-hint">Évaluation des épisodes de consommation ponctuelle importante</span>
+                            </div>
+
+                            <div className="col-12 mt-3">
+                              <div className="clinical-subgroup-title text-danger">
+                                <i className="bi bi-clipboard-pulse"></i> Questionnaire CAGE / DETA (Rapport à l'alcool)
+                              </div>
+                              <p className="small text-muted mb-2">Cochez les questions qui correspondent à votre ressenti :</p>
+                            </div>
+                            {[
+                              { key: "cageCutDown", label: "Avez-vous déjà ressenti le besoin de diminuer votre consommation d'alcool ?" },
+                              { key: "cageAnnoyed", label: "Votre entourage vous a-t-il déjà fait des remarques ou reproches sur votre consommation ?" },
+                              { key: "cageGuilty", label: "Avez-vous déjà eu l'impression de boire trop ou éprouvé un sentiment de culpabilité ?" },
+                              { key: "cageEyeOpener", label: "Avez-vous déjà eu besoin d'un verre d'alcool dès le matin pour vous sentir en forme ?" }
+                            ].map((item) => (
+                              <div className="col-12" key={item.key}>
+                                <div className="form-check">
+                                  <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                                  <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="col-12 mt-3">
+                      <h5 className="fw-semibold clinical-section-subhead">
+                        <i className="bi bi-flower1 text-success"></i> Consommation de Cannabis
+                      </h5>
+                    </div>
+                    <div className="col-12 form-check">
+                      <input className="form-check-input" type="checkbox" id="field-cannabisLast12Months" name="cannabisLast12Months" checked={!!form.cannabisLast12Months} onChange={handleChange} />
+                      <label className="form-check-label fw-semibold" htmlFor="field-cannabisLast12Months">Avez-vous consommé du cannabis (herbe, résine...) au cours des 12 derniers mois ?</label>
+                    </div>
+
+                    {form.cannabisLast12Months && (
+                      <div className="col-12">
+                        <div className="clinical-conditional-card">
+                          <div className="clinical-subgroup-title">
+                            <i className="bi bi-sliders"></i> Précisions sur la consommation de cannabis
+                          </div>
+                          <div className="row g-3">
+                            <div className="col-12 col-md-6">
+                              <label className="form-label">Fréquence d'usage au cours des 30 derniers jours :</label>
+                              <select className="form-select" name="cannabisFrequency" value={form.cannabisFrequency || "NONE"} onChange={handleChange}>
+                                <option value="NONE">Aucune consommation ce mois-ci</option>
+                                <option value="LESS_THAN_3">1 à 2 fois dans le mois</option>
+                                <option value="THREE_TO_5">3 à 5 fois dans le mois</option>
+                                <option value="SIX_TO_9">6 à 9 fois dans le mois</option>
+                                <option value="TEN_TO_19">10 à 19 fois (environ 1 jour sur 2)</option>
+                                <option value="TWENTY_TO_29">20 à 29 fois (presque quotidien)</option>
+                                <option value="DAILY">Tous les jours (usage quotidien)</option>
+                              </select>
+                            </div>
+                            <div className="col-12 col-md-6">
+                              <label className="form-label">Âge auquel vous avez commencé à consommer :</label>
+                              <input className="form-control" type="number" name="cannabisStartAge" value={form.cannabisStartAge || ""} onChange={handleChange} placeholder="ex: 17" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="col-12 mt-3">
+                      <h5 className="fw-semibold clinical-section-subhead">
+                        <i className="bi bi-wallet2 text-primary"></i> Budget & Situation socio-économique (Score EPICES)
+                      </h5>
+                      <p className="small text-muted mb-0">Ces indicateurs permettent d'adapter le soutien médico-social et l'accès aux substituts remboursés.</p>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label">Budget hebdomadaire consacré au tabac (en euros / semaine) :</label>
+                      <input className="form-control" type="number" name="weeklyTobaccoSpend" value={form.weeklyTobaccoSpend || ""} onChange={handleChange} placeholder="ex: 70" />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label">Tranche de revenus mensuels nets de votre foyer :</label>
+                      <select className="form-select" name="incomeBracket" value={form.incomeBracket || ""} onChange={handleChange}>
+                        <option value="">Sélectionner votre tranche de revenus</option>
+                        <option value="BELOW_1000">Moins de 1 000 € / mois</option>
+                        <option value="FROM_1001_TO_2000">De 1 001 € à 2 000 € / mois</option>
+                        <option value="FROM_2001_TO_3000">De 2 001 € à 3 000 € / mois</option>
+                        <option value="FROM_3001_TO_4000">De 3 001 € à 4 000 € / mois</option>
+                        <option value="ABOVE_4000">Plus de 4 000 € / mois</option>
+                      </select>
+                    </div>
+
+                    <div className="col-12 mt-2">
+                      <div className="clinical-subgroup-title">
+                        <i className="bi bi-shield-shaded"></i> Questionnaire social validé (EPICES)
                       </div>
                     </div>
-                  ))}
-
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Cannabis</h5>
-                  </div>
-                  <div className="col-12 form-check">
-                    <input className="form-check-input" type="checkbox" name="cannabisLast12Months" checked={!!form.cannabisLast12Months} onChange={handleChange} />
-                    <label className="form-check-label">Consommation dans les 12 derniers mois</label>
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label">Frequence (30 derniers jours)</label>
-                    <select className="form-select" name="cannabisFrequency" value={form.cannabisFrequency || "NONE"} onChange={handleChange}>
-                      <option value="NONE">Aucune</option>
-                      <option value="LESS_THAN_3">1 a 2 fois</option>
-                      <option value="THREE_TO_5">3 a 5 fois</option>
-                      <option value="SIX_TO_9">6 a 9 fois</option>
-                      <option value="TEN_TO_19">10 a 19 fois</option>
-                      <option value="TWENTY_TO_29">20 a 29 fois</option>
-                      <option value="DAILY">Tous les jours</option>
-                    </select>
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label">Age de debut</label>
-                    <input className="form-control" type="number" name="cannabisStartAge" value={form.cannabisStartAge || ""} onChange={handleChange} />
-                  </div>
-
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">Budget et EPICES</h5>
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label">Depense tabac / semaine</label>
-                    <input className="form-control" type="number" name="weeklyTobaccoSpend" value={form.weeklyTobaccoSpend || ""} onChange={handleChange} />
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label">Revenus mensuels</label>
-                    <select className="form-select" name="incomeBracket" value={form.incomeBracket || ""} onChange={handleChange}>
-                      <option value="">Selectionner</option>
-                      <option value="BELOW_1000">Moins de 1000</option>
-                      <option value="FROM_1001_TO_2000">1001 a 2000</option>
-                      <option value="FROM_2001_TO_3000">2001 a 3000</option>
-                      <option value="FROM_3001_TO_4000">3001 a 4000</option>
-                      <option value="ABOVE_4000">Plus de 4000</option>
-                    </select>
-                  </div>
-                  {[
-                    { key: "epicesQ49", label: "Rencontrez-vous un travailleur social ?" },
-                    { key: "epicesQ50", label: "Assurance maladie complementaire ?" },
-                    { key: "epicesQ51", label: "Vivez-vous en couple ?" },
-                    { key: "epicesQ52", label: "Proprietaire de votre logement ?" },
-                    { key: "epicesQ53", label: "Difficultes financieres dans le mois ?" },
-                    { key: "epicesQ54", label: "Avez-vous fait du sport dans les 12 derniers mois ?" },
-                    { key: "epicesQ55", label: "Etes-vous alle au spectacle dans les 12 derniers mois ?" },
-                    { key: "epicesQ56", label: "Etes-vous parti en vacances dans les 12 derniers mois ?" },
-                    { key: "epicesQ57", label: "Contacts familiaux dans les 6 derniers mois ?" },
-                    { key: "epicesQ58", label: "Personne pour vous heberger quelques jours ?" },
-                    { key: "epicesQ59", label: "Personne pour aide materielle ?" }
-                  ].map((item) => (
-                    <div className="col-12 col-md-6" key={item.key}>
-                      <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                    {[
+                      { key: "epicesQ49", label: "Rencontrez-vous actuellement un travailleur social (assistante sociale, éducateur...) ?" },
+                      { key: "epicesQ50", label: "Bénéficiez-vous d'une assurance maladie complémentaire (Mutuelle ou Complémentaire Santé Solidaire / CSS) ?" },
+                      { key: "epicesQ51", label: "Vivez-vous actuellement en couple au sein du même foyer ?" },
+                      { key: "epicesQ52", label: "Êtes-vous propriétaire de votre logement principal ?" },
+                      { key: "epicesQ53", label: "Avez-vous connu des difficultés financières pour subvenir à vos besoins au cours des 12 derniers mois ?" },
+                      { key: "epicesQ54", label: "Avez-vous pratiqué une activité physique ou sportive au cours des 12 derniers mois ?" },
+                      { key: "epicesQ55", label: "Êtes-vous allé(e) au cinéma, spectacle, musée ou concert au cours des 12 derniers mois ?" },
+                      { key: "epicesQ56", label: "Êtes-vous parti(e) en vacances (au moins 1 semaine) au cours des 12 derniers mois ?" },
+                      { key: "epicesQ57", label: "Avez-vous des contacts réguliers avec des membres de votre famille (en dehors de votre foyer) ?" },
+                      { key: "epicesQ58", label: "En cas de coup dur, auriez-vous une personne dans votre entourage capable de vous héberger quelques jours ?" },
+                      { key: "epicesQ59", label: "En cas d'urgence financière, auriez-vous un proche capable de vous apporter une aide matérielle ?" }
+                    ].map((item) => (
+                      <div className="col-12 col-md-6" key={item.key}>
+                        <div className="form-check">
+                          <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                          <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div className="col-12 mt-2">
-                    <h5 className="fw-semibold">HONC (dependance tabac)</h5>
-                  </div>
-                  {[
-                    { key: "honcQ1", label: "Difficile d'arreter ?" },
-                    { key: "honcQ2", label: "Fume parce que dependance ?" },
-                    { key: "honcQ3", label: "Envies imperieuses ?" },
-                    { key: "honcQ4", label: "Besoin urgent d'une cigarette ?" },
-                    { key: "honcQ5", label: "Difficile de ne pas fumer aux endroits interdits ?" },
-                    { key: "honcQ6", label: "Difficile de se concentrer sans fumer ?" },
-                    { key: "honcQ7", label: "Irritable si pas fumer ?" },
-                    { key: "honcQ8", label: "Nerveux ou anxieux sans fumer ?" },
-                    { key: "honcQ9", label: "Triste ou deprime sans fumer ?" },
-                    { key: "honcQ10", label: "Besoin urgent ou panique si pas fumer ?" }
-                  ].map((item) => (
-                    <div className="col-12" key={item.key}>
-                      <div className="form-check">
-                        <input className="form-check-input" type="checkbox" name={item.key} checked={!!form[item.key]} onChange={handleChange} />
-                        <label className="form-check-label">{item.label}</label>
+                    <div className="col-12 mt-3">
+                      <h5 className="fw-semibold clinical-section-subhead">
+                        <i className="bi bi-activity text-primary"></i> Évaluation de la dépendance (Score HONC)
+                      </h5>
+                      <p className="small text-muted mb-0">Mesure la perte d'autonomie et l'intensité du besoin physique et psychologique :</p>
+                    </div>
+                    {[
+                      { key: "honcQ1", label: "Avez-vous déjà essayé d'arrêter de fumer et trouvé cela difficile ?" },
+                      { key: "honcQ2", label: "Fumez-vous aujourd'hui principalement parce qu'il vous semble difficile d'arrêter ?" },
+                      { key: "honcQ3", label: "Ressentez-vous parfois des envies puissantes et irrépressibles d'allumer une cigarette ?" },
+                      { key: "honcQ4", label: "Avez-vous parfois la sensation d'un besoin urgent d'une cigarette ?" },
+                      { key: "honcQ5", label: "Éprouvez-vous de la difficulté à ne pas fumer dans les endroits où c'est interdit ?" },
+                      { key: "honcQ6", label: "Avez-vous du mal à vous concentrer lorsque vous êtes privé(e) de tabac ?" },
+                      { key: "honcQ7", label: "Vous sentez-vous irritable ou impatient(e) lorsque vous ne pouvez pas fumer ?" },
+                      { key: "honcQ8", label: "Ressentez-vous de la nervosité ou de l'anxiété lorsque vous êtes en manque de tabac ?" },
+                      { key: "honcQ9", label: "Vous arrive-t-il de vous sentir triste ou déprimé(e) sans cigarette ?" },
+                      { key: "honcQ10", label: "Ressentez-vous une sensation d'angoisse ou de panique si vous vous trouvez à court de tabac ?" }
+                    ].map((item) => (
+                      <div className="col-12" key={item.key}>
+                        <div className="form-check">
+                          <input className="form-check-input" type="checkbox" id={`field-${item.key}`} name={item.key} checked={!!form[item.key]} onChange={handleChange} />
+                          <label className="form-check-label" htmlFor={`field-${item.key}`}>{item.label}</label>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div className="col-12">
-                    <label className="form-label">Notes complementaires</label>
-                    <textarea className="form-control" rows="3" name="notes" value={form.notes || ""} onChange={handleChange} />
+                    <div className="col-12">
+                      <label className="form-label">Notes médicales ou remarques complémentaires :</label>
+                      <textarea className="form-control" rows="3" name="notes" value={form.notes || ""} onChange={handleChange} placeholder="Observations particulières, antécédents addictologiques ou remarques personnelles..." />
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div className="evaluation-footer-actions">
                 <button

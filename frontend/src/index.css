@@ -18639,3 +18639,89 @@ body.dark-theme .nc-history-card,
   background: rgba(15, 23, 42, 0.5);
   border-color: rgba(51, 65, 85, 0.6);
 }
+
+/* Clinical Evaluation Conditional Groups & Clarified Labels */
+.clinical-conditional-card {
+  background: rgba(56, 189, 248, 0.04);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-left: 4px solid #0284c7;
+  border-radius: 0.85rem;
+  padding: 1.15rem 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  animation: fadeInClinical 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.dark-theme .clinical-conditional-card,
+[data-theme="dark"] .clinical-conditional-card {
+  background: rgba(14, 116, 144, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  border-left-color: #38bdf8;
+}
+
+@keyframes fadeInClinical {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.clinical-section-subhead {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--nc-copy);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clinical-help-hint {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--nc-copy-soft, #64748b);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.clinical-banner-positive {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+body.dark-theme .clinical-banner-positive,
+[data-theme="dark"] .clinical-banner-positive {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+.clinical-subgroup-title {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #0284c7;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+body.dark-theme .clinical-subgroup-title,
+[data-theme="dark"] .clinical-subgroup-title {
+  color: #38bdf8;
+}
+
