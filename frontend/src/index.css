@@ -6120,454 +6120,857 @@ body.dark-theme .landing-roadmap-explore-link,
 }
 
 
+/* ==========================================================================
+   NEURALCONSULT CLINICAL EVALUATION & LIQUID TIMELINE SUITE
+   Ultra-premium Biometric Liquid Physics, Glass Conduit, and Executive KPIs
+   ========================================================================== */
+
+/* --- Executive Clinical KPI Bar --- */
+.evaluation-kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.evaluation-kpi-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--nc-panel);
+  border: 1px solid var(--nc-panel-border);
+  border-radius: 1.5rem;
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.evaluation-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--nc-glow);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.08);
+}
+
+.evaluation-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.evaluation-kpi-icon-pill {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--nc-glow);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+}
+
+.evaluation-kpi-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--nc-panel-strong);
+  border: 1px solid var(--nc-panel-border);
+  color: var(--nc-copy-soft);
+}
+
+.evaluation-kpi-badge.is-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.evaluation-kpi-badge.is-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.evaluation-kpi-badge.is-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.evaluation-kpi-badge.is-primary {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--nc-glow);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.evaluation-kpi-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.evaluation-kpi-value {
+  font-family: "Sora", sans-serif;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--nc-copy);
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.evaluation-kpi-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--nc-copy-soft);
+  margin-top: 0.35rem;
+}
+
+/* Screening Chips Grid */
+.screening-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.screening-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.9rem;
+  background: var(--nc-panel-strong);
+  border: 1px solid var(--nc-panel-border);
+  font-size: 0.82rem;
+}
+
+.screening-chip-name {
+  font-weight: 600;
+  color: var(--nc-copy);
+}
+
+.screening-chip-val {
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  color: var(--nc-glow);
+}
+
+/* Navigation Strip */
+.evaluation-nav-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.4rem;
+  margin-bottom: 2rem;
+  background: var(--nc-panel);
+  border: 1px solid var(--nc-panel-border);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.evaluation-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--nc-copy);
+  background: var(--nc-panel-strong);
+  border: 1px solid var(--nc-panel-border);
+  transition: all 180ms ease;
+  cursor: pointer;
+}
+
+.evaluation-nav-btn:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--nc-glow);
+  color: var(--nc-glow);
+  transform: translateY(-1px);
+}
+
+/* --- The Main Evaluation Stage --- */
 .evaluation-timeline-stage {
   position: relative;
   isolation: isolate;
   display: grid;
-  gap: 2rem;
-  padding: 1.5rem 1.35rem 2.35rem;
-  border-radius: 2rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.88)),
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.2), transparent 44%),
-    radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.12), transparent 46%);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  box-shadow: 0 22px 52px rgba(37, 99, 235, 0.12);
+  gap: 2.5rem;
+  padding: 2.2rem 1.8rem 3.5rem;
+  border-radius: 2.25rem;
+  background: var(--nc-panel);
+  border: 1px solid var(--nc-panel-border);
+  box-shadow: var(--nc-card-shadow);
   overflow: hidden;
 }
 
+/* Soft ambient background orbs */
 .evaluation-timeline-stage::before {
   content: "";
   position: absolute;
-  inset: auto -12% -12% -12%;
-  height: 14rem;
-  background:
-    radial-gradient(circle at 18% 46%, rgba(56, 189, 248, 0.22), transparent 24%),
-    radial-gradient(circle at 54% 34%, rgba(37, 99, 235, 0.18), transparent 22%),
-    radial-gradient(circle at 83% 60%, rgba(14, 165, 233, 0.18), transparent 18%);
-  filter: blur(24px);
-  opacity: 0.88;
+  top: -10%;
+  left: 20%;
+  width: 40rem;
+  height: 25rem;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
   z-index: -1;
 }
 
 .evaluation-timeline-stage::after {
   content: "";
   position: absolute;
-  inset: 1rem;
-  border-radius: 1.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.48);
+  bottom: 5%;
+  right: 15%;
+  width: 35rem;
+  height: 25rem;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(14, 165, 233, 0.04) 50%, transparent 70%);
+  filter: blur(50px);
   pointer-events: none;
+  z-index: -1;
 }
 
+/* --- Hero Banner & Biometric Fluid Capacitor --- */
 .evaluation-journey-head {
-  width: min(100%, 980px);
+  width: min(100%, 1020px);
   margin-inline: auto;
-  margin-bottom: 2.1rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 1.8rem;
-  padding: 1.45rem 1.55rem;
-  border-radius: 1.8rem;
-  background:
-    radial-gradient(circle at left top, rgba(125, 211, 252, 0.2), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.92));
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  box-shadow:
-    0 22px 48px rgba(37, 99, 235, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  gap: 2.5rem;
+  padding: 1.8rem 2.2rem;
+  border-radius: 1.75rem;
+  background: linear-gradient(135deg, var(--nc-panel) 0%, var(--nc-panel-strong) 100%);
+  border: 1px solid var(--nc-panel-border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.03);
 }
 
-.evaluation-journey-copy {
-  text-align: left;
-}
-
-.evaluation-journey-copy h3 {
-  font-size: clamp(1.55rem, 2.8vw, 2.2rem);
-  color: #0f2f57;
-}
-
-.evaluation-journey-copy .muted-text {
-  max-width: 44rem;
-  color: #486581;
-  line-height: 1.75;
-}
-
-.evaluation-timeline-progress-vertical {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto auto;
+.evaluation-journey-copy .hero-kicker {
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  min-height: 17rem;
-  padding: 0.5rem 0.35rem 0.5rem 1rem;
-}
-
-.evaluation-timeline-progress-vertical::before {
-  content: "";
-  position: absolute;
-  inset: 0.4rem auto 0.4rem 1.32rem;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(37, 99, 235, 0.14), transparent);
-}
-
-.evaluation-timeline-progress-column {
-  position: relative;
-  width: 1.3rem;
-  height: 15rem;
-  border-radius: 999px;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(191, 219, 254, 0.56), rgba(219, 234, 254, 0.94)),
-    rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(37, 99, 235, 0.14);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
-    0 18px 34px rgba(37, 99, 235, 0.12);
-}
-
-.evaluation-timeline-progress-column::before {
-  content: "";
-  position: absolute;
-  inset: 0.45rem;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  pointer-events: none;
-}
-
-.evaluation-timeline-progress-column-fill {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: var(--timeline-progress, 0%);
-  min-height: 0;
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(96, 165, 250, 0.92), rgba(37, 99, 235, 0.98)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 45%);
-  box-shadow:
-    0 -18px 26px rgba(37, 99, 235, 0.18),
-    0 0 22px rgba(56, 189, 248, 0.18);
-  overflow: hidden;
-  transition: height 180ms ease-out;
-}
-
-.evaluation-timeline-progress-column-fill::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.46) 0 11%, transparent 12% 100%),
-    radial-gradient(circle at 72% 62%, rgba(255, 255, 255, 0.24) 0 8%, transparent 9% 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 32%, rgba(255, 255, 255, 0.08) 68%, transparent),
-    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.22), transparent);
-  background-size: 100% 110px, 100% 150px, 100% 100%, 100% 180px;
-  animation: evaluation-water-flow 6.2s linear infinite;
-  opacity: 0.82;
-}
-
-.evaluation-timeline-progress-column-fill::before {
-  content: "";
-  position: absolute;
-  inset: -18% 0 auto;
-  height: 1.4rem;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08) 74%, transparent 76%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(191, 219, 254, 0.08));
-  filter: blur(0.4px);
-}
-
-.evaluation-timeline-progress-meta {
-  display: grid;
-  gap: 0.3rem;
-  min-width: 4rem;
-}
-
-.evaluation-timeline-progress-meta.is-vertical {
-  justify-items: center;
-  text-align: center;
-}
-
-.evaluation-timeline-progress-meta span {
+  gap: 0.4rem;
   font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #486581;
-}
-
-.evaluation-timeline-progress-meta strong {
-  font-family: "Sora", sans-serif;
-  font-size: 1.4rem;
-  color: #0f2f57;
-}
-
-.evaluation-timeline-centered {
-  position: relative;
-  display: grid;
-  gap: 1.4rem;
-  width: min(100%, 980px);
-  margin-inline: auto;
-  padding: 1.2rem 0 2rem;
-}
-
-.evaluation-timeline-centered::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 0.95rem;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(219, 234, 254, 0.88)),
-    rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
-    0 0 24px rgba(59, 130, 246, 0.1);
-}
-
-.evaluation-timeline-centered::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 1.2rem;
-  height: var(--timeline-progress, 0%);
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, #10b981, #059669),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 65%);
-  box-shadow:
-    0 12px 28px rgba(16, 185, 129, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.3);
-  overflow: hidden;
-}
-
-.evaluation-timeline-centered::after {
-  background-size: 100% 100%, 100% 100%;
+  color: var(--nc-glow);
+  margin-bottom: 0.5rem;
 }
 
 .timeline-main-title {
   font-family: "Sora", sans-serif;
-  font-size: 2.2rem;
+  font-size: clamp(1.6rem, 2.5vw, 2.2rem);
   font-weight: 800;
-  color: #0f172a;
-  margin: 0.5rem 0 1.5rem 0;
   letter-spacing: -0.02em;
-}
-
-.evaluation-timeline-row {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 6rem 1fr;
-  gap: 0;
-  align-items: center;
-  padding: 1.5rem 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  width: 100%;
-}
-
-.evaluation-timeline-row-info {
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-right: 2.5rem;
-}
-
-.evaluation-timeline-row-label {
-  color: #059669;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-.evaluation-timeline-row-title {
-  font-family: "Sora", sans-serif;
-  font-size: 1.75rem;
-  color: #064e3b;
-  font-weight: 800;
+  color: var(--nc-copy);
+  margin: 0 0 0.5rem 0;
   line-height: 1.2;
 }
 
-.evaluation-timeline-row-center {
+.evaluation-journey-copy .timeline-subtitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--nc-glow);
+  margin-bottom: 0.5rem;
+}
+
+.evaluation-journey-copy .timeline-desc {
+  font-size: 0.92rem;
+  color: var(--nc-copy-soft);
+  max-width: 44rem;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* Biometric Fluid Capacitor Column (Hero Right) */
+.liquid-flow-capacitor {
   display: flex;
-  justify-content: center;
   align-items: center;
-  min-height: 10rem;
-  position: relative;
-  z-index: 2;
+  gap: 1.25rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 1.5rem;
+  background: var(--nc-panel);
+  border: 1px solid var(--nc-panel-border);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.evaluation-timeline-row-copy {
-  padding: 1.5rem 2.5rem;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  text-align: left;
-  margin-left: 1.5rem;
-}
-
-.evaluation-timeline-row-node {
+.capacitor-tube-outer {
   position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 1.6rem;
+  height: 9.5rem;
   border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "Sora", sans-serif;
-  color: #ffffff;
-  background: linear-gradient(180deg, #34d399, #10b981);
-  border: 3px solid #ffffff;
-  box-shadow:
-    0 0 0 0.75rem rgba(16, 185, 129, 0.12),
-    0 20px 35px rgba(5, 150, 105, 0.25);
+  background: rgba(226, 232, 240, 0.5);
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08), 0 0 16px rgba(56, 189, 248, 0.12);
+  overflow: hidden;
 }
 
-.evaluation-timeline-row-node::before {
+body.dark-theme .capacitor-tube-outer {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45), 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.capacitor-tube-fill {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--timeline-progress, 0%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 40%, #2563eb 100%);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  transition: height 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: hidden;
+}
+
+.capacitor-tube-fill::after {
   content: "";
   position: absolute;
-  inset: calc(100% - (var(--phase-progress, 0) * 100%)) 0 0;
-  background: linear-gradient(180deg, #059669, #10b981);
-  transition: inset 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff, 0 0 14px #38bdf8;
+  opacity: 0.9;
 }
 
-.evaluation-timeline-row-node::after {
+.capacitor-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.capacitor-meta-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nc-copy-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.capacitor-meta-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.capacitor-meta-val {
+  font-family: "Sora", sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--nc-copy);
+  line-height: 1;
+}
+
+.capacitor-ticks {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 8.5rem;
+  font-size: 0.65rem;
+  font-family: monospace;
+  color: var(--nc-copy-soft);
+  opacity: 0.7;
+}
+
+/* --- The Liquid Timeline Central Architecture --- */
+.evaluation-timeline-centered {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+  width: min(100%, 1020px);
+  margin-inline: auto;
+  padding: 3rem 0 4rem;
+}
+
+/* The Borosilicate Glass Conduit (Vertical Channel) */
+.timeline-glass-conduit {
+  position: absolute;
+  top: 4rem;
+  bottom: 4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.15rem;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.45);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.06),
+    0 0 12px rgba(56, 189, 248, 0.08);
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+body.dark-theme .timeline-glass-conduit {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.5),
+    0 0 16px rgba(56, 189, 248, 0.12);
+}
+
+/* The Animated Fluid Column Inside Conduit */
+.timeline-liquid-stream {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--timeline-progress, 0%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 35%, #2563eb 70%, #4f46e5 100%);
+  box-shadow:
+    0 0 18px rgba(56, 189, 248, 0.7),
+    inset 0 0 10px rgba(255, 255, 255, 0.4);
+  transition: height 160ms cubic-bezier(0.1, 0.8, 0.2, 1);
+  overflow: hidden;
+}
+
+body.dark-theme .timeline-liquid-stream {
+  background: linear-gradient(180deg, #67e8f9 0%, #06b6d4 35%, #0284c7 70%, #6366f1 100%);
+  box-shadow:
+    0 0 24px rgba(6, 182, 212, 0.8),
+    inset 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Liquid Stream Shimmer & Floating Micro-bubbles */
+.timeline-liquid-stream::before {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, 0.42), transparent 28%),
-    radial-gradient(circle at 62% 78%, rgba(255, 255, 255, 0.18), transparent 22%),
-    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.12), transparent);
-  opacity: calc(0.25 + (var(--phase-progress, 0) * 0.55));
-  z-index: 0;
-  animation: evaluation-node-surge 4.8s ease-in-out infinite;
+    radial-gradient(circle at 35% 15%, rgba(255, 255, 255, 0.6) 0 12%, transparent 14%),
+    radial-gradient(circle at 65% 55%, rgba(255, 255, 255, 0.4) 0 10%, transparent 12%),
+    radial-gradient(circle at 40% 85%, rgba(255, 255, 255, 0.5) 0 14%, transparent 16%);
+  background-size: 100% 120px;
+  animation: bubbleRise 4s linear infinite;
+  opacity: 0.85;
 }
 
-.evaluation-timeline-row-node-index {
-  position: relative;
-  z-index: 1;
-  font-size: 0.9rem;
-  text-shadow: 0 1px 10px rgba(15, 47, 87, 0.28);
-}
-
-.evaluation-timeline-row-copy {
-  padding: 1.35rem 1.45rem;
-  border-radius: 1.5rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.88)),
-    rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.1);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
-}
-
-.evaluation-timeline-row-wave {
-  display: inline-flex;
-  margin-bottom: 0.55rem;
-  padding: 0.38rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.73rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: #1d4ed8;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-}
-
-.evaluation-timeline-row-copy strong {
-  display: block;
-  font-family: "Sora", sans-serif;
-  font-size: clamp(1.2rem, 2vw, 1.65rem);
-  margin-bottom: 0.45rem;
-  color: #0f2f57;
-}
-
-.evaluation-timeline-row-copy p {
-  margin: 0;
-  color: #486581;
-  line-height: 1.6;
-}
-
-.evaluation-timeline-row:hover .evaluation-timeline-row-copy,
-.evaluation-timeline-row:focus-visible .evaluation-timeline-row-copy,
-.evaluation-timeline-row.is-active .evaluation-timeline-row-copy,
-.evaluation-timeline-row.is-visited .evaluation-timeline-row-copy {
-  transform: translateY(-3px);
-  border-color: rgba(37, 99, 235, 0.24);
+/* The Glowing Liquid Meniscus & Wave Crest at the Leading Tip */
+.timeline-liquid-stream::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #ffffff 20%, #67e8f9 60%, transparent 100%);
   box-shadow:
-    0 22px 42px rgba(37, 99, 235, 0.14),
-    0 0 18px rgba(56, 189, 248, 0.12);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(219, 234, 254, 0.92)),
-    rgba(255, 255, 255, 0.72);
+    0 0 14px #ffffff,
+    0 0 24px #38bdf8,
+    0 4px 12px rgba(37, 99, 235, 0.8);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+  animation: liquidPulse 1.8s ease-in-out infinite alternate;
 }
 
-.evaluation-assistant-strip {
+/* --- Timeline Phase Row --- */
+.evaluation-timeline-row {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 6.5rem 1fr;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Left Aside: Phase Identity & Clinical Category */
+.timeline-row-aside-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  padding-right: 2.8rem;
+}
+
+.timeline-row-meta-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+}
+
+.timeline-phase-pill {
+  font-family: "Sora", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nc-glow);
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  transition: all 200ms ease;
+}
+
+.timeline-row-range {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--nc-copy-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.timeline-row-heading {
+  font-family: "Sora", sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--nc-copy);
+  line-height: 1.25;
+  margin: 0;
+  transition: color 200ms ease;
+}
+
+.timeline-row-objective {
+  font-size: 0.85rem;
+  color: var(--nc-copy-soft);
+  margin-top: 0.4rem;
+  max-width: 22rem;
+  line-height: 1.5;
+}
+
+/* Center Column: The Biometric Milestone Node */
+.timeline-row-node-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 3;
+}
+
+.timeline-phase-node {
+  position: relative;
+  isolation: isolate;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nc-panel);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(37, 99, 235, 0.2),
+    0 10px 25px rgba(0, 0, 0, 0.08);
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease, border-color 260ms ease;
+}
+
+body.dark-theme .timeline-phase-node {
+  background: #0f172a;
+  border-color: #1e293b;
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.3),
+    0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+/* Inner Liquid Chamber Inside Node */
+.node-liquid-chamber {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--nc-panel-strong);
+  z-index: 0;
+  transition: background 300ms ease;
+}
+
+.node-liquid-level {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: calc(var(--phase-progress, 0) * 100%);
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 40%, #2563eb 100%);
+  transition: height 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+}
+
+body.dark-theme .node-liquid-level {
+  background: linear-gradient(180deg, #67e8f9 0%, #06b6d4 40%, #4f46e5 100%);
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.7);
+}
+
+/* Ripple Wave Shimmer on Filled Chamber */
+.node-liquid-level::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 8px #ffffff;
+  border-radius: 50%;
+}
+
+.timeline-node-index {
+  position: relative;
+  z-index: 2;
+  font-family: "Sora", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--nc-copy-soft);
+  transition: color 240ms ease, transform 240ms ease;
+}
+
+/* Node States: Filled & Visited & Active */
+.evaluation-timeline-row.is-visited .node-liquid-level,
+.evaluation-timeline-row.is-active .node-liquid-level {
+  height: 100%;
+}
+
+.evaluation-timeline-row.is-visited .timeline-node-index,
+.evaluation-timeline-row.is-active .timeline-node-index {
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(15, 23, 42, 0.4);
+}
+
+.evaluation-timeline-row.is-active .timeline-phase-node {
+  transform: scale(1.1);
+  border-color: var(--nc-glow);
+  box-shadow:
+    0 0 0 6px rgba(56, 189, 248, 0.25),
+    0 12px 32px rgba(37, 99, 235, 0.35);
+}
+
+/* Beacon Ripple Animation on Active Node */
+.node-beacon-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 2px solid var(--nc-glow);
+  opacity: 0;
+  pointer-events: none;
+  animation: beaconPulse 2.2s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Right Aside: Interactive Clinical Glass Card */
+.timeline-row-card {
+  padding-left: 2.8rem;
+  width: 100%;
+}
+
+.timeline-card-glass {
+  position: relative;
+  background: var(--nc-panel);
+  border: 1px solid var(--nc-panel-border);
+  border-radius: 1.5rem;
+  padding: 1.5rem 1.65rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  transition: all 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.evaluation-timeline-row:hover .timeline-card-glass {
+  transform: translateY(-4px);
+  border-color: var(--nc-glow);
+  box-shadow:
+    0 18px 40px rgba(37, 99, 235, 0.1),
+    0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+.evaluation-timeline-row:hover .timeline-phase-node {
+  transform: scale(1.08);
+}
+
+.evaluation-timeline-row:hover .timeline-row-heading {
+  color: var(--nc-glow);
+}
+
+.timeline-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.25rem;
-  background: rgba(219, 234, 254, 0.54);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  color: var(--nc-copy);
+  margin-bottom: 0.75rem;
 }
 
-.evaluation-assistant-strip strong {
-  display: block;
-  margin-bottom: 0.3rem;
-  color: #0f2f57;
-}
-
-.evaluation-assistant-strip-badge {
+.timeline-card-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.7rem 0.95rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(37, 99, 235, 0.16);
-  color: #1d4ed8;
+  gap: 0.35rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  white-space: nowrap;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-@keyframes evaluation-water-flow {
+.timeline-card-status-badge.is-completed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.timeline-card-status-badge.is-current {
+  background: rgba(56, 189, 248, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+body.dark-theme .timeline-card-status-badge.is-current {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.timeline-card-status-badge.is-pending {
+  background: var(--nc-panel-strong);
+  color: var(--nc-copy-soft);
+  border: 1px solid var(--nc-panel-border);
+}
+
+.timeline-card-desc {
+  font-size: 0.9rem;
+  color: var(--nc-copy);
+  line-height: 1.55;
+  margin-bottom: 0.9rem;
+}
+
+.timeline-card-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1.1rem;
+}
+
+.timeline-goal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--nc-panel-strong);
+  color: var(--nc-copy-soft);
+  border: 1px solid var(--nc-panel-border);
+}
+
+.timeline-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nc-glow);
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.75rem;
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  transition: all 180ms ease;
+}
+
+.evaluation-timeline-row:hover .timeline-card-action {
+  background: var(--nc-glow);
+  color: #ffffff;
+  border-color: var(--nc-glow);
+  padding-right: 1.15rem;
+}
+
+.evaluation-timeline-row:hover .timeline-card-action i {
+  transform: translateX(3px);
+}
+
+.timeline-card-action i {
+  transition: transform 180ms ease;
+}
+
+/* --- Keyframe Animations --- */
+@keyframes bubbleRise {
   0% {
-    background-position: 0 0, 0 0, 0 0, 0 -180px;
+    background-position: 0 120px;
   }
-
   100% {
-    background-position: 0 120px, 0 160px, 0 0, 0 180px;
+    background-position: 0 -120px;
   }
 }
 
-@keyframes evaluation-node-surge {
-
-  0%,
-  100% {
-    opacity: calc(0.25 + (var(--phase-progress, 0) * 0.55));
-    transform: translateY(0);
+@keyframes liquidPulse {
+  0% {
+    transform: scaleX(0.92);
+    opacity: 0.85;
   }
+  100% {
+    transform: scaleX(1.08);
+    opacity: 1;
+  }
+}
 
+@keyframes beaconPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
   50% {
-    opacity: calc(0.38 + (var(--phase-progress, 0) * 0.6));
-    transform: translateY(-2px);
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 991px) {
+  .evaluation-journey-head {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    text-align: center;
+  }
+  .evaluation-journey-copy {
+    text-align: center;
+  }
+  .liquid-flow-capacitor {
+    margin-inline: auto;
+  }
+  .evaluation-timeline-row {
+    grid-template-columns: 3.5rem 1fr;
+    gap: 1.5rem;
+  }
+  .timeline-row-aside-left {
+    display: none;
+  }
+  .timeline-glass-conduit {
+    left: 1.75rem;
+    transform: none;
+  }
+  .timeline-row-node-wrapper {
+    justify-content: flex-start;
+  }
+  .timeline-row-card {
+    padding-left: 0;
   }
 }
 
@@ -7591,7 +7994,6 @@ body.light-theme .sidebar-link:hover {
 body.light-theme .sidebar-link.active,
 body.light-theme .btn-dark,
 body.light-theme .community-avatar,
-body.light-theme .evaluation-timeline-row-node,
 body.light-theme .landing-roadmap-row-node {
   background: #2563eb !important;
   color: #ffffff !important;
@@ -7957,7 +8359,6 @@ body.dark-theme .sidebar-link-icon {
 
 body.dark-theme .btn-dark,
 body.dark-theme .community-avatar,
-body.dark-theme .evaluation-timeline-row-node,
 body.dark-theme .landing-roadmap-row-node {
   background: #0284c7 !important;
   color: #ffffff !important;

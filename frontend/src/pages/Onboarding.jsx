@@ -368,54 +368,145 @@ const Onboarding = () => {
     : Math.round((visitedSteps.length / CLINICAL_PHASES.length) * 100);
   const timelineVisualProgress = timelineScrollProgress;
 
+  const signal12Value = Math.max(
+    scores?.alcoholScore || 0,
+    scores?.honcScore || 0,
+    scores?.cageScore || 0
+  );
+
+  const signal12Severity = useMemo(() => {
+    if (signal12Value >= 3) return { label: "Attention Clinique", badgeClass: "is-danger" };
+    if (signal12Value >= 1) return { label: "Vigilance Modérée", badgeClass: "is-warning" };
+    return { label: "Faible Risque", badgeClass: "is-success" };
+  }, [signal12Value]);
+
   return (
     <div className="container py-4 app-shell">
+      {/* Top Clinical Header */}
       <div className="evaluation-page-header" data-guide-id="evaluation-header">
         <div>
-          <div className="hero-kicker">Parcours d'évaluation clinique</div>
-          <h2 className="fw-bold mb-1">Consultation initiale du patient</h2>
+          <div className="hero-kicker">
+            <i className="bi bi-shield-check me-1" /> Protocole Médical Haute Précision
+          </div>
+          <h2 className="fw-bold mb-1">Consultation Initiale d'Évaluation</h2>
           <div className="muted-text">
-            Le profil personnel reste distinct. Toute la matiere clinique, tabagique et sociale vit dans cette timeline.
-          </div>
-        </div>
-        <div className="evaluation-status-stack">
-          <div className="evaluation-status-pill">
-            <span>Signal 12</span>
-            <strong>{Math.max(scores?.alcoholScore || 0, scores?.honcScore || 0, scores?.cageScore || 0)}</strong>
-          </div>
-          <div className={`evaluation-status-pill ${user?.profile?.onboardingComplete ? "is-complete" : ""}`}>
-            <span>Parcours</span>
-            <strong>{user?.profile?.onboardingComplete ? "Complet" : `${progressPercent}%`}</strong>
+            Recueil clinique approfondi et cartographie multidimensionnelle du profil d'addiction du patient.
           </div>
         </div>
       </div>
 
-      {/* Barre de navigation libre vers les autres modules */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 mb-4 rounded-4 shadow-sm" style={{ background: "var(--nc-panel, #ffffff)", border: "1px solid var(--nc-border, #e5e7eb)" }}>
+      {/* Executive Clinical KPI Bar */}
+      <div className="evaluation-kpi-bar" data-guide-id="evaluation-kpis">
+        {/* Card 1: Progression */}
+        <div className="evaluation-kpi-card">
+          <div className="evaluation-kpi-header">
+            <div className="evaluation-kpi-icon-pill">
+              <i className="bi bi-speedometer2" />
+            </div>
+            <span className={`evaluation-kpi-badge ${user?.profile?.onboardingComplete ? "is-success" : "is-primary"}`}>
+              {user?.profile?.onboardingComplete ? "Protocole Validé" : "En cours"}
+            </span>
+          </div>
+          <div className="evaluation-kpi-body">
+            <div className="evaluation-kpi-value">
+              {progressPercent}%
+            </div>
+            <div className="evaluation-kpi-label">
+              {visitedSteps.length} sur {CLINICAL_PHASES.length} phases explorées
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Signal 12 */}
+        <div className="evaluation-kpi-card">
+          <div className="evaluation-kpi-header">
+            <div className="evaluation-kpi-icon-pill">
+              <i className="bi bi-shield-shaded" />
+            </div>
+            <span className={`evaluation-kpi-badge ${signal12Severity.badgeClass}`}>
+              {signal12Severity.label}
+            </span>
+          </div>
+          <div className="evaluation-kpi-body">
+            <div className="evaluation-kpi-value">
+              {signal12Value} <span style={{ fontSize: "1.1rem", opacity: 0.7 }}>/ 12</span>
+            </div>
+            <div className="evaluation-kpi-label">
+              Indice de vulnérabilité Signal 12
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Screening Scores */}
+        <div className="evaluation-kpi-card">
+          <div className="evaluation-kpi-header">
+            <div className="evaluation-kpi-icon-pill">
+              <i className="bi bi-clipboard2-pulse" />
+            </div>
+            <span className={`evaluation-kpi-badge ${scores ? "is-success" : ""}`}>
+              {scores ? "Dépistages Actifs" : "En attente"}
+            </span>
+          </div>
+          <div className="evaluation-kpi-body">
+            <div className="screening-chips-grid">
+              <div className="screening-chip">
+                <span className="screening-chip-name">CAGE</span>
+                <span className="screening-chip-val">
+                  {scores?.cageScore != null ? `${scores.cageScore}${scores.cagePositive ? " (!)" : ""}` : "—"}
+                </span>
+              </div>
+              <div className="screening-chip">
+                <span className="screening-chip-name">HONC</span>
+                <span className="screening-chip-val">
+                  {scores?.honcScore != null ? `${scores.honcScore}${scores.honcHighDependence ? " (H)" : ""}` : "—"}
+                </span>
+              </div>
+              <div className="screening-chip">
+                <span className="screening-chip-name">EPICES</span>
+                <span className="screening-chip-val">
+                  {scores?.epicesScore != null ? scores.epicesScore : "—"}
+                </span>
+              </div>
+              <div className="screening-chip">
+                <span className="screening-chip-name">Alcool</span>
+                <span className="screening-chip-val">
+                  {scores?.alcoholScore != null ? scores.alcoholScore : "—"}
+                </span>
+              </div>
+            </div>
+            <div className="evaluation-kpi-label mt-2">
+              Scores normalisés HAS & OMS
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Strip */}
+      <div className="evaluation-nav-strip">
         <div className="d-flex align-items-center gap-2">
           <i className="bi bi-compass text-primary fs-5" />
-          <span className="small fw-semibold text-secondary">Accès direct aux modules de la plateforme :</span>
+          <span className="fw-semibold small">Accès direct aux modules cliniques :</span>
         </div>
         <div className="d-flex flex-wrap gap-2">
           <button 
             type="button" 
-            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            className="evaluation-nav-btn"
             onClick={() => navigate("/dashboard")}
           >
-            <i className="bi bi-activity" />
+            <i className="bi bi-grid-1x2" />
             <span>Tableau de bord</span>
           </button>
           <button 
             type="button" 
-            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            className="evaluation-nav-btn"
             onClick={() => navigate("/tests")}
           >
-            <i className="bi bi-clipboard-data" />
+            <i className="bi bi-clipboard2-pulse" />
             <span>Tests cliniques</span>
           </button>
           <button 
             type="button" 
-            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            className="evaluation-nav-btn"
             onClick={() => navigate("/journal")}
           >
             <i className="bi bi-journal-medical" />
@@ -423,7 +514,7 @@ const Onboarding = () => {
           </button>
           <button 
             type="button" 
-            className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm"
+            className="evaluation-nav-btn"
             onClick={() => navigate("/plan")}
           >
             <i className="bi bi-diagram-3" />
@@ -433,49 +524,64 @@ const Onboarding = () => {
       </div>
 
       {message && (
-        <div className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"}`}>
+        <div className={`alert ${message.type === "error" ? "alert-danger" : "alert-success"} rounded-4 mb-4 shadow-sm`}>
           {message.text}
         </div>
       )}
 
-      {scores && (
-        <div className="alert alert-info">
-          CAGE: {scores.cageScore ?? "-"} {scores.cagePositive ? "(positif)" : ""}
-          {" | "}HONC: {scores.honcScore ?? "-"} {scores.honcHighDependence ? "(dependance forte)" : ""}
-          {" | "}EPICES: {scores.epicesScore ?? "-"}
-          {" | "}Alcool: {scores.alcoholScore ?? "-"}
-        </div>
-      )}
-
+      {/* The Liquid Timeline Stage */}
       <div
         ref={timelineStageRef}
         className="evaluation-timeline-stage"
         data-guide-id="evaluation-timeline"
         style={{ "--timeline-progress": `${timelineVisualProgress}%` }}
       >
+        {/* Stage Hero Banner & Biometric Fluid Capacitor */}
         <div className="evaluation-journey-head">
           <div className="evaluation-journey-copy">
-            <div className="hero-kicker">Parcours initial</div>
+            <div className="hero-kicker">
+              <i className="bi bi-droplet-half" /> Colonne Fluidique Réactive
+            </div>
             <h2 className="timeline-main-title">TIMELINE DES PHASES D'ÉVALUATION</h2>
-            <h3 className="mb-2">Cliquez sur une phase pour ouvrir le panel central de questions.</h3>
-            <p className="muted-text mb-0">
-              La timeline se remplit pendant le scroll comme une colonne clinique vivante. Le patient avance par
-              reperes visuels, puis ouvre chaque bloc au centre de l'ecran.
+            <div className="timeline-subtitle">
+              Cliquez sur une phase pour ouvrir le questionnaire central assisté par IA.
+            </div>
+            <p className="timeline-desc">
+              Le fluide biométrique réagit dynamiquement au défilement de votre écran pour matérialiser l'avancement clinique. Chaque palier franchi enregistre vos données en toute confidentialité.
             </p>
           </div>
 
-          <div className="evaluation-timeline-progress-vertical" aria-hidden="true">
-            <div className="evaluation-timeline-progress-column">
-              <span className="evaluation-timeline-progress-column-fill" />
+          <div className="liquid-flow-capacitor" aria-label="Jauge capacitive de flux clinique">
+            <div className="capacitor-tube-outer">
+              <div
+                className="capacitor-tube-fill"
+                style={{ height: `${timelineVisualProgress}%` }}
+              />
             </div>
-            <div className="evaluation-timeline-progress-meta is-vertical">
-              <span>Flux clinique</span>
-              <strong>{timelineVisualProgress}%</strong>
+            <div className="capacitor-ticks">
+              <span>100%</span>
+              <span>75%</span>
+              <span>50%</span>
+              <span>25%</span>
+              <span>0%</span>
+            </div>
+            <div className="capacitor-meta">
+              <div className="capacitor-meta-tag">Flux fluide</div>
+              <div className="capacitor-meta-val">{timelineVisualProgress}%</div>
             </div>
           </div>
         </div>
 
+        {/* The Centered Timeline Container */}
         <div className="evaluation-timeline-centered">
+          {/* Glass Conduit with Glowing Liquid Stream & Meniscus */}
+          <div className="timeline-glass-conduit" aria-hidden="true">
+            <div
+              className="timeline-liquid-stream"
+              style={{ height: `${timelineVisualProgress}%` }}
+            />
+          </div>
+
           {CLINICAL_PHASES.map((phase, index) => {
             const isActive = phase.id === step;
             const isVisited = visitedSteps.includes(phase.id);
@@ -483,28 +589,109 @@ const Onboarding = () => {
               0,
               Math.min(1, (timelineVisualProgress / 100) * CLINICAL_PHASES.length - index)
             );
+
             return (
-              <button
+              <div
                 key={phase.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 className={`evaluation-timeline-row ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}`}
                 onClick={() => openPhasePanel(phase.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openPhasePanel(phase.id);
+                  }
+                }}
                 style={{ "--phase-progress": phaseFill.toFixed(2) }}
               >
-                <div className="evaluation-timeline-row-info">
-                  <div className="evaluation-timeline-row-label">{phase.label}</div>
-                  <strong className="evaluation-timeline-row-title">{phase.title}</strong>
+                {/* Left Aside: Identity & Objective */}
+                <div className="timeline-row-aside-left">
+                  <div className="timeline-row-meta-strip">
+                    <span className="timeline-phase-pill">{phase.label}</span>
+                    <span className="timeline-row-range">
+                      <i className="bi bi-ui-checks-grid" /> {phase.questionRange}
+                    </span>
+                  </div>
+                  <h3 className="timeline-row-heading">{phase.title}</h3>
+                  <p className="timeline-row-objective">
+                    {phase.goals?.[0] || phase.summary}
+                  </p>
                 </div>
-                <div className="evaluation-timeline-row-center">
-                  <span className="evaluation-timeline-row-node">
-                    <span className="evaluation-timeline-row-node-index">{phase.id}</span>
-                  </span>
+
+                {/* Center Column: Liquid Milestone Node */}
+                <div className="timeline-row-node-wrapper">
+                  <div className="timeline-phase-node">
+                    <div className="node-liquid-chamber">
+                      <div
+                        className="node-liquid-level"
+                        style={{ height: `${(phaseFill * 100).toFixed(0)}%` }}
+                      />
+                    </div>
+                    <span className="timeline-node-index">
+                      {isVisited ? <i className="bi bi-check-lg" /> : phase.id}
+                    </span>
+                    {isActive && <span className="node-beacon-ring" />}
+                  </div>
                 </div>
-                <div className="evaluation-timeline-row-copy">
-                  <span className="evaluation-timeline-row-wave">Progression visuelle</span>
-                  <p>{phase.summary}</p>
+
+                {/* Right Aside: Interactive Glass Card */}
+                <div className="timeline-row-card">
+                  <div className="timeline-card-glass">
+                    <div className="timeline-card-header">
+                      <span
+                        className={`timeline-card-status-badge ${
+                          isVisited
+                            ? "is-completed"
+                            : isActive
+                            ? "is-current"
+                            : "is-pending"
+                        }`}
+                      >
+                        <i
+                          className={
+                            isVisited
+                              ? "bi bi-check-circle-fill"
+                              : isActive
+                              ? "bi bi-play-circle-fill"
+                              : "bi bi-circle"
+                          }
+                        />
+                        <span>
+                          {isVisited
+                            ? "Complété"
+                            : isActive
+                            ? "En cours"
+                            : "À réaliser"}
+                        </span>
+                      </span>
+                    </div>
+
+                    <p className="timeline-card-desc">{phase.summary}</p>
+
+                    {phase.goals && phase.goals.length > 0 && (
+                      <div className="timeline-card-goals">
+                        {phase.goals.slice(0, 2).map((goal, gIdx) => (
+                          <span key={gIdx} className="timeline-goal-pill">
+                            <i className="bi bi-bullseye" /> {goal}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="timeline-card-action">
+                      <span>
+                        {isVisited
+                          ? "Consulter ou modifier"
+                          : isActive
+                          ? "Continuer la phase"
+                          : "Commencer la phase"}
+                      </span>
+                      <i className="bi bi-arrow-right" />
+                    </div>
+                  </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
