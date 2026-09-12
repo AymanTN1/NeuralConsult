@@ -125,13 +125,23 @@ const ClinicalTopbar = () => {
 
   return (
     <header className="clinical-topbar">
-      <div className="d-flex align-items-center gap-3">
-        <img
-          className="d-lg-none"
-          src="/icons/icon_Neural_Consult_Sevrage.png"
-          alt="Logo"
-          style={{ width: "36px", height: "36px", borderRadius: "10px", objectFit: "cover" }}
-        />
+      <div className="d-flex align-items-center gap-2.5">
+        <button
+          type="button"
+          className="topbar-brand-trigger"
+          onClick={() => window.dispatchEvent(new CustomEvent("nc:toggle-sidebar"))}
+          title="Ouvrir le menu de navigation"
+          aria-label="Ouvrir le menu de navigation"
+        >
+          <img
+            src="/icons/icon_Neural_Consult_Sevrage.png"
+            alt="Logo NeuralConsult"
+            className="topbar-brand-logo"
+          />
+          <span className="topbar-brand-badge" aria-hidden="true">
+            <i className="bi bi-list" />
+          </span>
+        </button>
         <div>
           <div className="topbar-eyebrow">{meta.eyebrow}</div>
           <h1 className="topbar-title">{meta.title}</h1>

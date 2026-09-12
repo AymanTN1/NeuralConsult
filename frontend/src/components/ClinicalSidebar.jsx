@@ -82,84 +82,156 @@ const ClinicalSidebar = () => {
 
   const [isCollapsed, setIsCollapsed] = useState(localStorage.getItem("nc_sidebar_collapsed") === "true");
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("nc_sidebar_collapsed", isCollapsed);
     document.body.classList.toggle("sidebar-collapsed", isCollapsed);
   }, [isCollapsed]);
 
+  // Close mobile sidebar on route navigation
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
+  // Listen to custom sidebar toggle events (e.g. from topbar logo click)
+  useEffect(() => {
+    const handleToggle = () => {
+      if (window.innerWidth < 1024) {
+        setIsMobileOpen((prev) => !prev);
+      } else {
+        setIsCollapsed((prev) => !prev);
+      }
+    };
+
+    const handleOpen = () => {
+      if (window.innerWidth < 1024) {
+        setIsMobileOpen(true);
+      } else {
+        setIsCollapsed(false);
+      }
+    };
+
+    const handleClose = () => {
+      setIsMobileOpen(false);
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsMobileOpen(false);
+      }
+    };
+
+    window.addEventListener("nc:toggle-sidebar", handleToggle);
+    window.addEventListener("nc:open-sidebar", handleOpen);
+    window.addEventListener("nc:close-sidebar", handleClose);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("nc:toggle-sidebar", handleToggle);
+      window.removeEventListener("nc:open-sidebar", handleOpen);
+      window.removeEventListener("nc:close-sidebar", handleClose);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const toggleSidebar = (e) => {
     e.stopPropagation();
-    setIsCollapsed(!isCollapsed);
+    if (window.innerWidth < 1024) {
+      setIsMobileOpen(!isMobileOpen);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
   };
 
-  const isExpanded = !isCollapsed || isHovered;
+  const isExpanded = !isCollapsed || isHovered || isMobileOpen;
 
   return (
-    <aside 
-      className={`clinical-sidebar ${isCollapsed ? "is-collapsed" : ""} ${isHovered ? "is-hovered" : ""}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="sidebar-brand-header">
-        <div className="brand-main">
-          <div className="brand-mark" onClick={toggleSidebar} role="button" title={isCollapsed ? "Déplier le menu" : "NeuralConsult"}>
-            <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="NeuralConsult" />
-          </div>
-          {isExpanded && (
-            <div className="brand-text">
-              <span className="sidebar-eyebrow">Calm Clinical Care</span>
-              <span className="sidebar-title">NeuralConsult</span>
+    <>
+      {isMobileOpen && (
+        <div
+          className="sidebar-mobile-backdrop"
+          onClick={() => setIsMobileOpen(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="Fermer le menu"
+        />
+      )}
+      <aside 
+        className={`clinical-sidebar ${isCollapsed ? "is-collapsed" : ""} ${isHovered ? "is-hovered" : ""} ${isMobileOpen ? "is-mobile-open" : ""}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="sidebar-brand-header">
+          <div className="brand-main">
+            <div className="brand-mark" onClick={toggleSidebar} role="button" title={isCollapsed ? "Déplier le menu" : "NeuralConsult"}>
+              <img src="/icons/icon_Neural_Consult_Sevrage.png" alt="NeuralConsult" />
             </div>
+            {isExpanded && (
+              <div className="brand-text">
+                <span className="sidebar-eyebrow">Calm Clinical Care</span>
+                <span className="sidebar-title">NeuralConsult</span>
+              </div>
+            )}
+          </div>
+          
+          {isMobileOpen ? (
+            <button
+              type="button"
+              className="sidebar-mobile-close-btn"
+              onClick={() => setIsMobileOpen(false)}
+              title="Fermer le menu"
+              aria-label="Fermer le menu"
+            >
+              <i className="bi bi-x-lg" />
+            </button>
+          ) : isExpanded ? (
+            <button 
+              type="button" 
+              className="sidebar-master-toggle" 
+              onClick={toggleSidebar}
+              title="Replier le menu"
+              aria-label="Replier le menu"
+            >
+              <i className="bi bi-layout-sidebar-inset" />
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              className="sidebar-mini-toggle" 
+              onClick={toggleSidebar}
+              title="Déplier le menu"
+              aria-label="Déplier le menu"
+            >
+              <i className="bi bi-list" />
+            </button>
           )}
         </div>
-        
-        {isExpanded ? (
-          <button 
-            type="button" 
-            className="sidebar-master-toggle" 
-            onClick={toggleSidebar}
-            title="Replier le menu"
-            aria-label="Replier le menu"
-          >
-            <i className="bi bi-layout-sidebar-inset" />
-          </button>
-        ) : (
-          <button 
-            type="button" 
-            className="sidebar-mini-toggle" 
-            onClick={toggleSidebar}
-            title="Déplier le menu"
-            aria-label="Déplier le menu"
-          >
-            <i className="bi bi-list" />
-          </button>
+
+        {isExpanded && (
+          <div className="sidebar-patient">
+            <div className="sidebar-patient-label">{doctorMode || adminMode ? "Session en cours" : "Dossier en cours"}</div>
+            <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
+            <div className="sidebar-status-pill">{statusLabel}</div>
+          </div>
         )}
-      </div>
 
-      {isExpanded && (
-        <div className="sidebar-patient">
-          <div className="sidebar-patient-label">{doctorMode || adminMode ? "Session en cours" : "Dossier en cours"}</div>
-          <div className="sidebar-patient-name">{user?.fullName || "Patient"}</div>
-          <div className="sidebar-status-pill">{statusLabel}</div>
-        </div>
-      )}
-
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            className="sidebar-link"
-            to={item.to}
-            title={!isExpanded ? item.label : ""}
-          >
-            <span className="sidebar-link-icon">
-              <i className={`${item.icon} fs-5`} />
-            </span>
-            {isExpanded && <span className="sidebar-link-label">{item.label}</span>}
-          </NavLink>
-        ))}
-      </nav>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              className="sidebar-link"
+              to={item.to}
+              title={!isExpanded ? item.label : ""}
+              onClick={() => setIsMobileOpen(false)}
+            >
+              <span className="sidebar-link-icon">
+                <i className={`${item.icon} fs-5`} />
+              </span>
+              {isExpanded && <span className="sidebar-link-label">{item.label}</span>}
+            </NavLink>
+          ))}
+        </nav>
 
       {isExpanded && (
         <div className="sidebar-footer">
@@ -174,6 +246,7 @@ const ClinicalSidebar = () => {
         </div>
       )}
     </aside>
+    </>
   );
 };
 
