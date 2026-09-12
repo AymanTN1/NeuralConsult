@@ -18725,3 +18725,330 @@ body.dark-theme .clinical-subgroup-title,
   color: #38bdf8;
 }
 
+/* ========================================================
+   🏆 INTERACTIVE PATIENT TROPHIES & GAMIFICATION STYLES
+   ======================================================== */
+.trophy-spotlight-card {
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.5) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.35);
+  border-radius: 18px;
+  padding: 1.15rem 1.4rem;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.08);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.trophy-spotlight-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.15);
+}
+
+body.dark-theme .trophy-spotlight-card,
+[data-theme="dark"] .trophy-spotlight-card {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.2) 0%, rgba(30, 41, 59, 0.8) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.spotlight-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.trophy-spotlight-card:hover .spotlight-icon-wrap {
+  transform: scale(1.08) rotate(6deg);
+}
+
+.trophies-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 1.1rem;
+  margin-top: 1rem;
+}
+
+.trophy-card-interactive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 0.6rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.trophy-card-interactive:hover {
+  transform: translateY(-4px);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+}
+
+body.dark-theme .trophy-card-interactive,
+[data-theme="dark"] .trophy-card-interactive {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+body.dark-theme .trophy-card-interactive:hover,
+[data-theme="dark"] .trophy-card-interactive:hover {
+  background: rgba(30, 41, 59, 0.9);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.trophy-badge-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  margin-bottom: 0.6rem;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trophy-card-interactive:hover .trophy-badge-circle {
+  transform: scale(1.12);
+}
+
+.trophy-card-interactive.is-unlocked .trophy-badge-circle {
+  animation: floatTrophyBadge 4s ease-in-out infinite alternate;
+}
+
+@keyframes floatTrophyBadge {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+.trophy-lock-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background-color: #475569;
+  color: white;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid white;
+}
+
+.trophy-sparkle-indicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  color: #fbbf24;
+  font-size: 0.85rem;
+  animation: spinSparkle 6s linear infinite;
+}
+
+@keyframes spinSparkle {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.trophy-card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.dark-theme .trophy-card-title,
+[data-theme="dark"] .trophy-card-title {
+  color: #f1f5f9;
+}
+
+.trophy-card-req {
+  font-size: 0.68rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+/* Modal Popup for Trophy */
+.modal-backdrop-trophy {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.trophy-modal-dialog {
+  background: #ffffff;
+  border-radius: 24px;
+  max-width: 460px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  animation: slideUpTrophy 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.dark-theme .trophy-modal-dialog,
+[data-theme="dark"] .trophy-modal-dialog {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+@keyframes slideUpTrophy {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.trophy-modal-big-badge {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.3rem;
+  margin: 0 auto;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+}
+
+/* ========================================================
+   🩺 RECOVERY CHECKLIST STYLES
+   ======================================================== */
+.recovery-checklist-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02);
+  padding: 1.6rem;
+}
+
+body.dark-theme .recovery-checklist-card,
+[data-theme="dark"] .recovery-checklist-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.checklist-tabs-pill {
+  display: flex;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 0.25rem;
+  border-radius: 999px;
+  gap: 0.25rem;
+}
+
+body.dark-theme .checklist-tabs-pill,
+[data-theme="dark"] .checklist-tabs-pill {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.checklist-tab-btn {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--nc-copy-soft, #64748b);
+  transition: all 0.2s ease;
+}
+
+.checklist-tab-btn.is-active {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.dark-theme .checklist-tab-btn.is-active,
+[data-theme="dark"] .checklist-tab-btn.is-active {
+  background: #334155;
+  color: #38bdf8;
+}
+
+.checklist-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.015);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checklist-task-item:hover {
+  background: rgba(2, 132, 199, 0.04);
+  border-color: rgba(2, 132, 199, 0.2);
+}
+
+.checklist-task-item.is-checked {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+body.dark-theme .checklist-task-item,
+[data-theme="dark"] .checklist-task-item {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .checklist-task-item:hover,
+[data-theme="dark"] .checklist-task-item:hover {
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.clinical-benchmark-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.015);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.clinical-benchmark-item.is-achieved {
+  border-left: 3px solid #10b981;
+}
+
+.clinical-benchmark-item.is-upcoming {
+  border-left: 3px solid #94a3b8;
+  opacity: 0.85;
+}
+
+.benchmark-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+

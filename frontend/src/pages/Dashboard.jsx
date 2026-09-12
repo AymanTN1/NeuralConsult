@@ -15,6 +15,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import { chartTheme } from "../theme/chartTheme";
+import RecoveryChecklist from "../components/RecoveryChecklist";
+import PatientTrophies from "../components/PatientTrophies";
 
 const InteractiveLung3D = lazy(() => import("../components/InteractiveLung3D"));
 
@@ -104,30 +106,12 @@ const Dashboard = () => {
   }));
 
   const hadTrend = [...hadHistory]
-    .reverse()
+    .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
     .map((test) => ({
       date: test.createdAt ? new Date(test.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "-",
       anxiete: test.anxietyScore ?? 0,
       depression: test.depressionScore ?? 0
     }));
-
-  const healthMilestones = [
-    {
-      title: "Le souffle remonte",
-      copy: "La sensation d'oxygene redevient un indicateur concret plutot qu'un concept abstrait.",
-      done: reports.length >= 3
-    },
-    {
-      title: "Le brouillard baisse",
-      copy: "Les pics de cravings et de stress deviennent plus lisibles pour le medecin.",
-      done: averageDailyConsumption < baselineDailyConsumption
-    },
-    {
-      title: "L'alliance clinique prend",
-      copy: "Le parcours est suffisamment documente pour piloter le plan et la note medicale.",
-      done: Boolean(plan || clinicalNote)
-    }
-  ];
 
   // 🎮 Gamification real-time calculations
   const targetQuitDate = plan?.targetQuitDate || user?.profile?.targetQuitDate || user?.createdAt;
@@ -211,16 +195,6 @@ const Dashboard = () => {
     }
   ];
 
-  const badgesList = [
-    { id: "bronze", title: "Bronze", requirement: "3 jours libres", icon: "bi-award-fill", color: "#cd7f32", unlocked: diffDays >= 3 },
-    { id: "argent", title: "Argent", requirement: "1 semaine libre", icon: "bi-award-fill", color: "#c0c0c0", unlocked: diffDays >= 7 },
-    { id: "or", title: "Or", requirement: "1 mois libre", icon: "bi-award-fill", color: "#ffd700", unlocked: diffDays >= 30 },
-    { id: "platine", title: "Platine", requirement: "3 mois libres", icon: "bi-gem", color: "#60a5fa", unlocked: diffDays >= 90 },
-    { id: "legende", title: "Légende", requirement: "1 an libre", icon: "bi-trophy-fill", color: "#a855f7", unlocked: diffDays >= 365 }
-  ];
-
-  const currentLevel = Math.max(1, Math.floor(diffDays / 7) + 1);
-
   const isDemo = Boolean(
     user?.isDemo ||
     user?.email?.includes("tantani") ||
@@ -240,7 +214,7 @@ const Dashboard = () => {
             <div className="d-flex align-items-center gap-2 mb-2">
               <span className="pulse-dot-live" />
               <span className="nc-badge-pill bg-success-subtle text-success border border-success-subtle">
-                Suivi Actif — J+{diffDays} Sans Tabac
+                Suivi Actif — J+{Math.max(1, Math.floor(diffDays))} Sans Tabac
               </span>
             </div>
             <h2 className="dashboard-title mb-1 fw-bold">
@@ -322,66 +296,13 @@ const Dashboard = () => {
 
       {/* 🏆 Section Gamification & Récompenses */}
       <section className="rewards-dashboard-section">
-        {/* Main rewards card with real-time ticker and badges */}
-        <div className="rewards-main-card">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <span className="hero-kicker">🏆 Vos Victoires Cliniques & Récompenses</span>
-              <h3 className="fw-bold text-dark mb-0">Sevrage Niveau {currentLevel}</h3>
-            </div>
-            <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold border border-primary border-opacity-15">
-              Libre depuis {timeElapsed.days} jours
-            </span>
-          </div>
-
-          <p className="text-secondary mb-4">
-            Chaque seconde sans fumer permet à votre corps de se régénérer et à votre cagnotte de grandir. Continuez ainsi !
-          </p>
-
-          <div className="reward-ticker-grid">
-            <div className="reward-ticker-card">
-              <span className="ticker-label">💰 Cagnotte Économisée</span>
-              <span className="ticker-value text-success">{realtimeMoney.toFixed(2)} DH</span>
-              <span className="ticker-sub">Basé sur vos dépenses habituelles</span>
-            </div>
-
-            <div className="reward-ticker-card">
-              <span className="ticker-label">🚭 Cigarettes Évitées</span>
-              <span className="ticker-value text-primary">{Math.floor(realtimeCigarettes)} cig.</span>
-              <span className="ticker-sub">Non consommées au total</span>
-            </div>
-
-            <div className="reward-ticker-card">
-              <span className="ticker-label">⏳ Temps de Liberté</span>
-              <span className="ticker-value text-dark" style={{ fontSize: "1.25rem", padding: "0.2rem 0" }}>
-                {timeElapsed.days}j {timeElapsed.hours}h {timeElapsed.minutes}m {timeElapsed.seconds}s
-              </span>
-              <span className="ticker-sub">Compteur de liberté en direct</span>
-            </div>
-          </div>
-
-          <hr className="my-4" style={{ opacity: 0.1 }} />
-
-          <div>
-            <h5 className="fw-bold text-dark mb-3"><i className="bi bi-trophy-fill text-warning me-2"></i>Vos Trophées Débloqués</h5>
-            <div className="badges-shelf">
-              {badgesList.map((badge) => (
-                <div key={badge.id} className={`badge-trophy ${badge.unlocked ? "unlocked" : "locked"}`} title={badge.unlocked ? `Débloqué ! - ${badge.requirement}` : `Verrouillé - Requis: ${badge.requirement}`}>
-                  <div className="badge-circle" style={{ backgroundColor: badge.unlocked ? `${badge.color}15` : "#e5e7eb", color: badge.unlocked ? badge.color : "#9ca3af", border: badge.unlocked ? `2px solid ${badge.color}` : "2px solid #d1d5db" }}>
-                    <i className={`bi ${badge.icon}`}></i>
-                    {!badge.unlocked && (
-                      <div className="badge-lock">
-                        <i className="bi bi-lock-fill"></i>
-                      </div>
-                    )}
-                  </div>
-                  <span className="badge-title">{badge.title}</span>
-                  <span className="badge-req">{badge.requirement}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Composant interactif complet des trophées & motivation */}
+        <PatientTrophies
+          diffDays={diffDays}
+          realtimeMoney={realtimeMoney}
+          realtimeCigarettes={realtimeCigarettes}
+          timeElapsed={timeElapsed}
+        />
 
         {/* Physiological recovery gauges */}
         <div className="physiological-recovery-card">
@@ -524,28 +445,8 @@ const Dashboard = () => {
           </Link>
         </article>
 
-        <article className="milestone-stack">
-          <div className="chart-card-head">
-            <div>
-              <div className="hero-kicker">Health milestones</div>
-              <h3>Checklist de recuperation</h3>
-            </div>
-          </div>
-
-          <div className="milestone-list">
-            {healthMilestones.map((milestone) => (
-              <div key={milestone.title} className={`milestone-item ${milestone.done ? "is-done" : ""}`}>
-                <span className="milestone-bullet">
-                  <i className={`bi ${milestone.done ? "bi-check2" : "bi-record-circle"}`} />
-                </span>
-                <div>
-                  <strong>{milestone.title}</strong>
-                  <p>{milestone.copy}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
+        {/* Checklist interactive de récupération */}
+        <RecoveryChecklist diffDays={diffDays} reportsCount={reports.length} />
       </section>
     </div>
   );
