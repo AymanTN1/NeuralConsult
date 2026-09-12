@@ -2292,6 +2292,52 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
   // ─── MUTATIONS (POST / PUT / DELETE) ───
   if (upperMethod !== "GET") {
 
+    // 0. Onboarding / Clinical Evaluation Persistence & Scoring
+    if (url.includes("/api/onboarding") && upperMethod === "POST") {
+      const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_USERS.patient1;
+      const cageCutDown = Boolean(payload?.cageCutDown);
+      const cageAnnoyed = Boolean(payload?.cageAnnoyed);
+      const cageGuilty = Boolean(payload?.cageGuilty);
+      const cageEyeOpener = Boolean(payload?.cageEyeOpener);
+      const cageScore = (cageCutDown ? 1 : 0) + (cageAnnoyed ? 1 : 0) + (cageGuilty ? 1 : 0) + (cageEyeOpener ? 1 : 0);
+
+      const honcAnswers = [payload?.honcQ1, payload?.honcQ2, payload?.honcQ3, payload?.honcQ4, payload?.honcQ5, payload?.honcQ6, payload?.honcQ7, payload?.honcQ8, payload?.honcQ9, payload?.honcQ10];
+      const honcScore = honcAnswers.filter(Boolean).length;
+
+      const epicesAnswers = [payload?.epicesQ49, payload?.epicesQ50, payload?.epicesQ51, payload?.epicesQ52, payload?.epicesQ53, payload?.epicesQ54, payload?.epicesQ55, payload?.epicesQ56, payload?.epicesQ57, payload?.epicesQ58, payload?.epicesQ59];
+      const epicesScore = epicesAnswers.filter(Boolean).length;
+
+      const alcFreq = payload?.alcoholFrequency != null ? Number(payload.alcoholFrequency) : null;
+      const alcQty = payload?.alcoholQuantity != null ? Number(payload.alcoholQuantity) : null;
+      const alcBinge = payload?.alcoholBinge != null ? Number(payload.alcoholBinge) : null;
+      const alcoholScore = (alcFreq != null || alcQty != null || alcBinge != null)
+        ? (alcFreq || 0) + (alcQty || 0) + (alcBinge || 0)
+        : 1;
+
+      const savedOnboarding = {
+        profile: {
+          ...(activeUser?.patientProfile || {}),
+          ...(payload || {}),
+          onboardingComplete: true
+        },
+        assessment: {
+          ...(payload || {}),
+          cageScore,
+          cagePositive: cageScore >= 2,
+          honcScore,
+          honcHighDependence: honcScore >= 7,
+          alcoholScore,
+          epicesScore
+        }
+      };
+
+      try {
+        localStorage.setItem("nc_demo_onboarding", JSON.stringify(savedOnboarding));
+      } catch (e) {}
+
+      return savedOnboarding;
+    }
+
     // 4. Communities Social Posts Creation
     if (url.includes("/api/communities/social/posts") && !url.includes("/reactions") && !url.includes("/comments") && upperMethod === "POST") {
       const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_COMMUNITY_PEOPLE[3];
@@ -3132,12 +3178,38 @@ export const handleDemoMockRequest = (url, method = "GET", payload = null) => {
     ];
   }
   if (url.includes("/api/onboarding")) {
+    try {
+      const stored = localStorage.getItem("nc_demo_onboarding");
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    const activeUser = getDemoUserByEmail(activeDemoEmail) || DEMO_USERS.patient1;
     return {
+      profile: {
+        ...(activeUser?.patientProfile || {}),
+        onboardingComplete: true
+      },
       assessment: {
         educationLevel: "Bac+5 / Master",
         consultationObjective: "Arrêt complet définitif du tabac",
         weeklyTobaccoSpend: 250,
-        manufacturedCigarettesPerDay: 15
+        manufacturedCigarettesPerDay: 15,
+        smokingStartAge: 18,
+        cigarettesPerDay: 15,
+        fagerstromScore: 0,
+        cageScore: 0,
+        cagePositive: false,
+        honcScore: 1,
+        honcHighDependence: false,
+        epicesScore: 18,
+        alcoholScore: 1,
+        alcoholFrequency: 1,
+        alcoholQuantity: 1,
+        alcoholBinge: 0,
+        cannabisFrequency: "NONE",
+        physicalActivityLevel: "MODERATE"
       }
     };
   }

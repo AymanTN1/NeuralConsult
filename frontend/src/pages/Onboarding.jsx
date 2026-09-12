@@ -158,19 +158,42 @@ const Onboarding = () => {
     const load = async () => {
       try {
         const { data } = await api.get("/api/onboarding");
-        if (data?.profile || data?.assessment) {
+        const loadedProfile = data?.profile || user?.profile || null;
+        const loadedAssessment = data?.assessment || null;
+
+        if (loadedProfile || loadedAssessment) {
           setForm((prev) => ({
             ...prev,
-            ...(data.profile || {}),
-            ...(data.assessment || {})
+            ...(loadedProfile || {}),
+            ...(loadedAssessment || {})
           }));
-          setScores(data.assessment || null);
+          setScores(loadedAssessment || null);
+
+          // Restore visited steps from existing medical dossier data
+          if (loadedProfile?.onboardingComplete) {
+            setVisitedSteps([1, 2, 3, 4, 5]);
+          } else {
+            const steps = new Set([1]);
+            const comb = { ...(loadedProfile || {}), ...(loadedAssessment || {}) };
+            if (comb.consultationObjective || comb.educationLevel || comb.dateOfBirth) steps.add(1);
+            if (comb.riskHypertension || comb.riskDiabetes || comb.medicalHistoryNotes || comb.respiratoryCopd) steps.add(2);
+            if (comb.cigarettesPerDay || comb.smokingStartAge || comb.manufacturedCigarettesPerDay || comb.usesECigarette) steps.add(3);
+            if (comb.fagerstromScore != null || loadedProfile?.fagerstromScore != null) steps.add(4);
+            if (comb.cageScore != null || comb.honcScore != null || comb.alcoholScore != null || comb.epicesScore != null) steps.add(5);
+            setVisitedSteps(Array.from(steps).sort());
+          }
         } else if (user?.profile) {
           setForm((prev) => ({ ...prev, ...user.profile }));
+          if (user.profile.onboardingComplete) {
+            setVisitedSteps([1, 2, 3, 4, 5]);
+          }
         }
       } catch (err) {
         if (user?.profile) {
           setForm((prev) => ({ ...prev, ...user.profile }));
+          if (user.profile.onboardingComplete) {
+            setVisitedSteps([1, 2, 3, 4, 5]);
+          }
         }
       }
     };
@@ -355,19 +378,45 @@ const Onboarding = () => {
     physicalActivityLevel: toEnum(form.physicalActivityLevel)
   }), [form]);
 
+  const handleValidatePhase = async (nextPhaseId) => {
+    // 1. Mark current phase as visited immediately
+    setVisitedSteps((prev) => (prev.includes(step) ? prev : [...prev, step]));
+
+    // 2. Persist intermediate draft to localStorage
+    try {
+      localStorage.setItem("nc_onboarding_draft", JSON.stringify(form));
+    } catch (e) {}
+
+    // 3. Save to backend API in background to ensure database persistence
+    try {
+      const { data } = await api.post("/api/onboarding", payload);
+      if (data?.assessment) {
+        setScores(data.assessment);
+      }
+    } catch (err) {
+      console.warn("Background autosave phase:", err);
+    }
+
+    // 4. Advance step & close modal
+    if (nextPhaseId) {
+      setStep(nextPhaseId);
+    }
+    closePhasePanel();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
     try {
       const { data } = await api.post("/api/onboarding", payload);
       setScores(data?.assessment || null);
+      setVisitedSteps([1, 2, 3, 4, 5]);
       await refetch();
       setIsPhasePanelOpen(false);
-      setMessage({ type: "success", text: "Evaluation enregistree. Passage automatique vers les tests cliniques." });
-      navigate("/tests");
+      setMessage({ type: "success", text: "Évaluation clinique enregistrée avec succès. Tous vos indicateurs sont synchronisés." });
     } catch (err) {
       const apiError = err?.response?.data?.error || err?.response?.data?.message;
-      setMessage({ type: "error", text: apiError ? `Erreur: ${apiError}` : "Erreur lors de l'enregistrement. Verifiez les champs." });
+      setMessage({ type: "error", text: apiError ? `Erreur: ${apiError}` : "Erreur lors de l'enregistrement. Vérifiez les champs." });
     }
   };
 
@@ -1363,16 +1412,13 @@ const Onboarding = () => {
                   <button
                     type="button"
                     className="btn btn-dark"
-                    onClick={() => {
-                      setStep((prev) => Math.min(CLINICAL_PHASES.length, prev + 1));
-                      closePhasePanel();
-                    }}
+                    onClick={() => handleValidatePhase(Math.min(CLINICAL_PHASES.length, step + 1))}
                   >
                     Valider cette phase
                   </button>
                 ) : (
                   <button type="submit" className="btn btn-dark">
-                    Enregistrer l'evaluation
+                    Enregistrer l'évaluation
                   </button>
                 )}
               </div>
