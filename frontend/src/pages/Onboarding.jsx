@@ -192,12 +192,16 @@ const Onboarding = () => {
     const computeProgress = () => {
       frameId = null;
       const rect = stage.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || 1;
-      const startLine = viewportHeight * 0.84;
-      const endLine = viewportHeight * 0.18;
-      const totalDistance = Math.max(rect.height + startLine - endLine, 1);
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 800;
+
+      // The liquid starts flowing as soon as the hero capacitor enters comfortable view (~75% viewport)
+      // and fills 100% when the last phase is scrolled into view (~25% viewport).
+      const startLine = viewportHeight * 0.75;
+      const endLine = viewportHeight * 0.25;
+      const totalDistance = Math.max(rect.height - (endLine - startLine), 1);
       const traveled = startLine - rect.top;
       const ratio = Math.min(1, Math.max(0, traveled / totalDistance));
+
       setTimelineScrollProgress(Math.round(ratio * 100));
     };
 
@@ -208,15 +212,34 @@ const Onboarding = () => {
       frameId = window.requestAnimationFrame(computeProgress);
     };
 
+    // Calculate immediately and also after brief layout settlement
     computeProgress();
-    window.addEventListener("scroll", scheduleProgress, { passive: true });
+    const initTimer = setTimeout(computeProgress, 120);
+
+    // Find all scrollable ancestor containers (e.g. .clinical-content)
+    const scrollContainers = [window, document];
+    let el = stage.parentElement;
+    while (el) {
+      const overflowY = window.getComputedStyle(el).overflowY;
+      if (overflowY === "auto" || overflowY === "scroll" || el.classList.contains("clinical-content")) {
+        scrollContainers.push(el);
+      }
+      el = el.parentElement;
+    }
+
+    scrollContainers.forEach((target) => {
+      target.addEventListener("scroll", scheduleProgress, { passive: true });
+    });
     window.addEventListener("resize", scheduleProgress);
 
     return () => {
+      clearTimeout(initTimer);
       if (frameId !== null) {
         window.cancelAnimationFrame(frameId);
       }
-      window.removeEventListener("scroll", scheduleProgress);
+      scrollContainers.forEach((target) => {
+        target.removeEventListener("scroll", scheduleProgress);
+      });
       window.removeEventListener("resize", scheduleProgress);
     };
   }, []);
@@ -363,10 +386,20 @@ const Onboarding = () => {
         "L'assistant reformule la question et peut proposer un choix officiel, mais le patient garde toujours la reponse finale."
     };
   }, [assistantField, selectedPhase]);
-  const progressPercent = user?.profile?.onboardingComplete
-    ? 100
-    : Math.round((visitedSteps.length / CLINICAL_PHASES.length) * 100);
+  const exploredCount = visitedSteps.length;
+  const totalCount = CLINICAL_PHASES.length;
+  const progressPercent = Math.round((exploredCount / totalCount) * 100);
+  const isFullyComplete = user?.profile?.onboardingComplete && exploredCount === totalCount;
   const timelineVisualProgress = timelineScrollProgress;
+
+  const hasRealScores = Boolean(
+    scores && (
+      scores.cageScore != null ||
+      scores.honcScore != null ||
+      scores.epicesScore != null ||
+      scores.alcoholScore != null
+    )
+  );
 
   const signal12Value = Math.max(
     scores?.alcoholScore || 0,
@@ -375,10 +408,13 @@ const Onboarding = () => {
   );
 
   const signal12Severity = useMemo(() => {
+    if (!hasRealScores && signal12Value === 0) {
+      return { label: "Non évalué", badgeClass: "is-warning" };
+    }
     if (signal12Value >= 3) return { label: "Attention Clinique", badgeClass: "is-danger" };
     if (signal12Value >= 1) return { label: "Vigilance Modérée", badgeClass: "is-warning" };
     return { label: "Faible Risque", badgeClass: "is-success" };
-  }, [signal12Value]);
+  }, [signal12Value, hasRealScores]);
 
   return (
     <div className="container py-4 app-shell">
@@ -403,16 +439,16 @@ const Onboarding = () => {
             <div className="evaluation-kpi-icon-pill">
               <i className="bi bi-speedometer2" />
             </div>
-            <span className={`evaluation-kpi-badge ${user?.profile?.onboardingComplete ? "is-success" : "is-primary"}`}>
-              {user?.profile?.onboardingComplete ? "Protocole Validé" : "En cours"}
+            <span className={`evaluation-kpi-badge ${isFullyComplete ? "is-success" : "is-primary"}`}>
+              {isFullyComplete ? "Protocole Validé" : "En cours"}
             </span>
           </div>
           <div className="evaluation-kpi-body">
             <div className="evaluation-kpi-value">
-              {progressPercent}%
+              {isFullyComplete ? 100 : progressPercent}%
             </div>
             <div className="evaluation-kpi-label">
-              {visitedSteps.length} sur {CLINICAL_PHASES.length} phases explorées
+              {exploredCount} sur {totalCount} phases explorées
             </div>
           </div>
         </div>
@@ -443,8 +479,8 @@ const Onboarding = () => {
             <div className="evaluation-kpi-icon-pill">
               <i className="bi bi-clipboard2-pulse" />
             </div>
-            <span className={`evaluation-kpi-badge ${scores ? "is-success" : ""}`}>
-              {scores ? "Dépistages Actifs" : "En attente"}
+            <span className={`evaluation-kpi-badge ${hasRealScores ? "is-success" : ""}`}>
+              {hasRealScores ? "Dépistages Actifs" : "En attente"}
             </span>
           </div>
           <div className="evaluation-kpi-body">
@@ -589,6 +625,7 @@ const Onboarding = () => {
               0,
               Math.min(1, (timelineVisualProgress / 100) * CLINICAL_PHASES.length - index)
             );
+            const nodeFillHeight = isVisited ? 100 : Math.round(phaseFill * 100);
 
             return (
               <div
@@ -625,7 +662,7 @@ const Onboarding = () => {
                     <div className="node-liquid-chamber">
                       <div
                         className="node-liquid-level"
-                        style={{ height: `${(phaseFill * 100).toFixed(0)}%` }}
+                        style={{ height: `${nodeFillHeight}%` }}
                       />
                     </div>
                     <span className="timeline-node-index">
@@ -679,7 +716,7 @@ const Onboarding = () => {
                       </div>
                     )}
 
-                    <div className="timeline-card-action">
+                    <div className={`timeline-card-action ${isVisited ? "is-visited-btn" : "is-action-btn"}`}>
                       <span>
                         {isVisited
                           ? "Consulter ou modifier"
